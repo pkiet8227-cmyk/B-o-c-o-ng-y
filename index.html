@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+  <title>Báo Cáo Ngày</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <div class="top-bg"></div>
+
+  <main class="container">
+
+    <section class="card">
+
+      <div class="header">
+
+        <div class="logo">
+          📋
+        </div>
+
+        <div>
+          <h1>BÁO CÁO NGÀY</h1>
+          <p>Nhập kết quả field khách hàng</p>
+        </div>
+
+      </div>
+
+
+      <form id="reportForm">
+
+        <div class="section-title">
+          👤 THÔNG TIN FIELD
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Cán bộ <span>*</span>
+          </label>
+
+          <input
+            id="user_name"
+            type="text"
+            placeholder="Nhập tên cán bộ"
+            autocomplete="off"
+            required>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Ngày field <span>*</span>
+          </label>
+
+          <input
+            id="field_date"
+            type="date"
+            required>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Số CIF <span>*</span>
+          </label>
+
+          <input
+            id="cif"
+            type="text"
+            placeholder="Nhập số CIF"
+            autocomplete="off"
+            required>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Tên khách hàng <span>*</span>
+          </label>
+
+          <input
+            id="customer_name"
+            type="text"
+            placeholder="Nhập tên khách hàng"
+            autocomplete="off"
+            required>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Kết quả <span>*</span>
+          </label>
+
+          <select
+            id="result"
+            required>
+
+            <option value="" selected disabled>
+              Chọn kết quả
+            </option>
+
+            <option value="Sống">
+              🟢 Sống
+            </option>
+
+            <option value="Chết">
+              ⚫ Chết
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Kết nối <span>*</span>
+          </label>
+
+          <select
+            id="connection"
+            required>
+
+            <option value="" selected disabled>
+              Chọn kết nối
+            </option>
+
+            <option value="KH">KH</option>
+            <option value="Vợ/Chồng">Vợ/Chồng</option>
+            <option value="Ba/Mẹ">Ba/Mẹ</option>
+            <option value="Con">Con</option>
+            <option value="Anh/Chị">Anh/Chị</option>
+            <option value="Hàng xóm">Hàng xóm</option>
+            <option value="Chính quyền địa phương">
+              Chính quyền địa phương
+            </option>
+            <option value="Không gặp ai">
+              Không gặp ai
+            </option>
+            <option value="Bán nhà">
+              Bán nhà
+            </option>
+            <option value="Chưa tìm được nhà">
+              Chưa tìm được nhà
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="section-title detail-title">
+          📝 KẾT QUẢ & TÁC ĐỘNG
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Kết quả chi tiết <span>*</span>
+          </label>
+
+          <textarea
+            id="detail"
+            rows="4"
+            placeholder="Nhập kết quả chi tiết..."
+            required></textarea>
+
+        </div>
+
+
+        <div class="money-box">
+
+          <label>
+            💰 Dự thu
+          </label>
+
+          <div class="money-input">
+
+            <input
+              id="expected_amount"
+              type="text"
+              inputmode="numeric"
+              placeholder="0"
+              autocomplete="off">
+
+            <b>VNĐ</b>
+
+          </div>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Hướng tác động tiếp theo <span>*</span>
+          </label>
+
+          <textarea
+            id="next_action"
+            rows="4"
+            placeholder="Nhập hướng tác động tiếp theo..."
+            required></textarea>
+
+        </div>
+
+
+        <button
+          id="submitBtn"
+          type="submit">
+
+          <span>🚀</span>
+          GỬI BÁO CÁO
+
+        </button>
+
+
+        <div id="message"></div>
+
+      </form>
+
+    </section>
+
+
+    <p class="footer">
+      🔒 Dữ liệu được lưu tập trung trên hệ thống
+    </p>
+
+  </main>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="config.js"></script>
+
+  <script src="app.js"></script>
+
+</body>
+</html>
