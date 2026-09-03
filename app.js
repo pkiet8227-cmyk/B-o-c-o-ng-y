@@ -1,16 +1,33 @@
+// ========================================
+// KHỞI TẠO SUPABASE
+// ========================================
+
+if (!window.supabase) {
+  alert("❌ Không tải được Supabase. Hãy kiểm tra Internet.");
+  throw new Error("Supabase library chưa được tải.");
+}
+
+if (
+  !window.SUPABASE_URL ||
+  !window.SUPABASE_ANON_KEY
+) {
+  alert("❌ Chưa cấu hình Supabase. Kiểm tra config.js.");
+  throw new Error("Supabase config không hợp lệ.");
+}
+
 const client = window.supabase.createClient(
   window.SUPABASE_URL,
   window.SUPABASE_ANON_KEY
 );
 
-const form =
-  document.getElementById("reportForm");
 
-const button =
-  document.getElementById("submitBtn");
+// ========================================
+// LẤY CÁC PHẦN TỬ HTML
+// ========================================
 
-const message =
-  document.getElementById("message");
+const form = document.getElementById("reportForm");
+const button = document.getElementById("submitBtn");
+const message = document.getElementById("message");
 
 const amountInput =
   document.getElementById("expected_amount");
@@ -19,19 +36,57 @@ const fieldDate =
   document.getElementById("field_date");
 
 
-// ===============================
+// ========================================
+// KIỂM TRA HTML
+// ========================================
+
+if (!form) {
+  throw new Error("Không tìm thấy reportForm.");
+}
+
+if (!button) {
+  throw new Error("Không tìm thấy submitBtn.");
+}
+
+if (!message) {
+  throw new Error("Không tìm thấy message.");
+}
+
+if (!amountInput) {
+  throw new Error("Không tìm thấy expected_amount.");
+}
+
+if (!fieldDate) {
+  throw new Error("Không tìm thấy field_date.");
+}
+
+
+// ========================================
 // NGÀY MẶC ĐỊNH
-// ===============================
+// ========================================
 
-fieldDate.value =
-  new Date()
-    .toISOString()
-    .split("T")[0];
+function getToday() {
+  const now = new Date();
+
+  const year = now.getFullYear();
+
+  const month =
+    String(now.getMonth() + 1)
+      .padStart(2, "0");
+
+  const day =
+    String(now.getDate())
+      .padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+fieldDate.value = getToday();
 
 
-// ===============================
-// TỰ ĐỘNG THÊM DẤU PHẨY
-// ===============================
+// ========================================
+// TỰ ĐỘNG THÊM DẤU PHẨY CHO DỰ THU
+// ========================================
 
 amountInput.addEventListener(
   "input",
@@ -54,14 +109,25 @@ amountInput.addEventListener(
       this.value = "";
 
     }
-
   }
 );
 
 
-// ===============================
+// ========================================
+// HIỂN THỊ THÔNG BÁO
+// ========================================
+
+function showMessage(text, color) {
+
+  message.textContent = text;
+  message.style.color = color;
+
+}
+
+
+// ========================================
 // GỬI BÁO CÁO
-// ===============================
+// ========================================
 
 form.addEventListener(
   "submit",
@@ -74,94 +140,175 @@ form.addEventListener(
     button.innerHTML =
       "⏳ ĐANG LƯU...";
 
-    message.textContent = "";
+    showMessage(
+      "⏳ Đang lưu dữ liệu...",
+      "#6366f1"
+    );
 
-    message.style.color =
-      "#6366f1";
+
+    // ========================================
+    // LẤY DỮ LIỆU
+    // ========================================
+
+    const userName =
+      document
+        .getElementById("user_name")
+        .value
+        .trim();
+
+    const cif =
+      document
+        .getElementById("cif")
+        .value
+        .trim();
+
+    const customerName =
+      document
+        .getElementById("customer_name")
+        .value
+        .trim();
+
+    const result =
+      document
+        .getElementById("result")
+        .value;
+
+    const connection =
+      document
+        .getElementById("connection")
+        .value;
+
+    const detail =
+      document
+        .getElementById("detail")
+        .value
+        .trim();
+
+    const nextAction =
+      document
+        .getElementById("next_action")
+        .value
+        .trim();
 
 
-    // Bỏ dấu phẩy trước khi lưu
-    const amountValue =
+    // ========================================
+    // CHUYỂN TIỀN VỀ NUMBER
+    // ========================================
+
+    const cleanAmount =
       amountInput.value
-        .replace(/,/g, "");
+        .replace(/,/g, "")
+        .replace(/\./g, "")
+        .trim();
+
+    const expectedAmount =
+      cleanAmount
+        ? Number(cleanAmount)
+        : 0;
 
 
-    const data = {
+    // ========================================
+    // KIỂM TRA DỮ LIỆU
+    // ========================================
 
-      user_name:
-        document
-          .getElementById("user_name")
-          .value
-          .trim(),
-
-      field_date:
-        fieldDate.value,
-
-      cif:
-        document
-          .getElementById("cif")
-          .value
-          .trim(),
-
-      customer_name:
-        document
-          .getElementById("customer_name")
-          .value
-          .trim(),
-
-      result:
-        document
-          .getElementById("result")
-          .value,
-
-      connection:
-        document
-          .getElementById("connection")
-          .value,
-
-      detail:
-        document
-          .getElementById("detail")
-          .value
-          .trim(),
-
-      expected_amount:
-        amountValue
-          ? Number(amountValue)
-          : 0,
-
-      next_action:
-        document
-          .getElementById("next_action")
-          .value
-          .trim()
-
-    };
-
-
-    // ===============================
-    // KIỂM TRA
-    // ===============================
-
-    if (
-      !data.user_name ||
-      !data.field_date ||
-      !data.cif ||
-      !data.customer_name ||
-      !data.result ||
-      !data.connection ||
-      !data.detail ||
-      !data.next_action
-    ) {
-
-      message.textContent =
-        "⚠️ Vui lòng nhập đầy đủ thông tin bắt buộc.";
-
-      message.style.color =
-        "#dc2626";
+    if (!userName) {
+      showMessage(
+        "⚠️ Vui lòng nhập Cán bộ.",
+        "#dc2626"
+      );
 
       button.disabled = false;
+      button.innerHTML =
+        "<span>🚀</span> GỬI BÁO CÁO";
 
+      return;
+    }
+
+    if (!fieldDate.value) {
+      showMessage(
+        "⚠️ Vui lòng chọn ngày.",
+        "#dc2626"
+      );
+
+      button.disabled = false;
+      button.innerHTML =
+        "<span>🚀</span> GỬI BÁO CÁO";
+
+      return;
+    }
+
+    if (!cif) {
+      showMessage(
+        "⚠️ Vui lòng nhập Số CIF.",
+        "#dc2626"
+      );
+
+      button.disabled = false;
+      button.innerHTML =
+        "<span>🚀</span> GỬI BÁO CÁO";
+
+      return;
+    }
+
+    if (!customerName) {
+      showMessage(
+        "⚠️ Vui lòng nhập Tên khách hàng.",
+        "#dc2626"
+      );
+
+      button.disabled = false;
+      button.innerHTML =
+        "<span>🚀</span> GỬI BÁO CÁO";
+
+      return;
+    }
+
+    if (!result) {
+      showMessage(
+        "⚠️ Vui lòng chọn Kết quả.",
+        "#dc2626"
+      );
+
+      button.disabled = false;
+      button.innerHTML =
+        "<span>🚀</span> GỬI BÁO CÁO";
+
+      return;
+    }
+
+    if (!connection) {
+      showMessage(
+        "⚠️ Vui lòng chọn Kết nối.",
+        "#dc2626"
+      );
+
+      button.disabled = false;
+      button.innerHTML =
+        "<span>🚀</span> GỬI BÁO CÁO";
+
+      return;
+    }
+
+    if (!detail) {
+      showMessage(
+        "⚠️ Vui lòng nhập Kết quả chi tiết.",
+        "#dc2626"
+      );
+
+      button.disabled = false;
+      button.innerHTML =
+        "<span>🚀</span> GỬI BÁO CÁO";
+
+      return;
+    }
+
+    if (!nextAction) {
+      showMessage(
+        "⚠️ Vui lòng nhập Hướng tác động tiếp theo.",
+        "#dc2626"
+      );
+
+      button.disabled = false;
       button.innerHTML =
         "<span>🚀</span> GỬI BÁO CÁO";
 
@@ -169,55 +316,125 @@ form.addEventListener(
     }
 
 
+    // ========================================
+    // TẠO DỮ LIỆU GỬI SUPABASE
+    // ========================================
+
+    const data = {
+
+      user_name: userName,
+
+      field_date:
+        fieldDate.value,
+
+      cif: cif,
+
+      customer_name:
+        customerName,
+
+      result: result,
+
+      connection:
+        connection,
+
+      detail:
+        detail,
+
+      expected_amount:
+        expectedAmount,
+
+      next_action:
+        nextAction
+
+    };
+
+
+    console.log(
+      "Dữ liệu chuẩn bị lưu:",
+      data
+    );
+
+
+    // ========================================
+    // LƯU SUPABASE
+    // ========================================
+
     try {
 
-      const { error } =
+      const { data: savedData, error } =
         await client
           .from("bao_cao_ngay")
-          .insert([data]);
-
+          .insert([data])
+          .select();
 
       if (error) {
 
-        throw error;
+        console.error(
+          "SUPABASE INSERT ERROR:",
+          error
+        );
 
+        throw error;
       }
 
 
-      message.textContent =
-        "✅ Đã lưu báo cáo thành công!";
+      console.log(
+        "Đã lưu thành công:",
+        savedData
+      );
 
-      message.style.color =
-        "#16a34a";
 
+      // ========================================
+      // THÔNG BÁO THÀNH CÔNG
+      // ========================================
+
+      showMessage(
+        "✅ Đã lưu báo cáo thành công!",
+        "#16a34a"
+      );
+
+
+      // Xóa form
 
       form.reset();
 
 
+      // Đặt lại ngày hôm nay
+
       fieldDate.value =
-        new Date()
-          .toISOString()
-          .split("T")[0];
+        getToday();
 
 
-      document
-        .getElementById("user_name")
-        .focus();
+      // Đưa con trỏ về Cán bộ
+
+      const userInput =
+        document.getElementById("user_name");
+
+      if (userInput) {
+        userInput.focus();
+      }
 
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        "LỖI LƯU BÁO CÁO:",
+        error
+      );
 
-      message.textContent =
-        "❌ Lưu thất bại: "
-        + error.message;
 
-      message.style.color =
-        "#dc2626";
+      showMessage(
+        "❌ Lưu thất bại: " +
+        (error.message || "Lỗi không xác định"),
+        "#dc2626"
+      );
 
     }
 
+
+    // ========================================
+    // MỞ LẠI NÚT
+    // ========================================
 
     button.disabled = false;
 
