@@ -1,5 +1,5 @@
 window.SUPABASE_URL =
-  "DÁN_SUPABASE_PROJECT_URL_VÀO_ĐÂY";
+  "https://cvlkvyiqgnqvaueyjnbq.supabase.co/rest/v1/";
 
 window.SUPABASE_ANON_KEY =
-  "DÁN_PUBLISHABLE_KEY_VÀO_ĐÂY";
+  "sb_publishable_bBz3F7hS3FtgsDWHisqhmw_LL_h6XGr";
