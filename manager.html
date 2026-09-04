@@ -102,10 +102,67 @@
       font-weight: bold;
     }
 
+    /*
+      PHÂN TRANG
+      Không cần sửa style.css
+      manager.js sẽ tự tạo nút phân trang
+    */
+
+    #pagination {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 5px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    #pagination button {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      background: white;
+      color: #334155;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #pagination button:hover {
+      background: #f1f5f9;
+    }
+
+    #pagination button.active {
+      background: #2563eb;
+      color: white;
+      border-color: #2563eb;
+      font-weight: bold;
+    }
+
+    #pagination button.arrow {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    #pagination button:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+
     @media (max-width:600px) {
 
       .stats {
         grid-template-columns: 1fr;
+      }
+
+      #pagination {
+        gap: 4px;
+      }
+
+      #pagination button {
+        width: 34px;
+        height: 34px;
       }
 
     }
@@ -120,6 +177,8 @@
 <main class="container manager-card">
 
   <section class="card">
+
+    <!-- HEADER -->
 
     <div class="header">
 
@@ -142,7 +201,9 @@
     </div>
 
 
+    <!-- ========================= -->
     <!-- LOGIN -->
+    <!-- ========================= -->
 
     <div id="loginBox">
 
@@ -186,12 +247,16 @@
     </div>
 
 
+    <!-- ========================= -->
     <!-- QUẢN LÝ -->
+    <!-- ========================= -->
 
     <div
       id="managerBox"
       style="display:none">
 
+
+      <!-- ĐĂNG XUẤT -->
 
       <button
         id="logoutBtn"
@@ -201,6 +266,10 @@
 
       </button>
 
+
+      <!-- ========================= -->
+      <!-- THỐNG KÊ -->
+      <!-- ========================= -->
 
       <div class="stats">
 
@@ -239,6 +308,10 @@
 
       </div>
 
+
+      <!-- ========================= -->
+      <!-- BỘ LỌC -->
+      <!-- ========================= -->
 
       <div class="section-title">
         🔎 BỘ LỌC
@@ -294,6 +367,10 @@
       </div>
 
 
+      <!-- ========================= -->
+      <!-- BẢNG DỮ LIỆU -->
+      <!-- ========================= -->
+
       <div class="table-wrap">
 
         <table>
@@ -302,39 +379,73 @@
 
             <tr>
 
-              <th>Cán bộ</th>
+              <th>
+                Cán bộ
+              </th>
 
-              <th>Ngày field</th>
+              <th>
+                Ngày field
+              </th>
 
-              <th>Số CIF</th>
+              <th>
+                Số CIF
+              </th>
 
-              <th>Tên khách hàng</th>
+              <th>
+                Tên khách hàng
+              </th>
 
-              <th>Kết quả</th>
+              <th>
+                Kết quả
+              </th>
 
-              <th>Kết nối</th>
+              <th>
+                Kết nối
+              </th>
 
-              <th>Kết quả chi tiết</th>
+              <th>
+                Kết quả chi tiết
+              </th>
 
-              <th>Dự thu</th>
+              <th>
+                Dự thu
+              </th>
 
-              <th>Hướng tác động tiếp theo</th>
+              <th>
+                Hướng tác động tiếp theo
+              </th>
 
-              <th>Xóa</th>
+              <th>
+                Xóa
+              </th>
 
             </tr>
 
           </thead>
 
 
-          <tbody id="tableBody"></tbody>
+          <tbody id="tableBody">
+
+          </tbody>
 
         </table>
 
       </div>
 
 
+      <!-- ========================= -->
+      <!-- PHÂN TRANG -->
+      <!-- ========================= -->
+
+      <div id="pagination"></div>
+
+
+      <!-- ========================= -->
+      <!-- THÔNG BÁO -->
+      <!-- ========================= -->
+
       <div id="managerMessage"></div>
+
 
     </div>
 
@@ -343,13 +454,33 @@
 </main>
 
 
+<!-- ========================= -->
+<!-- SUPABASE -->
+<!-- ========================= -->
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+<!-- ========================= -->
+<!-- XUẤT EXCEL -->
+<!-- ========================= -->
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
+
+<!-- ========================= -->
+<!-- CONFIG -->
+<!-- ========================= -->
+
 <script src="config.js"></script>
 
+
+<!-- ========================= -->
+<!-- JAVASCRIPT -->
+<!-- ========================= -->
+
 <script src="manager.js"></script>
+
 
 </body>
 
