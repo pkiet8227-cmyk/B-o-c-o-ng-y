@@ -362,10 +362,25 @@ form.addEventListener(
     try {
 
       const { data: savedData, error } =
-        await client
-          .from("bao_cao_ngay")
-          .insert([data])
-          .select();
+  await client
+    .from("bao_cao_ngay")
+    .insert([data]);
+
+if (error) {
+  console.error("SUPABASE INSERT ERROR:", error);
+
+  showMessage(
+    "❌ Supabase: " +
+    error.message +
+    " | Code: " +
+    (error.code || "N/A"),
+    "#dc2626"
+  );
+
+  button.disabled = false;
+  button.innerHTML = "<span>🚀</span> GỬI BÁO CÁO";
+  return;
+}
 
       if (error) {
 
