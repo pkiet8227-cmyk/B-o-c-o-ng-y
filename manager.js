@@ -4,6 +4,10 @@ const client = window.supabase.createClient(
 );
 
 
+// =====================================
+// ELEMENT
+// =====================================
+
 const loginBox =
   document.getElementById("loginBox");
 
@@ -16,8 +20,24 @@ const loginMessage =
 const managerMessage =
   document.getElementById("managerMessage");
 
+const tableBody =
+  document.getElementById("tableBody");
+
+const pagination =
+  document.getElementById("pagination");
+
+
+// =====================================
+// BIẾN
+// =====================================
 
 let allData = [];
+
+let filteredData = [];
+
+let currentPage = 1;
+
+const rowsPerPage = 20;
 
 
 // =====================================
@@ -111,6 +131,9 @@ async function loadData() {
   managerMessage.textContent =
     "⏳ Đang tải dữ liệu...";
 
+  managerMessage.style.color =
+    "#6366f1";
+
 
   const { data, error } =
     await client
@@ -141,40 +164,193 @@ async function loadData() {
     data || [];
 
 
+  currentPage = 1;
+
   applyCurrentFilter();
 
 
-  managerMessage.textContent =
-    "";
+  managerMessage.textContent = "";
 
 }
 
 
 // =====================================
-// HIỂN THỊ
+// LỌC DỮ LIỆU
 // =====================================
 
-function renderData(data) {
+document
+  .getElementById("filterBtn")
+  .addEventListener(
+    "click",
+    applyCurrentFilter
+  );
 
-  const tbody =
-    document.getElementById(
-      "tableBody"
-    );
+
+function applyCurrentFilter() {
+
+  const user =
+    document
+      .getElementById("filterUser")
+      .value
+      .trim()
+      .toLowerCase();
 
 
-  tbody.innerHTML = "";
+  const date =
+    document
+      .getElementById("filterDate")
+      .value;
 
+
+  filteredData =
+    allData.filter(row => {
+
+      const matchUser =
+        !user ||
+        (
+          row.user_name || ""
+        )
+          .toLowerCase()
+          .includes(user);
+
+
+      const matchDate =
+        !date ||
+        row.field_date === date;
+
+
+      return (
+        matchUser &&
+        matchDate
+      );
+
+    });
+
+
+  // Khi lọc luôn quay về trang 1
+  currentPage = 1;
+
+
+  renderData();
+
+}
+
+
+// =====================================
+// HIỂN THỊ DỮ LIỆU
+// =====================================
+
+function renderData() {
+
+  tableBody.innerHTML = "";
+
+
+  // ===================================
+  // TÍNH TỔNG TRÊN TOÀN BỘ DỮ LIỆU LỌC
+  // ===================================
 
   let total = 0;
 
 
-  data.forEach(row => {
+  filteredData.forEach(row => {
 
     total +=
       Number(
         row.expected_amount || 0
       );
 
+  });
+
+
+  document.getElementById(
+    "totalReports"
+  ).textContent =
+    filteredData.length;
+
+
+  document.getElementById(
+    "totalAmount"
+  ).textContent =
+    formatMoney(total)
+    + " đ";
+
+
+  // ===================================
+  // TÍNH PHÂN TRANG
+  // ===================================
+
+  const totalPages =
+    Math.ceil(
+      filteredData.length /
+      rowsPerPage
+    );
+
+
+  // Nếu xóa dữ liệu ở trang cuối
+  if (
+    totalPages > 0 &&
+    currentPage > totalPages
+  ) {
+
+    currentPage =
+      totalPages;
+
+  }
+
+
+  if (totalPages === 0) {
+
+    tableBody.innerHTML = `
+
+      <tr>
+
+        <td
+          colspan="10"
+          style="text-align:center;padding:20px">
+
+          Không có dữ liệu.
+
+        </td>
+
+      </tr>
+
+    `;
+
+
+    renderPagination(0);
+
+    return;
+  }
+
+
+  // ===================================
+  // LẤY 20 DÒNG CỦA TRANG HIỆN TẠI
+  // ===================================
+
+  const startIndex =
+    (
+      currentPage - 1
+    ) *
+    rowsPerPage;
+
+
+  const endIndex =
+    startIndex +
+    rowsPerPage;
+
+
+  const pageData =
+    filteredData.slice(
+      startIndex,
+      endIndex
+    );
+
+
+  // ===================================
+  // HIỂN THỊ
+  // ===================================
+
+  pageData.forEach(row => {
 
     const tr =
       document.createElement("tr");
@@ -251,22 +427,332 @@ function renderData(data) {
     `;
 
 
-    tbody.appendChild(tr);
+    tableBody.appendChild(tr);
 
   });
 
 
-  document.getElementById(
-    "totalReports"
-  ).textContent =
-    data.length;
+  // ===================================
+  // HIỂN THỊ PHÂN TRANG
+  // ===================================
+
+  renderPagination(totalPages);
+
+}
 
 
-  document.getElementById(
-    "totalAmount"
-  ).textContent =
-    formatMoney(total)
-    + " đ";
+// =====================================
+// PHÂN TRANG
+// =====================================
+
+function renderPagination(totalPages) {
+
+  pagination.innerHTML = "";
+
+
+  if (totalPages <= 1) {
+
+    return;
+
+  }
+
+
+  // ===================================
+  // NÚT TRANG TRƯỚC
+  // ===================================
+
+  const prevButton =
+    document.createElement("button");
+
+
+  prevButton.className =
+    "arrow";
+
+
+  prevButton.textContent =
+    "‹";
+
+
+  prevButton.disabled =
+    currentPage === 1;
+
+
+  prevButton.addEventListener(
+    "click",
+    () => {
+
+      if (currentPage > 1) {
+
+        currentPage--;
+
+        renderData();
+
+        scrollToTable();
+
+      }
+
+    }
+  );
+
+
+  pagination.appendChild(
+    prevButton
+  );
+
+
+  // ===================================
+  // TẠO DANH SÁCH TRANG
+  // ===================================
+
+  const pages =
+    getPaginationPages(
+      currentPage,
+      totalPages
+    );
+
+
+  pages.forEach(page => {
+
+    if (page === "...") {
+
+      const dots =
+        document.createElement("span");
+
+
+      dots.textContent =
+        "...";
+
+
+      dots.style.padding =
+        "0 5px";
+
+
+      dots.style.lineHeight =
+        "36px";
+
+
+      pagination.appendChild(
+        dots
+      );
+
+
+      return;
+
+    }
+
+
+    const button =
+      document.createElement("button");
+
+
+    button.textContent =
+      page;
+
+
+    if (page === currentPage) {
+
+      button.classList.add(
+        "active"
+      );
+
+    }
+
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        currentPage =
+          page;
+
+        renderData();
+
+        scrollToTable();
+
+      }
+    );
+
+
+    pagination.appendChild(
+      button
+    );
+
+  });
+
+
+  // ===================================
+  // NÚT TRANG SAU
+  // ===================================
+
+  const nextButton =
+    document.createElement("button");
+
+
+  nextButton.className =
+    "arrow";
+
+
+  nextButton.textContent =
+    "›";
+
+
+  nextButton.disabled =
+    currentPage === totalPages;
+
+
+  nextButton.addEventListener(
+    "click",
+    () => {
+
+      if (
+        currentPage <
+        totalPages
+      ) {
+
+        currentPage++;
+
+        renderData();
+
+        scrollToTable();
+
+      }
+
+    }
+  );
+
+
+  pagination.appendChild(
+    nextButton
+  );
+
+}
+
+
+// =====================================
+// TẠO SỐ TRANG
+// =====================================
+
+function getPaginationPages(
+  current,
+  total
+) {
+
+  // Ít trang thì hiện hết
+  if (total <= 7) {
+
+    return Array.from(
+      {
+        length: total
+      },
+      (_, index) =>
+        index + 1
+    );
+
+  }
+
+
+  const pages = [];
+
+
+  // Trang đầu
+  pages.push(1);
+
+
+  // -----------------------------------
+  // KHU VỰC GẦN TRANG HIỆN TẠI
+  // -----------------------------------
+
+  if (current <= 4) {
+
+    pages.push(2);
+    pages.push(3);
+    pages.push(4);
+    pages.push(5);
+
+    pages.push("...");
+
+    pages.push(total);
+
+  }
+
+  else if (
+    current >=
+    total - 3
+  ) {
+
+    pages.push("...");
+
+    pages.push(
+      total - 4
+    );
+
+    pages.push(
+      total - 3
+    );
+
+    pages.push(
+      total - 2
+    );
+
+    pages.push(
+      total - 1
+    );
+
+    pages.push(total);
+
+  }
+
+  else {
+
+    pages.push("...");
+
+    pages.push(
+      current - 1
+    );
+
+    pages.push(
+      current
+    );
+
+    pages.push(
+      current + 1
+    );
+
+    pages.push("...");
+
+    pages.push(total);
+
+  }
+
+
+  return pages;
+
+}
+
+
+// =====================================
+// CUỘN VỀ BẢNG
+// =====================================
+
+function scrollToTable() {
+
+  const table =
+    document.querySelector(
+      ".table-wrap"
+    );
+
+
+  if (!table) {
+
+    return;
+
+  }
+
+
+  table.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 
 }
 
@@ -300,16 +786,24 @@ async function deleteReport(id) {
       "⚠️ Bạn có chắc muốn xóa báo cáo này?\n\n"
 
       + "Cán bộ: "
-      + row.user_name
+      + (
+        row.user_name || ""
+      )
 
       + "\nKhách hàng: "
-      + row.customer_name
+      + (
+        row.customer_name || ""
+      )
 
       + "\nCIF: "
-      + row.cif
+      + (
+        row.cif || ""
+      )
 
       + "\nNgày field: "
-      + formatDate(row.field_date)
+      + formatDate(
+        row.field_date
+      )
 
     );
 
@@ -323,6 +817,9 @@ async function deleteReport(id) {
 
   managerMessage.textContent =
     "⏳ Đang xóa...";
+
+  managerMessage.style.color =
+    "#6366f1";
 
 
   const { error } =
@@ -352,32 +849,7 @@ async function deleteReport(id) {
     );
 
 
-  applyCurrentFilter();
-
-
-  managerMessage.textContent =
-    "✅ Đã xóa báo cáo thành công.";
-
-  managerMessage.style.color =
-    "#16a34a";
-
-}
-
-
-// =====================================
-// LỌC
-// =====================================
-
-document
-  .getElementById("filterBtn")
-  .addEventListener(
-    "click",
-    applyCurrentFilter
-  );
-
-
-function applyCurrentFilter() {
-
+  // Lọc lại dữ liệu
   const user =
     document
       .getElementById("filterUser")
@@ -392,7 +864,7 @@ function applyCurrentFilter() {
       .value;
 
 
-  const filtered =
+  filteredData =
     allData.filter(row => {
 
       const matchUser =
@@ -417,7 +889,42 @@ function applyCurrentFilter() {
     });
 
 
-  renderData(filtered);
+  // Nếu trang hiện tại không còn dữ liệu
+  const totalPages =
+    Math.ceil(
+      filteredData.length /
+      rowsPerPage
+    );
+
+
+  if (
+    totalPages > 0 &&
+    currentPage > totalPages
+  ) {
+
+    currentPage =
+      totalPages;
+
+  }
+
+
+  if (
+    filteredData.length === 0
+  ) {
+
+    currentPage = 1;
+
+  }
+
+
+  renderData();
+
+
+  managerMessage.textContent =
+    "✅ Đã xóa báo cáo thành công.";
+
+  managerMessage.style.color =
+    "#16a34a";
 
 }
 
@@ -494,6 +1001,7 @@ function exportExcel() {
     );
 
     return;
+
   }
 
 
@@ -580,20 +1088,33 @@ document
 
       allData = [];
 
+      filteredData = [];
 
-      document.getElementById(
-        "tableBody"
-      ).innerHTML = "";
+      currentPage = 1;
+
+
+      tableBody.innerHTML =
+        "";
+
+
+      pagination.innerHTML =
+        "";
 
 
       document.getElementById(
         "totalReports"
-      ).textContent = "0";
+      ).textContent =
+        "0";
 
 
       document.getElementById(
         "totalAmount"
-      ).textContent = "0 đ";
+      ).textContent =
+        "0 đ";
+
+
+      managerMessage.textContent =
+        "";
 
     }
   );
@@ -620,7 +1141,9 @@ function formatMoney(value) {
 function formatDate(value) {
 
   if (!value) {
+
     return "";
+
   }
 
 
@@ -629,7 +1152,9 @@ function formatDate(value) {
 
 
   if (parts.length !== 3) {
+
     return value;
+
   }
 
 
