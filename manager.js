@@ -4,7 +4,9 @@
 
 // QUẢN LÝ BÁO CÁO NGÀY
 
-// GOOGLE/GMAIL LOGIN + PHÂN QUYỀN SUPABASE
+// ĐĂNG NHẬP GMAIL + MẬT KHẨU SUPABASE AUTH
+
+// PHÂN QUYỀN QUA RPC is_manager()
 
 // ============================================================
 
@@ -12,11 +14,11 @@
 
   "use strict";
 
-  // ============================================================
+  // ==========================================================
 
   // KIỂM TRA SUPABASE
 
-  // ============================================================
+  // ==========================================================
 
   if (!window.supabase) {
 
@@ -42,11 +44,11 @@
 
   );
 
-  // ============================================================
+  // ==========================================================
 
   // DATA
 
-  // ============================================================
+  // ==========================================================
 
   let currentUser = null;
 
@@ -58,17 +60,23 @@
 
   const pageSize = 10;
 
+  let editingReportId = null;
+
   let isLoggingIn = false;
 
-  // ============================================================
+  // ==========================================================
 
   // ELEMENTS
 
-  // ============================================================
+  // ==========================================================
 
   let loginBox;
 
   let managerBox;
+
+  let loginEmail;
+
+  let loginPassword;
 
   let loginBtn;
 
@@ -83,8 +91,6 @@
   let sideMenuClose;
 
   let menuReportsBtn;
-
-  let menuPermissionBtn;
 
   let menuLogoutBtn;
 
@@ -114,121 +120,145 @@
 
   let managerMessage;
 
-  // ============================================================
+  // ==========================================================
 
   // INIT ELEMENTS
 
-  // ============================================================
+  // ==========================================================
 
   function initElements() {
 
-    loginBox = document.getElementById("loginBox");
+    loginBox =
 
-    managerBox = document.getElementById("managerBox");
+      document.getElementById("loginBox");
 
-    loginBtn = document.getElementById("loginBtn");
+    managerBox =
 
-    loginMessage = document.getElementById("loginMessage");
+      document.getElementById("managerBox");
 
-    menuBtn = document.getElementById("menuBtn");
+    // LOGIN
 
-    sideMenu = document.getElementById("sideMenu");
+    loginEmail =
 
-    sideMenuOverlay = document.getElementById("sideMenuOverlay");
+      document.getElementById("loginEmail");
 
-    sideMenuClose = document.getElementById("sideMenuClose");
+    loginPassword =
 
-    menuReportsBtn = document.getElementById("menuReportsBtn");
+      document.getElementById("loginPassword");
 
-    menuPermissionBtn = document.getElementById("menuPermissionBtn");
+    loginBtn =
 
-    menuLogoutBtn = document.getElementById("menuLogoutBtn");
+      document.getElementById("loginBtn");
 
-    logoutBtn = document.getElementById("logoutBtn");
+    loginMessage =
 
-    totalReports = document.getElementById("totalReports");
+      document.getElementById("loginMessage");
 
-    totalAmount = document.getElementById("totalAmount");
+    // MENU
 
-    filterUser = document.getElementById("filterUser");
+    menuBtn =
 
-    filterDate = document.getElementById("filterDate");
+      document.getElementById("menuBtn");
 
-    filterBtn = document.getElementById("filterBtn");
+    sideMenu =
 
-    refreshBtn = document.getElementById("refreshBtn");
+      document.getElementById("sideMenu");
 
-    exportBtn = document.getElementById("exportBtn");
+    sideMenuOverlay =
+
+      document.getElementById("sideMenuOverlay");
+
+    sideMenuClose =
+
+      document.getElementById("sideMenuClose");
+
+    menuReportsBtn =
+
+      document.getElementById("menuReportsBtn");
+
+    menuLogoutBtn =
+
+      document.getElementById("menuLogoutBtn");
+
+    logoutBtn =
+
+      document.getElementById("logoutBtn");
+
+    // STATS
+
+    totalReports =
+
+      document.getElementById("totalReports");
+
+    totalAmount =
+
+      document.getElementById("totalAmount");
+
+    // FILTER
+
+    filterUser =
+
+      document.getElementById("filterUser");
+
+    filterDate =
+
+      document.getElementById("filterDate");
+
+    filterBtn =
+
+      document.getElementById("filterBtn");
+
+    refreshBtn =
+
+      document.getElementById("refreshBtn");
+
+    exportBtn =
+
+      document.getElementById("exportBtn");
+
+    // USERS
 
     showSubmittedUsersBtn =
 
-      document.getElementById("showSubmittedUsersBtn");
+      document.getElementById(
+
+        "showSubmittedUsersBtn"
+
+      );
 
     submittedUserCount =
 
-      document.getElementById("submittedUserCount");
+      document.getElementById(
 
-    tableBody = document.getElementById("tableBody");
+        "submittedUserCount"
 
-    pagination = document.getElementById("pagination");
+      );
 
-    managerMessage = document.getElementById("managerMessage");
+    // TABLE
 
-  }
+    tableBody =
 
-  // ============================================================
+      document.getElementById("tableBody");
 
-  // CHUYỂN LOGIN SANG GOOGLE
+    pagination =
 
-  // ============================================================
+      document.getElementById("pagination");
 
-  function setupGoogleLoginUI() {
+    managerMessage =
 
-    if (!loginBox) return;
-
-    // Xóa các ô login cũ nếu HTML vẫn còn
-
-    const oldLoginId = document.getElementById("loginId");
-
-    const oldPassword = document.getElementById("password");
-
-    if (oldLoginId) {
-
-      const wrapper = oldLoginId.closest(".field");
-
-      if (wrapper) wrapper.style.display = "none";
-
-    }
-
-    if (oldPassword) {
-
-      const wrapper = oldPassword.closest(".field");
-
-      if (wrapper) wrapper.style.display = "none";
-
-    }
-
-    if (loginBtn) {
-
-      loginBtn.type = "button";
-
-      loginBtn.innerHTML = "🔵 ĐĂNG NHẬP BẰNG GOOGLE";
-
-    }
+      document.getElementById("managerMessage");
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // INIT
 
-  // ============================================================
+  // ==========================================================
 
   async function initManager() {
 
     initElements();
-
-    setupGoogleLoginUI();
 
     bindEvents();
 
@@ -264,7 +294,13 @@
 
       if (error) {
 
-        console.error("GET SESSION ERROR:", error);
+        console.error(
+
+          "GET SESSION ERROR:",
+
+          error
+
+        );
 
         showLogin();
 
@@ -272,7 +308,9 @@
 
       }
 
-      const session = data?.session;
+      const session =
+
+        data?.session;
 
       if (!session?.user) {
 
@@ -282,17 +320,23 @@
 
       }
 
-      currentUser = session.user;
+      currentUser =
 
-      console.log("GOOGLE USER:", currentUser);
+        session.user;
 
-      // ----------------------------------------------------------
+      console.log(
 
-      // KIỂM TRA QUYỀN
+        "CURRENT USER:",
 
-      // ----------------------------------------------------------
+        currentUser
 
-      const allowed = await checkManagerPermission();
+      );
+
+      // KIỂM TRA QUYỀN QUẢN LÝ
+
+      const allowed =
+
+        await checkManagerPermission();
 
       if (!allowed) {
 
@@ -318,7 +362,13 @@
 
     } catch (error) {
 
-      console.error("INIT ERROR:", error);
+      console.error(
+
+        "INIT ERROR:",
+
+        error
+
+      );
 
       currentUser = null;
 
@@ -326,7 +376,7 @@
 
       setLoginMessage(
 
-        "❌ Không thể khởi tạo: " +
+        "❌ Không thể khởi tạo trang quản lý: " +
 
         getErrorMessage(error),
 
@@ -336,87 +386,21 @@
 
     }
 
-    // ----------------------------------------------------------
-
-    // THEO DÕI LOGIN / LOGOUT
-
-    // ----------------------------------------------------------
-
-    client.auth.onAuthStateChange(async (event, session) => {
-
-      console.log("AUTH EVENT:", event);
-
-      if (event === "SIGNED_OUT") {
-
-        currentUser = null;
-
-        allReports = [];
-
-        filteredReports = [];
-
-        currentPage = 1;
-
-        showLogin();
-
-        return;
-
-      }
-
-      if (
-
-        (event === "SIGNED_IN" ||
-
-          event === "INITIAL_SESSION" ||
-
-          event === "TOKEN_REFRESHED") &&
-
-        session?.user
-
-      ) {
-
-        currentUser = session.user;
-
-        const allowed =
-
-          await checkManagerPermission();
-
-        if (!allowed) {
-
-          await client.auth.signOut();
-
-          currentUser = null;
-
-          showLogin();
-
-          setLoginMessage(
-
-            "❌ Gmail này chưa được cấp quyền quản lý.",
-
-            "error"
-
-          );
-
-          return;
-
-        }
-
-        await showManager();
-
-      }
-
-    });
-
   }
 
-  // ============================================================
+  // ==========================================================
 
   // EVENTS
 
-  // ============================================================
+  // ==========================================================
 
   function bindEvents() {
 
-    // GOOGLE LOGIN
+    // ========================================================
+
+    // LOGIN EMAIL + PASSWORD
+
+    // ========================================================
 
     if (loginBtn) {
 
@@ -424,13 +408,67 @@
 
         "click",
 
-        loginWithGoogle
+        loginWithEmail
 
       );
 
     }
 
+    // Cho phép nhấn Enter để đăng nhập
+
+    if (loginEmail) {
+
+      loginEmail.addEventListener(
+
+        "keydown",
+
+        function (e) {
+
+          if (e.key === "Enter") {
+
+            e.preventDefault();
+
+            if (loginPassword) {
+
+              loginPassword.focus();
+
+            }
+
+          }
+
+        }
+
+      );
+
+    }
+
+    if (loginPassword) {
+
+      loginPassword.addEventListener(
+
+        "keydown",
+
+        function (e) {
+
+          if (e.key === "Enter") {
+
+            e.preventDefault();
+
+            loginWithEmail();
+
+          }
+
+        }
+
+      );
+
+    }
+
+    // ========================================================
+
     // MENU
+
+    // ========================================================
 
     if (menuBtn) {
 
@@ -448,155 +486,269 @@
 
     if (sideMenuClose) {
 
-      sideMenuClose.onclick = closeMenu;
+      sideMenuClose.onclick =
+
+        function () {
+
+          closeMenu();
+
+        };
 
     }
 
     if (sideMenuOverlay) {
 
-      sideMenuOverlay.onclick = closeMenu;
+      sideMenuOverlay.onclick =
+
+        function () {
+
+          closeMenu();
+
+        };
 
     }
 
-    // QUẢN LÝ BÁO CÁO
+    // ========================================================
+
+    // REPORTS
+
+    // ========================================================
 
     if (menuReportsBtn) {
 
-      menuReportsBtn.onclick = async function () {
+      menuReportsBtn.onclick =
 
-        closeMenu();
+        async function () {
 
-        if (!currentUser) {
+          closeMenu();
 
-          showLogin();
+          if (!currentUser) {
 
-          return;
+            showLogin();
 
-        }
+            return;
 
-        await showManager();
+          }
 
-      };
+          await showManager();
 
-    }
-
-    // PHÂN QUYỀN
-
-    if (menuPermissionBtn) {
-
-      menuPermissionBtn.onclick = function () {
-
-        closeMenu();
-
-        showPermissionInfo();
-
-      };
+        };
 
     }
+
+    // ========================================================
 
     // LOGOUT
 
+    // ========================================================
+
     if (menuLogoutBtn) {
 
-      menuLogoutBtn.onclick = async function () {
+      menuLogoutBtn.onclick =
 
-        await logout();
+        async function () {
 
-      };
+          await logout();
+
+        };
 
     }
 
     if (logoutBtn) {
 
-      logoutBtn.onclick = async function () {
+      logoutBtn.onclick =
 
-        await logout();
+        async function () {
 
-      };
+          await logout();
+
+        };
 
     }
+
+    // ========================================================
 
     // FILTER
 
+    // ========================================================
+
     if (filterBtn) {
 
-      filterBtn.onclick = function () {
+      filterBtn.onclick =
 
-        applyFilter();
-
-      };
-
-    }
-
-    // ENTER FILTER USER
-
-    if (filterUser) {
-
-      filterUser.addEventListener("keydown", function (e) {
-
-        if (e.key === "Enter") {
-
-          e.preventDefault();
+        function () {
 
           applyFilter();
 
-        }
-
-      });
+        };
 
     }
+
+    // ========================================================
 
     // REFRESH
 
+    // ========================================================
+
     if (refreshBtn) {
 
-      refreshBtn.onclick = async function () {
+      refreshBtn.onclick =
 
-        if (filterUser) filterUser.value = "";
+        async function () {
 
-        if (filterDate) filterDate.value = "";
+          if (filterUser) {
 
-        await loadReports();
+            filterUser.value = "";
 
-      };
+          }
+
+          if (filterDate) {
+
+            filterDate.value = "";
+
+          }
+
+          await loadReports();
+
+        };
 
     }
+
+    // ========================================================
 
     // EXPORT
 
+    // ========================================================
+
     if (exportBtn) {
 
-      exportBtn.onclick = function () {
+      exportBtn.onclick =
 
-        exportExcel();
+        function () {
 
-      };
+          exportExcel();
+
+        };
 
     }
 
+    // ========================================================
+
     // USERS
+
+    // ========================================================
 
     if (showSubmittedUsersBtn) {
 
-      showSubmittedUsersBtn.onclick = function () {
+      showSubmittedUsersBtn.onclick =
 
-        showSubmittedUsers();
+        function () {
 
-      };
+          showSubmittedUsers();
+
+        };
 
     }
 
   }
 
-  // ============================================================
+  // ==========================================================
 
-  // GOOGLE LOGIN
+  // LOGIN EMAIL + PASSWORD
 
-  // ============================================================
+  // ==========================================================
 
-  async function loginWithGoogle() {
+  async function loginWithEmail() {
 
-    if (isLoggingIn) return;
+    if (isLoggingIn) {
+
+      return;
+
+    }
+
+    const email =
+
+      (
+
+        loginEmail?.value || ""
+
+      ).trim();
+
+    const password =
+
+      loginPassword?.value || "";
+
+    // ========================================================
+
+    // VALIDATE EMAIL
+
+    // ========================================================
+
+    if (!email) {
+
+      setLoginMessage(
+
+        "❌ Vui lòng nhập Gmail.",
+
+        "error"
+
+      );
+
+      if (loginEmail) {
+
+        loginEmail.focus();
+
+      }
+
+      return;
+
+    }
+
+    if (!isValidEmail(email)) {
+
+      setLoginMessage(
+
+        "❌ Gmail không đúng định dạng.",
+
+        "error"
+
+      );
+
+      if (loginEmail) {
+
+        loginEmail.focus();
+
+      }
+
+      return;
+
+    }
+
+    // ========================================================
+
+    // VALIDATE PASSWORD
+
+    // ========================================================
+
+    if (!password) {
+
+      setLoginMessage(
+
+        "❌ Vui lòng nhập mật khẩu.",
+
+        "error"
+
+      );
+
+      if (loginPassword) {
+
+        loginPassword.focus();
+
+      }
+
+      return;
+
+    }
 
     isLoggingIn = true;
 
@@ -604,15 +756,15 @@
 
       loginBtn.disabled = true;
 
-      loginBtn.innerHTML =
+      loginBtn.textContent =
 
-        "⏳ ĐANG CHUYỂN ĐẾN GOOGLE...";
+        "⏳ ĐANG ĐĂNG NHẬP...";
 
     }
 
     setLoginMessage(
 
-      "⏳ Đang chuyển đến Google...",
+      "⏳ Đang kiểm tra tài khoản...",
 
       "info"
 
@@ -620,97 +772,13 @@
 
     try {
 
-      const redirectTo =
+      // ======================================================
 
-        window.location.origin +
+      // SUPABASE AUTH
 
-        window.location.pathname;
+      // EMAIL + PASSWORD
 
-      console.log(
-
-        "GOOGLE REDIRECT:",
-
-        redirectTo
-
-      );
-
-      const {
-
-        error
-
-      } = await client.auth.signInWithOAuth({
-
-        provider: "google",
-
-        options: {
-
-          redirectTo: redirectTo,
-
-          queryParams: {
-
-            prompt: "select_account"
-
-          }
-
-        }
-
-      });
-
-      if (error) {
-
-        throw error;
-
-      }
-
-    } catch (error) {
-
-      console.error(
-
-        "GOOGLE LOGIN ERROR:",
-
-        error
-
-      );
-
-      setLoginMessage(
-
-        "❌ " + getErrorMessage(error),
-
-        "error"
-
-      );
-
-      isLoggingIn = false;
-
-      if (loginBtn) {
-
-        loginBtn.disabled = false;
-
-        loginBtn.innerHTML =
-
-          "🔵 ĐĂNG NHẬP BẰNG GOOGLE";
-
-      }
-
-    }
-
-  }
-
-  // ============================================================
-
-  // KIỂM TRA QUYỀN MANAGER
-
-  // ============================================================
-
-  async function checkManagerPermission() {
-
-    if (!currentUser) {
-
-      return false;
-
-    }
-
-    try {
+      // ======================================================
 
       const {
 
@@ -718,13 +786,191 @@
 
         error
 
-      } = await client.rpc("is_manager");
+      } =
+
+        await client.auth.signInWithPassword({
+
+          email: email,
+
+          password: password
+
+        });
+
+      if (error) {
+
+        throw error;
+
+      }
+
+      if (!data?.user) {
+
+        throw new Error(
+
+          "Không nhận được thông tin tài khoản."
+
+        );
+
+      }
+
+      currentUser =
+
+        data.user;
+
+      console.log(
+
+        "LOGIN USER:",
+
+        currentUser
+
+      );
+
+      // ======================================================
+
+      // KIỂM TRA QUYỀN QUẢN LÝ
+
+      // ======================================================
+
+      setLoginMessage(
+
+        "⏳ Đang kiểm tra quyền quản lý...",
+
+        "info"
+
+      );
+
+      const allowed =
+
+        await checkManagerPermission();
+
+      if (!allowed) {
+
+        await client.auth.signOut();
+
+        currentUser = null;
+
+        setLoginMessage(
+
+          "❌ Gmail này chưa được cấp quyền quản lý.",
+
+          "error"
+
+        );
+
+        return;
+
+      }
+
+      // ======================================================
+
+      // LOGIN THÀNH CÔNG
+
+      // ======================================================
+
+      if (loginPassword) {
+
+        loginPassword.value = "";
+
+      }
+
+      setLoginMessage(
+
+        "✅ Đăng nhập thành công.",
+
+        "success"
+
+      );
+
+      await showManager();
+
+    } catch (error) {
+
+      console.error(
+
+        "LOGIN ERROR:",
+
+        error
+
+      );
+
+      currentUser = null;
+
+      setLoginMessage(
+
+        "❌ " +
+
+        getErrorMessage(error),
+
+        "error"
+
+      );
+
+    } finally {
+
+      isLoggingIn = false;
+
+      if (loginBtn) {
+
+        loginBtn.disabled = false;
+
+        loginBtn.textContent =
+
+          "ĐĂNG NHẬP";
+
+      }
+
+    }
+
+  }
+
+  // ==========================================================
+
+  // VALIDATE EMAIL
+
+  // ==========================================================
+
+  function isValidEmail(email) {
+
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+      .test(email);
+
+  }
+
+  // ==========================================================
+
+  // CHECK MANAGER
+
+  // ==========================================================
+
+  async function checkManagerPermission() {
+
+    try {
+
+      if (!currentUser) {
+
+        return false;
+
+      }
+
+      const {
+
+        data,
+
+        error
+
+      } =
+
+        await client.rpc(
+
+          "is_manager"
+
+        );
 
       if (error) {
 
         console.error(
 
-          "IS_MANAGER ERROR:",
+          "IS MANAGER ERROR:",
 
           error
 
@@ -746,7 +992,7 @@
 
       console.log(
 
-        "IS_MANAGER RESULT:",
+        "IS MANAGER RESULT:",
 
         data
 
@@ -770,11 +1016,11 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
-  // HIỂN THỊ LOGIN
+  // SHOW LOGIN
 
-  // ============================================================
+  // ==========================================================
 
   function showLogin() {
 
@@ -798,15 +1044,13 @@
 
     closeMenu();
 
-    setupGoogleLoginUI();
-
     if (loginBtn) {
 
       loginBtn.disabled = false;
 
-      loginBtn.innerHTML =
+      loginBtn.textContent =
 
-        "🔵 ĐĂNG NHẬP BẰNG GOOGLE";
+        "ĐĂNG NHẬP";
 
     }
 
@@ -814,11 +1058,11 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
-  // HIỂN THỊ MANAGER
+  // SHOW MANAGER
 
-  // ============================================================
+  // ==========================================================
 
   async function showManager() {
 
@@ -832,9 +1076,19 @@
 
           error
 
-        } = await client.auth.getUser();
+        } =
+
+          await client.auth.getUser();
 
         if (error) {
+
+          console.error(
+
+            "GET USER ERROR:",
+
+            error
+
+          );
 
           showLogin();
 
@@ -842,7 +1096,9 @@
 
         }
 
-        currentUser = data?.user || null;
+        currentUser =
+
+          data?.user || null;
 
       }
 
@@ -908,15 +1164,27 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
-  // MENU
+  // OPEN MENU
 
-  // ============================================================
+  // ==========================================================
 
   function openMenu() {
 
-    if (!sideMenu || !sideMenuOverlay) {
+    if (
+
+      !sideMenu ||
+
+      !sideMenuOverlay
+
+    ) {
+
+      console.error(
+
+        "SIDE MENU ELEMENT NOT FOUND"
+
+      );
 
       return;
 
@@ -924,39 +1192,65 @@
 
     sideMenu.classList.add("open");
 
-    sideMenuOverlay.classList.add("open");
+    sideMenuOverlay.classList.add(
 
-    document.body.style.overflow = "hidden";
+      "open"
+
+    );
+
+    document.body.style.overflow =
+
+      "hidden";
 
   }
+
+  // ==========================================================
+
+  // CLOSE MENU
+
+  // ==========================================================
 
   function closeMenu() {
 
     if (sideMenu) {
 
-      sideMenu.classList.remove("open");
+      sideMenu.classList.remove(
+
+        "open"
+
+      );
 
     }
 
     if (sideMenuOverlay) {
 
-      sideMenuOverlay.classList.remove("open");
+      sideMenuOverlay.classList.remove(
+
+        "open"
+
+      );
 
     }
 
-    document.body.style.overflow = "";
+    document.body.style.overflow =
+
+      "";
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // LOAD REPORTS
 
-  // ============================================================
+  // ==========================================================
 
   async function loadReports() {
 
-    if (!currentUser) return;
+    if (!currentUser) {
+
+      return;
+
+    }
 
     showManagerMessage(
 
@@ -974,17 +1268,25 @@
 
         error
 
-      } = await client
+      } =
 
-        .from("bao_cao_ngay")
+        await client
 
-        .select("*")
+          .from("bao_cao_ngay")
 
-        .order("created_at", {
+          .select("*")
 
-          ascending: false
+          .order(
 
-        });
+            "created_at",
+
+            {
+
+              ascending: false
+
+            }
+
+          );
 
       if (error) {
 
@@ -1012,7 +1314,13 @@
 
       updateSubmittedUserCount();
 
-      showManagerMessage("", "info");
+      showManagerMessage(
+
+        "",
+
+        "info"
+
+      );
 
     } catch (error) {
 
@@ -1038,17 +1346,21 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // FILTER
 
-  // ============================================================
+  // ==========================================================
 
   function applyFilter() {
 
     const userKeyword =
 
-      (filterUser?.value || "")
+      (
+
+        filterUser?.value || ""
+
+      )
 
         .trim()
 
@@ -1056,39 +1368,49 @@
 
     const dateKeyword =
 
-      (filterDate?.value || "")
+      (
 
-        .trim();
+        filterDate?.value || ""
+
+      ).trim();
 
     filteredReports =
 
-      allReports.filter(report => {
+      allReports.filter(
 
-        const userText =
+        report => {
 
-          getReportUser(report)
+          const userText =
 
-            .toLowerCase();
+            getReportUser(report)
 
-        const userOK =
+              .toLowerCase();
 
-          !userKeyword ||
+          const userOK =
 
-          userText.includes(userKeyword);
+            !userKeyword ||
 
-        const reportDate =
+            userText.includes(
 
-          getReportDate(report);
+              userKeyword
 
-        const dateOK =
+            );
 
-          !dateKeyword ||
+          const reportDate =
 
-          reportDate === dateKeyword;
+            getReportDate(report);
 
-        return userOK && dateOK;
+          const dateOK =
 
-      });
+            !dateKeyword ||
+
+            reportDate === dateKeyword;
+
+          return userOK && dateOK;
+
+        }
+
+      );
 
     currentPage = 1;
 
@@ -1098,11 +1420,11 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // GET USER
 
-  // ============================================================
+  // ==========================================================
 
   function getReportUser(report) {
 
@@ -1132,11 +1454,11 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // GET DATE
 
-  // ============================================================
+  // ==========================================================
 
   function getReportDate(report) {
 
@@ -1156,7 +1478,11 @@
 
       "";
 
-    if (!value) return "";
+    if (!value) {
+
+      return "";
+
+    }
 
     if (
 
@@ -1166,39 +1492,67 @@
 
     ) {
 
-      return value.substring(0, 10);
+      return value.substring(
+
+        0,
+
+        10
+
+      );
 
     }
 
-    const d = new Date(value);
+    try {
 
-    if (isNaN(d.getTime())) {
+      const d =
+
+        new Date(value);
+
+      if (isNaN(d.getTime())) {
+
+        return String(value);
+
+      }
+
+      return [
+
+        d.getFullYear(),
+
+        String(
+
+          d.getMonth() + 1
+
+        ).padStart(2, "0"),
+
+        String(
+
+          d.getDate()
+
+        ).padStart(2, "0")
+
+      ].join("-");
+
+    } catch {
 
       return String(value);
 
     }
 
-    return [
-
-      d.getFullYear(),
-
-      String(d.getMonth() + 1).padStart(2, "0"),
-
-      String(d.getDate()).padStart(2, "0")
-
-    ].join("-");
-
   }
 
-  // ============================================================
+  // ==========================================================
 
   // GET AMOUNT
 
-  // ============================================================
+  // ==========================================================
 
   function getReportAmount(report) {
 
     const value =
+
+      report.expected_amount ??
+
+      report.expectedAmount ??
 
       report.amount ??
 
@@ -1207,10 +1561,6 @@
       report.duthu ??
 
       report.duThu ??
-
-      report.expected_amount ??
-
-      report.expectedAmount ??
 
       0;
 
@@ -1224,9 +1574,17 @@
 
       const cleaned =
 
-        value.replace(/[^\d.-]/g, "");
+        value.replace(
 
-      const number = Number(cleaned);
+          /[^\d.-]/g,
+
+          ""
+
+        );
+
+      const number =
+
+        Number(cleaned);
 
       return isNaN(number)
 
@@ -1240,11 +1598,103 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
+
+  // GET AMOUNT COLUMN
+
+  // ==========================================================
+
+  function getAmountColumn(report) {
+
+    if (
+
+      Object.prototype.hasOwnProperty.call(
+
+        report,
+
+        "expected_amount"
+
+      )
+
+    ) {
+
+      return "expected_amount";
+
+    }
+
+    if (
+
+      Object.prototype.hasOwnProperty.call(
+
+        report,
+
+        "expectedAmount"
+
+      )
+
+    ) {
+
+      return "expectedAmount";
+
+    }
+
+    if (
+
+      Object.prototype.hasOwnProperty.call(
+
+        report,
+
+        "amount"
+
+      )
+
+    ) {
+
+      return "amount";
+
+    }
+
+    if (
+
+      Object.prototype.hasOwnProperty.call(
+
+        report,
+
+        "du_thu"
+
+      )
+
+    ) {
+
+      return "du_thu";
+
+    }
+
+    if (
+
+      Object.prototype.hasOwnProperty.call(
+
+        report,
+
+        "duthu"
+
+      )
+
+    ) {
+
+      return "duthu";
+
+    }
+
+    return "expected_amount";
+
+  }
+
+  // ==========================================================
 
   // STATS
 
-  // ============================================================
+  // ==========================================================
 
   function updateStats() {
 
@@ -1262,9 +1712,17 @@
 
       filteredReports.reduce(
 
-        (sum, report) =>
+        (sum, report) => {
 
-          sum + getReportAmount(report),
+          return (
+
+            sum +
+
+            getReportAmount(report)
+
+          );
+
+        },
 
         0
 
@@ -1280,15 +1738,19 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // TABLE
 
-  // ============================================================
+  // ==========================================================
 
   function renderTable() {
 
-    if (!tableBody) return;
+    if (!tableBody) {
+
+      return;
+
+    }
 
     tableBody.innerHTML = "";
 
@@ -1298,7 +1760,9 @@
 
         <tr>
 
-          <td colspan="10"
+          <td
+
+            colspan="10"
 
             style="
 
@@ -1310,7 +1774,9 @@
 
               font-weight:bold;
 
-            ">
+            "
+
+          >
 
             Không có dữ liệu
 
@@ -1328,7 +1794,9 @@
 
     const start =
 
-      (currentPage - 1) * pageSize;
+      (currentPage - 1) *
+
+      pageSize;
 
     const end =
 
@@ -1336,189 +1804,255 @@
 
     const pageData =
 
-      filteredReports.slice(start, end);
+      filteredReports.slice(
 
-    pageData.forEach(report => {
+        start,
 
-      const tr =
+        end
 
-        document.createElement("tr");
+      );
 
-      const user =
+    pageData.forEach(
 
-        getReportUser(report);
+      report => {
 
-      const date =
+        const tr =
 
-        getReportDate(report);
+          document.createElement("tr");
 
-      const cif =
+        const user =
 
-        report.cif ??
+          getReportUser(report);
 
-        report.so_cif ??
+        const date =
 
-        report.cif_number ??
+          getReportDate(report);
 
-        "";
+        const cif =
 
-      const customerName =
+          report.cif ??
 
-        report.customer_name ??
+          report.so_cif ??
 
-        report.ten_khach_hang ??
+          report.cif_number ??
 
-        report.customer ??
+          "";
 
-        report.ho_ten_khach_hang ??
+        const customerName =
 
-        "";
+          report.customer_name ??
 
-      const result =
+          report.ten_khach_hang ??
 
-        report.result ??
+          report.customer ??
 
-        report.ket_qua ??
+          report.ho_ten_khach_hang ??
 
-        "";
+          "";
 
-      const connection =
+        const result =
 
-        report.connection ??
+          report.result ??
 
-        report.ket_noi ??
+          report.ket_qua ??
 
-        "";
+          "";
 
-      const detail =
+        const connection =
 
-        report.detail_result ??
+          report.connection ??
 
-        report.ket_qua_chi_tiet ??
+          report.ket_noi ??
 
-        report.result_detail ??
+          "";
 
-        report.chi_tiet ??
+        const detail =
 
-        "";
+          report.detail_result ??
 
-      const amount =
+          report.ket_qua_chi_tiet ??
 
-        getReportAmount(report);
+          report.result_detail ??
 
-      const nextAction =
+          report.chi_tiet ??
 
-        report.next_action ??
+          "";
 
-        report.huong_tac_dong_tiep_theo ??
+        const amount =
 
-        report.huong_tac_dong ??
+          getReportAmount(report);
 
-        "";
+        const nextAction =
 
-      tr.innerHTML = `
+          report.next_action ??
 
-        <td>${escapeHtml(user)}</td>
+          report.huong_tac_dong_tiep_theo ??
 
-        <td>
+          report.huong_tac_dong ??
 
-          ${escapeHtml(
+          "";
 
-            formatDisplayDate(date)
+        tr.innerHTML = `
 
-          )}
+          <td>
 
-        </td>
+            ${escapeHtml(user)}
 
-        <td>${escapeHtml(cif)}</td>
+          </td>
 
-        <td>${escapeHtml(customerName)}</td>
+          <td>
 
-        <td>${escapeHtml(result)}</td>
+            ${escapeHtml(
 
-        <td>${escapeHtml(connection)}</td>
+              formatDisplayDate(date)
 
-        <td>${escapeHtml(detail)}</td>
+            )}
 
-        <td>
+          </td>
 
-          ${escapeHtml(
+          <td>
 
-            formatMoney(amount)
+            ${escapeHtml(cif)}
 
-          )}
+          </td>
 
-        </td>
+          <td>
 
-        <td>${escapeHtml(nextAction)}</td>
+            ${escapeHtml(customerName)}
 
-        <td>
+          </td>
 
-          <button
+          <td>
 
-            class="edit-btn"
+            ${escapeHtml(result)}
 
-            type="button">
+          </td>
 
-            ✏️ Sửa
+          <td>
 
-          </button>
+            ${escapeHtml(connection)}
 
-          <button
+          </td>
 
-            class="delete-btn"
+          <td>
 
-            type="button">
+            ${escapeHtml(detail)}
 
-            🗑️ Xóa
+          </td>
 
-          </button>
+          <td>
 
-        </td>
+            ${escapeHtml(
 
-      `;
+              formatMoney(amount)
 
-      const editButton =
+            )}
 
-        tr.querySelector(".edit-btn");
+          </td>
 
-      const deleteButton =
+          <td>
 
-        tr.querySelector(".delete-btn");
+            ${escapeHtml(nextAction)}
 
-      if (editButton) {
+          </td>
 
-        editButton.onclick =
+          <td>
 
-          () => openEditModal(report);
+            <button
+
+              class="edit-btn"
+
+              type="button"
+
+              data-action="edit"
+
+            >
+
+              ✏️ Sửa
+
+            </button>
+
+            <button
+
+              class="delete-btn"
+
+              type="button"
+
+              data-action="delete"
+
+            >
+
+              🗑️ Xóa
+
+            </button>
+
+          </td>
+
+        `;
+
+        const editButton =
+
+          tr.querySelector(
+
+            '[data-action="edit"]'
+
+          );
+
+        const deleteButton =
+
+          tr.querySelector(
+
+            '[data-action="delete"]'
+
+          );
+
+        if (editButton) {
+
+          editButton.onclick =
+
+            function () {
+
+              openEditModal(report);
+
+            };
+
+        }
+
+        if (deleteButton) {
+
+          deleteButton.onclick =
+
+            function () {
+
+              deleteReport(report);
+
+            };
+
+        }
+
+        tableBody.appendChild(tr);
 
       }
 
-      if (deleteButton) {
-
-        deleteButton.onclick =
-
-          () => deleteReport(report);
-
-      }
-
-      tableBody.appendChild(tr);
-
-    });
+    );
 
     renderPagination();
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // PAGINATION
 
-  // ============================================================
+  // ==========================================================
 
   function renderPagination() {
 
-    if (!pagination) return;
+    if (!pagination) {
+
+      return;
+
+    }
 
     pagination.innerHTML = "";
 
@@ -1532,7 +2066,11 @@
 
       );
 
-    if (totalPages <= 1) return;
+    if (totalPages <= 1) {
+
+      return;
+
+    }
 
     const prev =
 
@@ -1546,19 +2084,21 @@
 
       currentPage === 1;
 
-    prev.onclick = () => {
+    prev.onclick =
 
-      if (currentPage > 1) {
+      function () {
 
-        currentPage--;
+        if (currentPage > 1) {
 
-        renderTable();
+          currentPage--;
 
-        scrollToTable();
+          renderTable();
 
-      }
+          scrollToTable();
 
-    };
+        }
+
+      };
 
     pagination.appendChild(prev);
 
@@ -1634,19 +2174,25 @@
 
       if (i === currentPage) {
 
-        button.classList.add("active");
+        button.classList.add(
+
+          "active"
+
+        );
 
       }
 
-      button.onclick = () => {
+      button.onclick =
 
-        currentPage = i;
+        function () {
 
-        renderTable();
+          currentPage = i;
 
-        scrollToTable();
+          renderTable();
 
-      };
+          scrollToTable();
+
+        };
 
       pagination.appendChild(button);
 
@@ -1664,35 +2210,47 @@
 
       currentPage === totalPages;
 
-    next.onclick = () => {
+    next.onclick =
 
-      if (currentPage < totalPages) {
+      function () {
 
-        currentPage++;
+        if (
 
-        renderTable();
+          currentPage <
 
-        scrollToTable();
+          totalPages
 
-      }
+        ) {
 
-    };
+          currentPage++;
+
+          renderTable();
+
+          scrollToTable();
+
+        }
+
+      };
 
     pagination.appendChild(next);
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // SCROLL
 
-  // ============================================================
+  // ==========================================================
 
   function scrollToTable() {
 
     const table =
 
-      document.querySelector(".table-wrap");
+      document.querySelector(
+
+        ".table-wrap"
+
+      );
 
     if (table) {
 
@@ -1708,13 +2266,17 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // EDIT MODAL
 
-  // ============================================================
+  // ==========================================================
 
   function openEditModal(report) {
+
+    editingReportId =
+
+      report.id;
 
     const currentAmount =
 
@@ -1750,9 +2312,23 @@
 
       <div class="edit-modal">
 
-        <h2>✏️ Sửa báo cáo</h2>
+        <h2>
 
-        <div style="display:grid;gap:12px;">
+          ✏️ Sửa báo cáo
+
+        </h2>
+
+        <div
+
+          style="
+
+            display:grid;
+
+            gap:12px;
+
+          "
+
+        >
 
           <div>
 
@@ -1766,7 +2342,9 @@
 
                 margin-bottom:6px;
 
-              ">
+              "
+
+            >
 
               Dự thu
 
@@ -1780,15 +2358,27 @@
 
               inputmode="numeric"
 
-              value="${escapeAttribute(currentAmount)}"
+              min="0"
 
-              placeholder="Nhập dự thu">
+              value="${escapeAttribute(
+
+                currentAmount
+
+              )}"
+
+              placeholder="Nhập dự thu"
+
+            >
 
           </div>
 
         </div>
 
-        <div class="edit-modal-buttons">
+        <div
+
+          class="edit-modal-buttons"
+
+        >
 
           <button
 
@@ -1796,7 +2386,9 @@
 
             class="edit-cancel-btn"
 
-            type="button">
+            type="button"
+
+          >
 
             HỦY
 
@@ -1808,7 +2400,9 @@
 
             class="edit-save-btn"
 
-            type="button">
+            type="button"
+
+          >
 
             💾 LƯU
 
@@ -1828,47 +2422,75 @@
 
             font-weight:bold;
 
-          ">
+          "
 
-        </div>
+        ></div>
 
       </div>
 
     `;
 
-    document.body.appendChild(overlay);
+    document.body.appendChild(
 
-    document.getElementById(
+      overlay
 
-      "editCancelBtn"
+    );
 
-    ).onclick = closeEditModal;
+    const cancelBtn =
 
-    document.getElementById(
+      document.getElementById(
 
-      "editSaveBtn"
+        "editCancelBtn"
 
-    ).onclick = () =>
+      );
 
-      saveEditReport(report);
+    const saveBtn =
 
-    overlay.onclick = e => {
+      document.getElementById(
 
-      if (e.target === overlay) {
+        "editSaveBtn"
 
-        closeEditModal();
+      );
 
-      }
+    if (cancelBtn) {
 
-    };
+      cancelBtn.onclick =
+
+        closeEditModal;
+
+    }
+
+    if (saveBtn) {
+
+      saveBtn.onclick =
+
+        function () {
+
+          saveEditReport(report);
+
+        };
+
+    }
+
+    overlay.onclick =
+
+      function (e) {
+
+        if (e.target === overlay) {
+
+          closeEditModal();
+
+        }
+
+      };
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // SAVE EDIT
 
-  // ============================================================
+  // ==========================================================
 
   async function saveEditReport(report) {
 
@@ -1896,7 +2518,11 @@
 
       );
 
-    if (!input) return;
+    if (!input) {
+
+      return;
+
+    }
 
     const amount =
 
@@ -1946,65 +2572,53 @@
 
     try {
 
-      let updateData;
+      // LẤY ĐÚNG TÊN CỘT DỰ THU
 
-      if (
+      const amountColumn =
 
-        Object.prototype.hasOwnProperty.call(
+        getAmountColumn(report);
 
-          report,
+      const updateData = {};
 
-          "amount"
+      updateData[amountColumn] =
 
-        )
+        amount;
 
-      ) {
+      console.log(
 
-        updateData = {
+        "UPDATE COLUMN:",
 
-          amount: amount
+        amountColumn
 
-        };
+      );
 
-      } else if (
+      console.log(
 
-        Object.prototype.hasOwnProperty.call(
+        "UPDATE DATA:",
 
-          report,
+        updateData
 
-          "du_thu"
-
-        )
-
-      ) {
-
-        updateData = {
-
-          du_thu: amount
-
-        };
-
-      } else {
-
-        updateData = {
-
-          amount: amount
-
-        };
-
-      }
+      );
 
       const {
 
         error
 
-      } = await client
+      } =
 
-        .from("bao_cao_ngay")
+        await client
 
-        .update(updateData)
+          .from("bao_cao_ngay")
 
-        .eq("id", report.id);
+          .update(updateData)
+
+          .eq(
+
+            "id",
+
+            report.id
+
+          );
 
       if (error) {
 
@@ -2060,11 +2674,11 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // CLOSE EDIT
 
-  // ============================================================
+  // ==========================================================
 
   function closeEditModal() {
 
@@ -2082,13 +2696,15 @@
 
     }
 
+    editingReportId = null;
+
   }
 
-  // ============================================================
+  // ==========================================================
 
   // DELETE
 
-  // ============================================================
+  // ==========================================================
 
   async function deleteReport(report) {
 
@@ -2116,7 +2732,11 @@
 
       );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+
+      return;
+
+    }
 
     try {
 
@@ -2132,13 +2752,21 @@
 
         error
 
-      } = await client
+      } =
 
-        .from("bao_cao_ngay")
+        await client
 
-        .delete()
+          .from("bao_cao_ngay")
 
-        .eq("id", report.id);
+          .delete()
+
+          .eq(
+
+            "id",
+
+            report.id
+
+          );
 
       if (error) {
 
@@ -2180,11 +2808,11 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // EXPORT EXCEL
 
-  // ============================================================
+  // ==========================================================
 
   function exportExcel() {
 
@@ -2220,85 +2848,109 @@
 
       const rows =
 
-        filteredReports.map(report => ({
+        filteredReports.map(
 
-          "Cán bộ":
+          report => {
 
-            getReportUser(report),
+            return {
 
-          "Ngày field":
+              "Cán bộ":
 
-            formatDisplayDate(
+                getReportUser(
 
-              getReportDate(report)
+                  report
 
-            ),
+                ),
 
-          "Số CIF":
+              "Ngày field":
 
-            report.cif ??
+                formatDisplayDate(
 
-            report.so_cif ??
+                  getReportDate(
 
-            report.cif_number ??
+                    report
 
-            "",
+                  )
 
-          "Tên khách hàng":
+                ),
 
-            report.customer_name ??
+              "Số CIF":
 
-            report.ten_khach_hang ??
+                report.cif ??
 
-            report.customer ??
+                report.so_cif ??
 
-            "",
+                report.cif_number ??
 
-          "Kết quả":
+                "",
 
-            report.result ??
+              "Tên khách hàng":
 
-            report.ket_qua ??
+                report.customer_name ??
 
-            "",
+                report.ten_khach_hang ??
 
-          "Kết nối":
+                report.customer ??
 
-            report.connection ??
+                "",
 
-            report.ket_noi ??
+              "Kết quả":
 
-            "",
+                report.result ??
 
-          "Kết quả chi tiết":
+                report.ket_qua ??
 
-            report.detail_result ??
+                "",
 
-            report.ket_qua_chi_tiet ??
+              "Kết nối":
 
-            report.result_detail ??
+                report.connection ??
 
-            "",
+                report.ket_noi ??
 
-          "Dự thu":
+                "",
 
-            getReportAmount(report),
+              "Kết quả chi tiết":
 
-          "Hướng tác động tiếp theo":
+                report.detail_result ??
 
-            report.next_action ??
+                report.ket_qua_chi_tiet ??
 
-            report.huong_tac_dong_tiep_theo ??
+                report.result_detail ??
 
-            report.huong_tac_dong ??
+                "",
 
-            ""
+              "Dự thu":
 
-        }));
+                getReportAmount(
+
+                  report
+
+                ),
+
+              "Hướng tác động tiếp theo":
+
+                report.next_action ??
+
+                report.huong_tac_dong_tiep_theo ??
+
+                report.huong_tac_dong ??
+
+                ""
+
+            };
+
+          }
+
+        );
 
       const worksheet =
 
-        XLSX.utils.json_to_sheet(rows);
+        XLSX.utils.json_to_sheet(
+
+          rows
+
+        );
 
       const workbook =
 
@@ -2314,13 +2966,13 @@
 
       );
 
-      const now = new Date();
+      const now =
+
+        new Date();
 
       const filename =
 
-        `BaoCaoNgay_` +
-
-        `${now.getFullYear()}-` +
+        `BaoCaoNgay_${now.getFullYear()}-` +
 
         `${String(
 
@@ -2370,29 +3022,39 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // COUNT USERS
 
-  // ============================================================
+  // ==========================================================
 
   function updateSubmittedUserCount() {
 
-    const users = new Set();
+    const users =
 
-    allReports.forEach(report => {
+      new Set();
 
-      const user =
+    allReports.forEach(
 
-        getReportUser(report).trim();
+      report => {
 
-      if (user) {
+        const user =
 
-        users.add(user);
+          getReportUser(
+
+            report
+
+          ).trim();
+
+        if (user) {
+
+          users.add(user);
+
+        }
 
       }
 
-    });
+    );
 
     if (submittedUserCount) {
 
@@ -2404,11 +3066,11 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // SHOW USERS
 
-  // ============================================================
+  // ==========================================================
 
   function showSubmittedUsers() {
 
@@ -2420,9 +3082,15 @@
 
           allReports
 
-            .map(report =>
+            .map(
 
-              getReportUser(report).trim()
+              report =>
+
+                getReportUser(
+
+                  report
+
+                ).trim()
 
             )
 
@@ -2430,9 +3098,17 @@
 
         )
 
-      ).sort((a, b) =>
+      ).sort(
 
-        a.localeCompare(b, "vi")
+        (a, b) =>
+
+          a.localeCompare(
+
+            b,
+
+            "vi"
+
+          )
 
       );
 
@@ -2480,29 +3156,47 @@
 
       content =
 
-        users.map(
+        users
 
-          (user, index) => `
+          .map(
 
-            <div class="submitted-user-item">
+            (
 
-              <div class="submitted-user-number">
+              user,
 
-                ${index + 1}
+              index
 
-              </div>
+            ) => {
 
-              <div>
+              return `
 
-                ${escapeHtml(user)}
+                <div class="submitted-user-item">
 
-              </div>
+                  <div
 
-            </div>
+                    class="submitted-user-number"
 
-          `
+                  >
 
-        ).join("");
+                    ${index + 1}
+
+                  </div>
+
+                  <div>
+
+                    ${escapeHtml(user)}
+
+                  </div>
+
+                </div>
+
+              `;
+
+            }
+
+          )
+
+          .join("");
 
     }
 
@@ -2522,7 +3216,11 @@
 
             class="user-modal-close"
 
-            type="button">
+            id="submittedUsersClose"
+
+            type="button"
+
+          >
 
             ×
 
@@ -2540,163 +3238,17 @@
 
     `;
 
-    document.body.appendChild(overlay);
+    document.body.appendChild(
+
+      overlay
+
+    );
 
     const closeBtn =
-
-      overlay.querySelector(
-
-        ".user-modal-close"
-
-      );
-
-    if (closeBtn) {
-
-      closeBtn.onclick =
-
-        () => overlay.remove();
-
-    }
-
-    overlay.onclick = e => {
-
-      if (e.target === overlay) {
-
-        overlay.remove();
-
-      }
-
-    };
-
-  }
-
-  // ============================================================
-
-  // PHÂN QUYỀN
-
-  // ============================================================
-
-  function showPermissionInfo() {
-
-    const old =
 
       document.getElementById(
 
-        "permissionInfoModal"
-
-      );
-
-    if (old) old.remove();
-
-    const overlay =
-
-      document.createElement("div");
-
-    overlay.id =
-
-      "permissionInfoModal";
-
-    overlay.className =
-
-      "user-modal-overlay";
-
-    const email =
-
-      currentUser?.email || "";
-
-    overlay.innerHTML = `
-
-      <div class="user-modal">
-
-        <div class="user-modal-header">
-
-          <h2>
-
-            🔐 PHÂN QUYỀN
-
-          </h2>
-
-          <button
-
-            class="user-modal-close"
-
-            type="button">
-
-            ×
-
-          </button>
-
-        </div>
-
-        <div class="user-modal-body">
-
-          <div
-
-            style="
-
-              padding:15px;
-
-              line-height:1.7;
-
-            ">
-
-            <b>Gmail đang đăng nhập:</b>
-
-            <div
-
-              style="
-
-                margin-top:5px;
-
-                padding:10px;
-
-                background:#f1f5f9;
-
-                border-radius:10px;
-
-                word-break:break-all;
-
-              ">
-
-              ${escapeHtml(email)}
-
-            </div>
-
-            <p>
-
-              🔐 Quyền quản lý được kiểm tra
-
-              trực tiếp thông qua Supabase
-
-              bằng hàm <b>is_manager()</b>.
-
-            </p>
-
-            <p>
-
-              Nếu Gmail chưa được cấp quyền,
-
-              tài khoản sẽ không thể truy cập
-
-              trang quản lý.
-
-            </p>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    `;
-
-    document.body.appendChild(overlay);
-
-    const closeBtn =
-
-      overlay.querySelector(
-
-        ".user-modal-close"
+        "submittedUsersClose"
 
       );
 
@@ -2704,27 +3256,33 @@
 
       closeBtn.onclick =
 
-        () => overlay.remove();
+        function () {
+
+          overlay.remove();
+
+        };
 
     }
 
-    overlay.onclick = e => {
+    overlay.onclick =
 
-      if (e.target === overlay) {
+      function (e) {
 
-        overlay.remove();
+        if (e.target === overlay) {
 
-      }
+          overlay.remove();
 
-    };
+        }
+
+      };
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // LOGOUT
 
-  // ============================================================
+  // ==========================================================
 
   async function logout() {
 
@@ -2754,6 +3312,18 @@
 
     currentPage = 1;
 
+    if (loginEmail) {
+
+      loginEmail.value = "";
+
+    }
+
+    if (loginPassword) {
+
+      loginPassword.value = "";
+
+    }
+
     showLogin();
 
     setLoginMessage(
@@ -2766,11 +3336,11 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // MESSAGE
 
-  // ============================================================
+  // ==========================================================
 
   function setLoginMessage(
 
@@ -2780,9 +3350,15 @@
 
   ) {
 
-    if (!loginMessage) return;
+    if (!loginMessage) {
 
-    loginMessage.textContent = text;
+      return;
+
+    }
+
+    loginMessage.textContent =
+
+      text;
 
     loginMessage.style.color =
 
@@ -2798,9 +3374,15 @@
 
   ) {
 
-    if (!managerMessage) return;
+    if (!managerMessage) {
 
-    managerMessage.textContent = text;
+      return;
+
+    }
+
+    managerMessage.textContent =
+
+      text;
 
     managerMessage.style.color =
 
@@ -2826,11 +3408,11 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
-  // ERROR
+  // ERROR MESSAGE
 
-  // ============================================================
+  // ==========================================================
 
   function getErrorMessage(error) {
 
@@ -2864,39 +3446,37 @@
 
       lower.includes(
 
-        "provider is not enabled"
+        "invalid login credentials"
 
       )
 
     ) {
 
-      return "Google Login chưa được bật trong Supabase.";
+      return "Gmail hoặc mật khẩu không đúng.";
 
     }
 
     if (
 
-      lower.includes("redirect")
+      lower.includes(
+
+        "email not confirmed"
+
+      )
 
     ) {
 
-      return "URL chuyển hướng Google chưa được cấu hình đúng trong Supabase.";
+      return "Gmail chưa được xác nhận trong Supabase Auth.";
 
     }
 
     if (
 
-      lower.includes("is_manager")
+      lower.includes(
 
-    ) {
+        "failed to fetch"
 
-      return "Supabase chưa có hàm is_manager() hoặc hàm đang bị lỗi.";
-
-    }
-
-    if (
-
-      lower.includes("failed to fetch")
+      )
 
     ) {
 
@@ -2906,7 +3486,11 @@
 
     if (
 
-      lower.includes("network")
+      lower.includes(
+
+        "network"
+
+      )
 
     ) {
 
@@ -2914,15 +3498,57 @@
 
     }
 
+    if (
+
+      lower.includes(
+
+        "is_manager"
+
+      )
+
+    ) {
+
+      return "Không gọi được chức năng kiểm tra quyền is_manager.";
+
+    }
+
+    if (
+
+      lower.includes(
+
+        "row-level security"
+
+      )
+
+    ) {
+
+      return "Tài khoản chưa có quyền truy cập dữ liệu báo cáo.";
+
+    }
+
+    if (
+
+      lower.includes(
+
+        "permission denied"
+
+      )
+
+    ) {
+
+      return "Tài khoản không có quyền thực hiện thao tác này.";
+
+    }
+
     return message;
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // MONEY
 
-  // ============================================================
+  // ==========================================================
 
   function formatMoney(value) {
 
@@ -2932,7 +3558,11 @@
 
     return (
 
-      number.toLocaleString("vi-VN") +
+      number.toLocaleString(
+
+        "vi-VN"
+
+      ) +
 
       " đ"
 
@@ -2940,21 +3570,31 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // DATE
 
-  // ============================================================
+  // ==========================================================
 
   function formatDisplayDate(value) {
 
-    if (!value) return "";
+    if (!value) {
 
-    const str = String(value);
+      return "";
+
+    }
+
+    const str =
+
+      String(value);
 
     if (
 
-      /^\d{4}-\d{2}-\d{2}$/.test(str)
+      /^\d{4}-\d{2}-\d{2}$/.test(
+
+        str
+
+      )
 
     ) {
 
@@ -2966,7 +3606,9 @@
 
         d
 
-      ] = str.split("-");
+      ] =
+
+        str.split("-");
 
       return `${d}/${m}/${y}`;
 
@@ -2974,13 +3616,23 @@
 
     if (
 
-      /^\d{4}-\d{2}-\d{2}/.test(str)
+      /^\d{4}-\d{2}-\d{2}/.test(
+
+        str
+
+      )
 
     ) {
 
       const date =
 
-        str.substring(0, 10);
+        str.substring(
+
+          0,
+
+          10
+
+        );
 
       const [
 
@@ -2990,7 +3642,9 @@
 
         d
 
-      ] = date.split("-");
+      ] =
+
+        date.split("-");
 
       return `${d}/${m}/${y}`;
 
@@ -3000,11 +3654,11 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // ESCAPE HTML
 
-  // ============================================================
+  // ==========================================================
 
   function escapeHtml(value) {
 
@@ -3022,17 +3676,53 @@
 
     return String(value)
 
-      .replace(/&/g, "&amp;")
+      .replace(
 
-      .replace(/</g, "&lt;")
+        /&/g,
 
-      .replace(/>/g, "&gt;")
+        "&amp;"
 
-      .replace(/"/g, "&quot;")
+      )
 
-      .replace(/'/g, "&#039;");
+      .replace(
+
+        /</g,
+
+        "&lt;"
+
+      )
+
+      .replace(
+
+        />/g,
+
+        "&gt;"
+
+      )
+
+      .replace(
+
+        /"/g,
+
+        "&quot;"
+
+      )
+
+      .replace(
+
+        /'/g,
+
+        "&#039;"
+
+      );
 
   }
+
+  // ==========================================================
+
+  // ESCAPE ATTRIBUTE
+
+  // ==========================================================
 
   function escapeAttribute(value) {
 
@@ -3040,15 +3730,17 @@
 
   }
 
-  // ============================================================
+  // ==========================================================
 
   // START
 
-  // ============================================================
+  // ==========================================================
 
   if (
 
-    document.readyState === "loading"
+    document.readyState ===
+
+    "loading"
 
   ) {
 
