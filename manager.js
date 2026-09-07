@@ -1,6 +1,6 @@
-// ========================================
+// =====================================================
 // KHỞI TẠO SUPABASE
-// ========================================
+// =====================================================
 
 if (!window.supabase) {
   alert("❌ Không tải được Supabase.");
@@ -11,7 +11,7 @@ if (
   !window.SUPABASE_URL ||
   !window.SUPABASE_ANON_KEY
 ) {
-  alert("❌ Chưa cấu hình Supabase. Kiểm tra config.js.");
+  alert("❌ Chưa cấu hình Supabase trong config.js.");
   throw new Error("Thiếu SUPABASE_URL hoặc SUPABASE_ANON_KEY.");
 }
 
@@ -21,21 +21,15 @@ const client = window.supabase.createClient(
 );
 
 
-// ========================================
+// =====================================================
 // ELEMENT
-// ========================================
+// =====================================================
 
 const loginBox =
   document.getElementById("loginBox");
 
 const managerBox =
   document.getElementById("managerBox");
-
-const loginMessage =
-  document.getElementById("loginMessage");
-
-const managerMessage =
-  document.getElementById("managerMessage");
 
 const emailInput =
   document.getElementById("email");
@@ -48,6 +42,18 @@ const loginBtn =
 
 const logoutBtn =
   document.getElementById("logoutBtn");
+
+const loginMessage =
+  document.getElementById("loginMessage");
+
+const managerMessage =
+  document.getElementById("managerMessage");
+
+const tableBody =
+  document.getElementById("tableBody");
+
+const pagination =
+  document.getElementById("pagination");
 
 const filterUser =
   document.getElementById("filterUser");
@@ -64,11 +70,11 @@ const refreshBtn =
 const exportBtn =
   document.getElementById("exportBtn");
 
-const tableBody =
-  document.getElementById("tableBody");
+const showSubmittedUsersBtn =
+  document.getElementById("showSubmittedUsersBtn");
 
-const pagination =
-  document.getElementById("pagination");
+const submittedUserCount =
+  document.getElementById("submittedUserCount");
 
 const totalReports =
   document.getElementById("totalReports");
@@ -76,16 +82,10 @@ const totalReports =
 const totalAmount =
   document.getElementById("totalAmount");
 
-const showSubmittedUsersBtn =
-  document.getElementById("showSubmittedUsersBtn");
 
-const submittedUserCount =
-  document.getElementById("submittedUserCount");
-
-
-// ========================================
+// =====================================================
 // BIẾN
-// ========================================
+// =====================================================
 
 let allData = [];
 
@@ -96,29 +96,38 @@ let currentPage = 1;
 const rowsPerPage = 20;
 
 
-// ========================================
-// KHỞI TẠO
-// ========================================
+// =====================================================
+// KHỞI ĐỘNG
+// =====================================================
 
 document.addEventListener(
   "DOMContentLoaded",
   async () => {
 
-    const {
-      data: {
-        session
+    try {
+
+      const {
+        data: {
+          session
+        }
+      } = await client.auth.getSession();
+
+      if (session) {
+
+        loginBox.style.display = "none";
+
+        managerBox.style.display = "block";
+
+        await loadData();
+
       }
-    } = await client.auth.getSession();
 
-    if (session) {
+    } catch (error) {
 
-      loginBox.style.display =
-        "none";
-
-      managerBox.style.display =
-        "block";
-
-      await loadData();
+      console.error(
+        "Lỗi kiểm tra session:",
+        error
+      );
 
     }
 
@@ -126,148 +135,159 @@ document.addEventListener(
 );
 
 
-// ========================================
+// =====================================================
 // LOGIN
-// ========================================
+// =====================================================
 
-loginBtn.addEventListener(
-  "click",
-  async () => {
+if (loginBtn) {
 
-    const email =
-      emailInput.value.trim();
+  loginBtn.addEventListener(
+    "click",
+    login
+  );
 
-    const password =
-      passwordInput.value;
-
-    if (!email || !password) {
-
-      showLoginMessage(
-        "⚠️ Vui lòng nhập email và mật khẩu.",
-        "red"
-      );
-
-      return;
-    }
+}
 
 
-    loginBtn.disabled = true;
+async function login() {
 
-    loginBtn.textContent =
-      "⏳ ĐANG ĐĂNG NHẬP...";
+  const email =
+    emailInput.value.trim();
 
-
-    const {
-      data,
-      error
-    } =
-      await client.auth.signInWithPassword({
-        email,
-        password
-      });
+  const password =
+    passwordInput.value;
 
 
-    if (error) {
+  if (!email || !password) {
 
-      showLoginMessage(
-        "❌ " + error.message,
-        "red"
-      );
+    loginMessage.textContent =
+      "❌ Vui lòng nhập email và mật khẩu.";
 
-      loginBtn.disabled = false;
+    loginMessage.style.color =
+      "#dc2626";
 
-      loginBtn.textContent =
-        "🔐 ĐĂNG NHẬP";
+    return;
 
-      return;
-    }
+  }
 
 
-    if (data.session) {
+  loginBtn.disabled = true;
 
-      loginBox.style.display =
-        "none";
+  loginBtn.textContent =
+    "⏳ ĐANG ĐĂNG NHẬP...";
 
-      managerBox.style.display =
-        "block";
 
-      showManagerMessage(
-        "✅ Đăng nhập thành công.",
-        "green"
-      );
+  const {
+    data,
+    error
+  } =
+    await client.auth.signInWithPassword({
+      email,
+      password
+    });
 
-      await loadData();
 
-    }
+  if (error) {
 
+    console.error(error);
+
+    loginMessage.textContent =
+      "❌ Đăng nhập thất bại: " +
+      error.message;
+
+    loginMessage.style.color =
+      "#dc2626";
 
     loginBtn.disabled = false;
 
     loginBtn.textContent =
       "🔐 ĐĂNG NHẬP";
 
-  }
-);
-
-
-// ========================================
-// ENTER LOGIN
-// ========================================
-
-passwordInput.addEventListener(
-  "keydown",
-  function (event) {
-
-    if (event.key === "Enter") {
-
-      loginBtn.click();
-
-    }
+    return;
 
   }
-);
 
 
-// ========================================
+  if (!data.session) {
+
+    loginMessage.textContent =
+      "❌ Không tạo được phiên đăng nhập.";
+
+    loginBtn.disabled = false;
+
+    loginBtn.textContent =
+      "🔐 ĐĂNG NHẬP";
+
+    return;
+
+  }
+
+
+  loginMessage.textContent =
+    "";
+
+  loginBox.style.display =
+    "none";
+
+  managerBox.style.display =
+    "block";
+
+
+  loginBtn.disabled = false;
+
+  loginBtn.textContent =
+    "🔐 ĐĂNG NHẬP";
+
+
+  await loadData();
+
+}
+
+
+// =====================================================
 // LOAD DATA
-// ========================================
+// =====================================================
 
 async function loadData() {
 
-  showManagerMessage(
-    "⏳ Đang tải dữ liệu...",
-    "blue"
-  );
+  managerMessage.textContent =
+    "⏳ Đang tải dữ liệu...";
+
+  managerMessage.style.color =
+    "#2563eb";
 
 
   const {
     data,
     error
-  } = await client
-    .from("bao_cao_ngay")
-    .select("*")
-    .order(
-      "created_at",
-      {
-        ascending: false
-      }
-    );
+  } =
+    await client
+      .from("bao_cao_ngay")
+      .select("*")
+      .order(
+        "created_at",
+        {
+          ascending: false
+        }
+      );
 
 
   if (error) {
 
     console.error(
-      "Lỗi loadData:",
+      "Lỗi tải dữ liệu:",
       error
     );
 
-    showManagerMessage(
+    managerMessage.textContent =
       "❌ Không tải được dữ liệu: " +
-      error.message,
-      "red"
-    );
+      error.message;
+
+    managerMessage.style.color =
+      "#dc2626";
 
     return;
+
   }
 
 
@@ -281,120 +301,62 @@ async function loadData() {
 
   applyCurrentFilter();
 
+  updateSubmittedUserCount();
 
-  showManagerMessage(
-    "✅ Đã cập nhật dữ liệu.",
-    "green"
+
+  managerMessage.textContent =
+    "✅ Đã cập nhật dữ liệu.";
+
+  managerMessage.style.color =
+    "#16a34a";
+
+
+  setTimeout(
+    () => {
+
+      managerMessage.textContent =
+        "";
+
+    },
+    2000
   );
 
 }
 
 
-// ========================================
-// CHUẨN HÓA TÊN CÁN BỘ
-// ========================================
+// =====================================================
+// LỌC
+// =====================================================
 
-function normalizeUserName(name) {
+if (filterBtn) {
 
-  return String(name || "")
-    .trim()
-    .replace(/\s+/g, " ")
-    .toLowerCase();
+  filterBtn.addEventListener(
+    "click",
+    () => {
 
-}
+      currentPage = 1;
 
-
-// ========================================
-// LẤY DANH SÁCH CÁN BỘ DUY NHẤT
-// ========================================
-
-function getUniqueUsers(data) {
-
-  const map =
-    new Map();
-
-
-  data.forEach(
-    row => {
-
-      const original =
-        String(
-          row.user_name || ""
-        ).trim();
-
-
-      if (!original) {
-        return;
-      }
-
-
-      const key =
-        normalizeUserName(
-          original
-        );
-
-
-      if (!map.has(key)) {
-
-        map.set(
-          key,
-          original
-        );
-
-      }
+      applyCurrentFilter();
 
     }
   );
 
-
-  return Array.from(
-    map.values()
-  ).sort(
-    (a, b) =>
-      a.localeCompare(
-        b,
-        "vi",
-        {
-          sensitivity: "base"
-        }
-      )
-  );
-
 }
 
-
-// ========================================
-// CẬP NHẬT SỐ CÁN BỘ
-// ========================================
-
-function updateSubmittedUserCount() {
-
-  const users =
-    getUniqueUsers(
-      allData
-    );
-
-
-  submittedUserCount.textContent =
-    users.length;
-
-}
-
-
-// ========================================
-// APPLY FILTER
-// ========================================
 
 function applyCurrentFilter() {
 
   const userKeyword =
-    filterUser.value
-      .trim()
-      .toLowerCase();
-
+    normalizeText(
+      filterUser
+        ? filterUser.value
+        : ""
+    );
 
   const selectedDate =
-    filterDate.value;
+    filterDate
+      ? filterDate.value
+      : "";
 
 
   filteredData =
@@ -402,17 +364,9 @@ function applyCurrentFilter() {
       row => {
 
         const rowUser =
-          String(
-            row.user_name || ""
-          )
-            .trim()
-            .toLowerCase();
-
-
-        const rowDate =
-          String(
-            row.field_date || ""
-          ).trim();
+          normalizeText(
+            row.user_name
+          );
 
 
         const matchUser =
@@ -424,7 +378,10 @@ function applyCurrentFilter() {
 
         const matchDate =
           !selectedDate ||
-          rowDate === selectedDate;
+          String(
+            row.field_date || ""
+          ).slice(0, 10) ===
+            selectedDate;
 
 
         return (
@@ -436,34 +393,30 @@ function applyCurrentFilter() {
     );
 
 
-  updateSubmittedUserCount();
-
-
   renderData();
+
+  updateSubmittedUserCount();
 
 }
 
 
-// ========================================
-// RENDER DATA
-// ========================================
+// =====================================================
+// HIỂN THỊ DỮ LIỆU
+// =====================================================
 
 function renderData() {
 
-  tableBody.innerHTML = "";
+  tableBody.innerHTML =
+    "";
 
 
-  // ======================================
-  // TỔNG BÁO CÁO
-  // ======================================
+  // ---------------------------------------------
+  // THỐNG KÊ
+  // ---------------------------------------------
 
   totalReports.textContent =
     filteredData.length;
 
-
-  // ======================================
-  // TỔNG DỰ THU
-  // ======================================
 
   let total =
     0;
@@ -482,20 +435,49 @@ function renderData() {
 
 
   totalAmount.textContent =
-    formatMoney(total) + " đ";
+    formatMoney(total) +
+    " đ";
 
 
-  // ======================================
+  // ---------------------------------------------
+  // KHÔNG CÓ DỮ LIỆU
+  // ---------------------------------------------
+
+  if (
+    filteredData.length === 0
+  ) {
+
+    tableBody.innerHTML = `
+      <tr>
+        <td
+          colspan="10"
+          style="
+            text-align:center;
+            padding:30px;
+            color:#64748b;
+            font-weight:700;
+          "
+        >
+          Không có dữ liệu
+        </td>
+      </tr>
+    `;
+
+    renderPagination();
+
+    return;
+
+  }
+
+
+  // ---------------------------------------------
   // PHÂN TRANG
-  // ======================================
+  // ---------------------------------------------
 
   const totalPages =
-    Math.max(
-      1,
-      Math.ceil(
-        filteredData.length /
-        rowsPerPage
-      )
+    Math.ceil(
+      filteredData.length /
+      rowsPerPage
     );
 
 
@@ -511,12 +493,15 @@ function renderData() {
 
 
   const start =
-    (currentPage - 1) *
+    (
+      currentPage - 1
+    ) *
     rowsPerPage;
 
 
   const end =
-    start + rowsPerPage;
+    start +
+    rowsPerPage;
 
 
   const pageData =
@@ -526,39 +511,9 @@ function renderData() {
     );
 
 
-  // ======================================
-  // KHÔNG CÓ DỮ LIỆU
-  // ======================================
-
-  if (pageData.length === 0) {
-
-    tableBody.innerHTML = `
-      <tr>
-        <td
-          colspan="11"
-          style="
-            text-align:center;
-            padding:30px;
-            color:#64748b;
-            font-weight:bold;
-          "
-        >
-          📭 Không có dữ liệu
-        </td>
-      </tr>
-    `;
-
-    renderPagination(
-      totalPages
-    );
-
-    return;
-  }
-
-
-  // ======================================
-  // RENDER TỪNG DÒNG
-  // ======================================
+  // ---------------------------------------------
+  // RENDER
+  // ---------------------------------------------
 
   pageData.forEach(
     row => {
@@ -572,11 +527,9 @@ function renderData() {
       tr.innerHTML = `
 
         <td>
-          <strong>
-            ${escapeHtml(
-              row.user_name || ""
-            )}
-          </strong>
+          ${escapeHtml(
+            row.user_name || ""
+          )}
         </td>
 
         <td>
@@ -616,13 +569,11 @@ function renderData() {
         </td>
 
         <td>
-          <strong>
-            ${formatMoney(
-              parseMoney(
-                row.expected_amount
-              )
-            )} đ
-          </strong>
+          ${formatMoney(
+            parseMoney(
+              row.expected_amount
+            )
+          )}
         </td>
 
         <td>
@@ -635,18 +586,20 @@ function renderData() {
 
           <button
             class="edit-btn"
-            onclick="editUserName('${escapeJs(row.id)}')"
+            type="button"
+            data-edit-id="${escapeHtml(
+              String(row.id)
+            )}"
           >
             ✏️ SỬA
           </button>
 
-        </td>
-
-        <td>
-
           <button
             class="delete-btn"
-            onclick="deleteReport('${escapeJs(row.id)}')"
+            type="button"
+            data-delete-id="${escapeHtml(
+              String(row.id)
+            )}"
           >
             🗑️ XÓA
           </button>
@@ -664,310 +617,166 @@ function renderData() {
   );
 
 
-  renderPagination(
-    totalPages
-  );
+  // ---------------------------------------------
+  // GẮN EVENT SỬA
+  // ---------------------------------------------
+
+  tableBody
+    .querySelectorAll(
+      "[data-edit-id]"
+    )
+    .forEach(
+      button => {
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            const id =
+              button.dataset.editId;
+
+            openEditUserModal(
+              id
+            );
+
+          }
+        );
+
+      }
+    );
+
+
+  // ---------------------------------------------
+  // GẮN EVENT XÓA
+  // ---------------------------------------------
+
+  tableBody
+    .querySelectorAll(
+      "[data-delete-id]"
+    )
+    .forEach(
+      button => {
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            const id =
+              button.dataset.deleteId;
+
+            deleteReport(
+              id
+            );
+
+          }
+        );
+
+      }
+    );
+
+
+  renderPagination();
 
 }
 
 
-// ========================================
-// CHỈNH SỬA CÁN BỘ
-// ========================================
+// =====================================================
+// CẬP NHẬT SỐ CÁN BỘ
+// =====================================================
 
-async function editUserName(id) {
+function updateSubmittedUserCount() {
 
-  const row =
-    allData.find(
-      item =>
-        String(item.id) ===
-        String(id)
+  const sourceData =
+    filteredData;
+
+
+  const uniqueUsers =
+    getUniqueUsers(
+      sourceData
     );
 
 
-  if (!row) {
+  submittedUserCount.textContent =
+    uniqueUsers.length;
 
-    alert(
-      "❌ Không tìm thấy báo cáo."
-    );
-
-    return;
-  }
+}
 
 
-  const oldName =
-    String(
-      row.user_name || ""
-    ).trim();
+// =====================================================
+// LẤY DANH SÁCH CÁN BỘ KHÔNG TRÙNG
+// =====================================================
+
+function getUniqueUsers(data) {
+
+  const map =
+    new Map();
 
 
-  const newName =
-    prompt(
-      "✏️ Nhập tên cán bộ mới:",
-      oldName
-    );
+  data.forEach(
+    row => {
+
+      const originalName =
+        String(
+          row.user_name || ""
+        ).trim();
 
 
-  if (
-    newName === null
-  ) {
-    return;
-  }
-
-
-  const cleanName =
-    newName
-      .trim()
-      .replace(/\s+/g, " ");
-
-
-  if (!cleanName) {
-
-    alert(
-      "⚠️ Tên cán bộ không được để trống."
-    );
-
-    return;
-  }
-
-
-  if (
-    normalizeUserName(
-      cleanName
-    ) ===
-    normalizeUserName(
-      oldName
-    )
-  ) {
-
-    alert(
-      "ℹ️ Tên mới giống tên cũ."
-    );
-
-    return;
-  }
-
-
-  const changeAll =
-    confirm(
-      `Bạn có muốn đổi TẤT CẢ báo cáo của cán bộ "${oldName}" thành "${cleanName}" không?\n\n` +
-      `• Bấm OK: đổi toàn bộ báo cáo của cán bộ này.\n` +
-      `• Bấm Hủy: chỉ đổi báo cáo đang chọn.`
-    );
-
-
-  showManagerMessage(
-    "⏳ Đang cập nhật...",
-    "blue"
-  );
-
-
-  // ======================================
-  // ĐỔI TOÀN BỘ
-  // ======================================
-
-  if (changeAll) {
-
-    const oldKey =
-      normalizeUserName(
-        oldName
-      );
-
-
-    const rowsToUpdate =
-      allData.filter(
-        item =>
-          normalizeUserName(
-            item.user_name
-          ) === oldKey
-      );
-
-
-    if (
-      rowsToUpdate.length === 0
-    ) {
-
-      showManagerMessage(
-        "❌ Không tìm thấy dữ liệu cần sửa.",
-        "red"
-      );
-
-      return;
-    }
-
-
-    // Cập nhật từng ID
-    // để không phụ thuộc việc
-    // Supabase có cho filter
-    // theo chữ hoa/thường hay không.
-
-    for (
-      const item of rowsToUpdate
-    ) {
-
-      const {
-        error
-      } =
-        await client
-          .from("bao_cao_ngay")
-          .update({
-            user_name:
-              cleanName
-          })
-          .eq(
-            "id",
-            item.id
-          );
-
-
-      if (error) {
-
-        console.error(
-          "Lỗi update:",
-          error
-        );
-
-        showManagerMessage(
-          "❌ Lỗi cập nhật: " +
-          error.message,
-          "red"
-        );
-
+      if (!originalName) {
         return;
       }
 
+
+      const key =
+        normalizeText(
+          originalName
+        );
+
+
+      if (!map.has(key)) {
+
+        map.set(
+          key,
+          originalName
+        );
+
+      }
+
     }
+  );
 
 
-    // Cập nhật local
-    allData =
-      allData.map(
-        item => {
-
-          if (
-            normalizeUserName(
-              item.user_name
-            ) === oldKey
-          ) {
-
-            return {
-              ...item,
-              user_name:
-                cleanName
-            };
-
-          }
-
-          return item;
-
-        }
-      );
-
-
-    applyCurrentFilter();
-
-
-    showManagerMessage(
-      `✅ Đã đổi toàn bộ "${oldName}" thành "${cleanName}".`,
-      "green"
-    );
-
-
-    return;
-  }
-
-
-  // ======================================
-  // CHỈ ĐỔI 1 DÒNG
-  // ======================================
-
-  const {
-    error
-  } =
-    await client
-      .from("bao_cao_ngay")
-      .update({
-        user_name:
-          cleanName
-      })
-      .eq(
-        "id",
-        row.id
-      );
-
-
-  if (error) {
-
-    console.error(
-      "Lỗi update:",
-      error
-    );
-
-    showManagerMessage(
-      "❌ Cập nhật thất bại: " +
-      error.message,
-      "red"
-    );
-
-    return;
-  }
-
-
-  // Cập nhật local
-  const index =
-    allData.findIndex(
-      item =>
-        String(item.id) ===
-        String(id)
-    );
-
-
-  if (index !== -1) {
-
-    allData[index].user_name =
-      cleanName;
-
-  }
-
-
-  applyCurrentFilter();
-
-
-  showManagerMessage(
-    `✅ Đã đổi "${oldName}" thành "${cleanName}".`,
-    "green"
+  return Array.from(
+    map.values()
+  ).sort(
+    (a, b) =>
+      a.localeCompare(
+        b,
+        "vi"
+      )
   );
 
 }
 
 
-// ========================================
-// CÁN BỘ ĐÃ NHẬP BÁO CÁO
-// ========================================
+// =====================================================
+// HIỂN THỊ CÁN BỘ ĐÃ NHẬP
+// =====================================================
 
-showSubmittedUsersBtn.addEventListener(
-  "click",
-  async () => {
+if (showSubmittedUsersBtn) {
 
-    // Tải lại dữ liệu mới nhất
-    // trước khi hiển thị danh sách.
-    await loadData();
+  showSubmittedUsersBtn.addEventListener(
+    "click",
+    showSubmittedUsers
+  );
 
-    showSubmittedUsers();
+}
 
-  }
-);
-
-
-// ========================================
-// HIỂN THỊ DANH SÁCH CÁN BỘ
-// ========================================
 
 function showSubmittedUsers() {
 
   const users =
     getUniqueUsers(
-      allData
+      filteredData
     );
 
 
@@ -989,30 +798,34 @@ function showSubmittedUsers() {
     "user-modal";
 
 
-  const userList =
-    users.length
-      ? users
+  const listHtml =
+    users.length === 0
+
+      ? `
+        <div class="no-user">
+          Chưa có cán bộ nào nhập báo cáo.
+        </div>
+      `
+
+      : users
           .map(
-            (user, index) => `
+            (name, index) => `
               <div class="submitted-user-item">
 
-                <div class="submitted-user-number">
+                <div
+                  class="submitted-user-number"
+                >
                   ${index + 1}
                 </div>
 
                 <div>
-                  ${escapeHtml(user)}
+                  ${escapeHtml(name)}
                 </div>
 
               </div>
             `
           )
-          .join("")
-      : `
-          <div class="no-user">
-            📭 Chưa có cán bộ nào nhập báo cáo.
-          </div>
-        `;
+          .join("");
 
 
   modal.innerHTML = `
@@ -1020,12 +833,13 @@ function showSubmittedUsers() {
     <div class="user-modal-header">
 
       <h2>
-        👥 CÁN BỘ ĐÃ NHẬP BÁO CÁO (${users.length})
+        👥 CÁN BỘ ĐÃ NHẬP BÁO CÁO
+        (${users.length})
       </h2>
 
       <button
         class="user-modal-close"
-        id="closeUserModal"
+        type="button"
       >
         ×
       </button>
@@ -1035,7 +849,7 @@ function showSubmittedUsers() {
 
     <div class="user-modal-body">
 
-      ${userList}
+      ${listHtml}
 
     </div>
 
@@ -1052,21 +866,22 @@ function showSubmittedUsers() {
   );
 
 
-  document
-    .getElementById(
-      "closeUserModal"
-    )
-    .addEventListener(
-      "click",
-      () => {
-
-        overlay.remove();
-
-      }
+  const closeBtn =
+    modal.querySelector(
+      ".user-modal-close"
     );
 
 
-  // Bấm ra ngoài modal để đóng
+  closeBtn.addEventListener(
+    "click",
+    () => {
+
+      overlay.remove();
+
+    }
+  );
+
+
   overlay.addEventListener(
     "click",
     event => {
@@ -1086,9 +901,400 @@ function showSubmittedUsers() {
 }
 
 
-// ========================================
-// DELETE REPORT
-// ========================================
+// =====================================================
+// MODAL SỬA CÁN BỘ
+// =====================================================
+
+function openEditUserModal(id) {
+
+  const row =
+    allData.find(
+      item =>
+        String(item.id) ===
+        String(id)
+    );
+
+
+  if (!row) {
+
+    alert(
+      "❌ Không tìm thấy báo cáo."
+    );
+
+    return;
+
+  }
+
+
+  const oldName =
+    String(
+      row.user_name || ""
+    ).trim();
+
+
+  const overlay =
+    document.createElement(
+      "div"
+    );
+
+  overlay.className =
+    "edit-modal-overlay";
+
+
+  const modal =
+    document.createElement(
+      "div"
+    );
+
+  modal.className =
+    "edit-modal";
+
+
+  modal.innerHTML = `
+
+    <h2>
+      ✏️ CHỈNH SỬA CÁN BỘ
+    </h2>
+
+    <label>
+      Tên cán bộ
+    </label>
+
+    <input
+      id="editUserNameInput"
+      type="text"
+      value="${escapeAttribute(
+        oldName
+      )}"
+      placeholder="Nhập tên cán bộ"
+      autocomplete="off"
+    >
+
+    <div class="edit-modal-buttons">
+
+      <button
+        id="cancelEditUserBtn"
+        class="edit-cancel-btn"
+        type="button"
+      >
+        HỦY
+      </button>
+
+      <button
+        id="saveEditUserBtn"
+        class="edit-save-btn"
+        type="button"
+      >
+        💾 LƯU
+      </button>
+
+    </div>
+
+  `;
+
+
+  overlay.appendChild(
+    modal
+  );
+
+
+  document.body.appendChild(
+    overlay
+  );
+
+
+  const input =
+    modal.querySelector(
+      "#editUserNameInput"
+    );
+
+
+  const saveBtn =
+    modal.querySelector(
+      "#saveEditUserBtn"
+    );
+
+
+  const cancelBtn =
+    modal.querySelector(
+      "#cancelEditUserBtn"
+    );
+
+
+  setTimeout(
+    () => {
+
+      input.focus();
+
+      input.select();
+
+    },
+    50
+  );
+
+
+  cancelBtn.addEventListener(
+    "click",
+    () => {
+
+      overlay.remove();
+
+    }
+  );
+
+
+  overlay.addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target ===
+        overlay
+      ) {
+
+        overlay.remove();
+
+      }
+
+    }
+  );
+
+
+  saveBtn.addEventListener(
+    "click",
+    async () => {
+
+      const newName =
+        input.value.trim();
+
+
+      if (!newName) {
+
+        alert(
+          "❌ Tên cán bộ không được để trống."
+        );
+
+        input.focus();
+
+        return;
+
+      }
+
+
+      if (
+        normalizeText(newName) ===
+        normalizeText(oldName)
+      ) {
+
+        overlay.remove();
+
+        return;
+
+      }
+
+
+      saveBtn.disabled =
+        true;
+
+      saveBtn.textContent =
+        "⏳ ĐANG LƯU...";
+
+
+      await updateUserName(
+        id,
+        newName,
+        overlay,
+        saveBtn
+      );
+
+    }
+  );
+
+}
+
+
+// =====================================================
+// UPDATE USER_NAME TRỰC TIẾP SUPABASE
+// =====================================================
+
+async function updateUserName(
+  id,
+  newName,
+  overlay,
+  saveBtn
+) {
+
+  try {
+
+    /*
+      QUAN TRỌNG:
+
+      Đây là phần cập nhật trực tiếp
+      cột user_name trong bảng
+      bao_cao_ngay.
+    */
+
+    const {
+      data,
+      error
+    } =
+      await client
+        .from("bao_cao_ngay")
+        .update({
+          user_name: newName
+        })
+        .eq(
+          "id",
+          id
+        )
+        .select();
+
+
+    if (error) {
+
+      console.error(
+        "Lỗi UPDATE:",
+        error
+      );
+
+
+      saveBtn.disabled =
+        false;
+
+      saveBtn.textContent =
+        "💾 LƯU";
+
+
+      alert(
+        "❌ Sửa thất bại:\n\n" +
+        error.message
+      );
+
+      return;
+
+    }
+
+
+    /*
+      Nếu Supabase trả về [] thì
+      rất có thể RLS đang chặn UPDATE.
+    */
+
+    if (
+      !data ||
+      data.length === 0
+    ) {
+
+      saveBtn.disabled =
+        false;
+
+      saveBtn.textContent =
+        "💾 LƯU";
+
+
+      alert(
+        "❌ Không cập nhật được dữ liệu.\n\n" +
+        "Supabase có thể đang chặn quyền UPDATE bằng RLS."
+      );
+
+      return;
+
+    }
+
+
+    // ---------------------------------------------
+    // CẬP NHẬT LOCAL DATA NGAY LẬP TỨC
+    // ---------------------------------------------
+
+    const updatedRow =
+      data[0];
+
+
+    const index =
+      allData.findIndex(
+        item =>
+          String(item.id) ===
+          String(id)
+      );
+
+
+    if (index !== -1) {
+
+      allData[index] =
+        {
+          ...allData[index],
+          ...updatedRow
+        };
+
+    }
+
+
+    // ---------------------------------------------
+    // ĐÓNG MODAL
+    // ---------------------------------------------
+
+    overlay.remove();
+
+
+    // ---------------------------------------------
+    // VẼ LẠI BẢNG
+    // ---------------------------------------------
+
+    applyCurrentFilter();
+
+
+    // ---------------------------------------------
+    // CẬP NHẬT SỐ CÁN BỘ
+    // ---------------------------------------------
+
+    updateSubmittedUserCount();
+
+
+    managerMessage.textContent =
+      "✅ Đã sửa cán bộ thành: " +
+      newName;
+
+    managerMessage.style.color =
+      "#16a34a";
+
+
+    setTimeout(
+      () => {
+
+        managerMessage.textContent =
+          "";
+
+      },
+      2500
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      error
+    );
+
+
+    saveBtn.disabled =
+      false;
+
+    saveBtn.textContent =
+      "💾 LƯU";
+
+
+    alert(
+      "❌ Có lỗi xảy ra khi sửa."
+    );
+
+  }
+
+}
+
+
+// =====================================================
+// XÓA BÁO CÁO
+// =====================================================
 
 async function deleteReport(id) {
 
@@ -1107,24 +1313,28 @@ async function deleteReport(id) {
     );
 
     return;
+
   }
 
 
-  const ok =
+  const confirmDelete =
     confirm(
-      `Bạn có chắc muốn xóa báo cáo của "${row.user_name || ""}" không?`
+      "Bạn có chắc muốn xóa báo cáo của cán bộ:\n\n" +
+      (
+        row.user_name ||
+        ""
+      ) +
+      "\n\nSố CIF: " +
+      (
+        row.cif ||
+        ""
+      )
     );
 
 
-  if (!ok) {
+  if (!confirmDelete) {
     return;
   }
-
-
-  showManagerMessage(
-    "⏳ Đang xóa...",
-    "blue"
-  );
 
 
   const {
@@ -1142,19 +1352,23 @@ async function deleteReport(id) {
   if (error) {
 
     console.error(
-      "Lỗi delete:",
       error
     );
 
-    showManagerMessage(
-      "❌ Xóa thất bại: " +
-      error.message,
-      "red"
+
+    alert(
+      "❌ Xóa thất bại:\n\n" +
+      error.message
     );
 
     return;
+
   }
 
+
+  // ---------------------------------------------
+  // XÓA KHỎI LOCAL DATA
+  // ---------------------------------------------
 
   allData =
     allData.filter(
@@ -1164,226 +1378,100 @@ async function deleteReport(id) {
     );
 
 
+  // ---------------------------------------------
+  // HIỂN THỊ LẠI
+  // ---------------------------------------------
+
   applyCurrentFilter();
 
+  updateSubmittedUserCount();
 
-  showManagerMessage(
-    "✅ Đã xóa báo cáo.",
-    "green"
+
+  managerMessage.textContent =
+    "✅ Đã xóa báo cáo.";
+
+  managerMessage.style.color =
+    "#16a34a";
+
+
+  setTimeout(
+    () => {
+
+      managerMessage.textContent =
+        "";
+
+    },
+    2000
   );
 
 }
 
 
-// ========================================
-// LỌC
-// ========================================
-
-filterBtn.addEventListener(
-  "click",
-  () => {
-
-    currentPage = 1;
-
-    applyCurrentFilter();
-
-    showManagerMessage(
-      `🔎 Đã lọc ${filteredData.length} báo cáo.`,
-      "blue"
-    );
-
-  }
-);
-
-
-// ========================================
-// ENTER KHI LỌC CÁN BỘ
-// ========================================
-
-filterUser.addEventListener(
-  "keydown",
-  event => {
-
-    if (
-      event.key === "Enter"
-    ) {
-
-      filterBtn.click();
-
-    }
-
-  }
-);
-
-
-// ========================================
+// =====================================================
 // LÀM MỚI
-// ========================================
+// =====================================================
 
-refreshBtn.addEventListener(
-  "click",
-  async () => {
+if (refreshBtn) {
 
-    refreshBtn.disabled =
-      true;
+  refreshBtn.addEventListener(
+    "click",
+    async () => {
 
-    refreshBtn.textContent =
-      "⏳ ĐANG TẢI...";
+      await loadData();
 
-
-    await loadData();
-
-
-    refreshBtn.disabled =
-      false;
-
-    refreshBtn.textContent =
-      "🔄 LÀM MỚI";
-
-  }
-);
-
-
-// ========================================
-// XUẤT EXCEL
-// ========================================
-
-exportBtn.addEventListener(
-  "click",
-  () => {
-
-    if (
-      filteredData.length === 0
-    ) {
-
-      alert(
-        "⚠️ Không có dữ liệu để xuất."
-      );
-
-      return;
     }
+  );
+
+}
 
 
-    if (
-      typeof XLSX ===
-      "undefined"
-    ) {
+// =====================================================
+// PHÂN TRANG
+// =====================================================
 
-      alert(
-        "❌ Chưa tải được thư viện Excel."
-      );
-
-      return;
-    }
-
-
-    const excelData =
-      filteredData.map(
-        row => ({
-
-          "Cán bộ":
-            row.user_name || "",
-
-          "Ngày field":
-            formatDate(
-              row.field_date
-            ),
-
-          "Số CIF":
-            row.cif || "",
-
-          "Tên khách hàng":
-            row.customer_name || "",
-
-          "Kết quả":
-            row.result || "",
-
-          "Kết nối":
-            row.connection || "",
-
-          "Kết quả chi tiết":
-            row.detail || "",
-
-          "Dự thu":
-            parseMoney(
-              row.expected_amount
-            ),
-
-          "Hướng tác động tiếp theo":
-            row.next_action || ""
-
-        })
-      );
-
-
-    const worksheet =
-      XLSX.utils.json_to_sheet(
-        excelData
-      );
-
-
-    const workbook =
-      XLSX.utils.book_new();
-
-
-    XLSX.utils.book_append_sheet(
-      workbook,
-      worksheet,
-      "Báo cáo ngày"
-    );
-
-
-    XLSX.writeFile(
-      workbook,
-      "bao_cao_ngay.xlsx"
-    );
-
-
-    showManagerMessage(
-      "✅ Đã xuất Excel thành công.",
-      "green"
-    );
-
-  }
-);
-
-
-// ========================================
-// PAGINATION
-// ========================================
-
-function renderPagination(
-  totalPages
-) {
+function renderPagination() {
 
   pagination.innerHTML =
     "";
 
 
+  const totalPages =
+    Math.ceil(
+      filteredData.length /
+      rowsPerPage
+    );
+
+
   if (
     totalPages <= 1
   ) {
+
     return;
+
   }
 
 
+  // ---------------------------------------------
   // NÚT TRƯỚC
+  // ---------------------------------------------
 
-  const prev =
+  const prevBtn =
     document.createElement(
       "button"
     );
 
-  prev.className =
+  prevBtn.className =
     "arrow";
 
-  prev.textContent =
+  prevBtn.innerHTML =
     "‹";
 
-  prev.disabled =
+  prevBtn.disabled =
     currentPage === 1;
 
-  prev.onclick =
+
+  prevBtn.addEventListener(
+    "click",
     () => {
 
       if (
@@ -1398,20 +1486,21 @@ function renderPagination(
 
       }
 
-    };
-
-
-  pagination.appendChild(
-    prev
+    }
   );
 
 
-  // ======================================
-  // SỐ TRANG
-  // ======================================
+  pagination.appendChild(
+    prevBtn
+  );
+
+
+  // ---------------------------------------------
+  // DANH SÁCH TRANG
+  // ---------------------------------------------
 
   const pages =
-    getPageNumbers(
+    getPaginationPages(
       currentPage,
       totalPages
     );
@@ -1420,49 +1509,51 @@ function renderPagination(
   pages.forEach(
     page => {
 
-      if (
-        page === "..."
-      ) {
+      if (page === "...") {
 
         const dots =
           document.createElement(
-            "button"
+            "span"
           );
 
         dots.textContent =
           "...";
 
-        dots.disabled =
-          true;
+        dots.style.padding =
+          "0 5px";
 
         pagination.appendChild(
           dots
         );
 
         return;
+
       }
 
 
-      const button =
+      const btn =
         document.createElement(
           "button"
         );
 
-      button.textContent =
+      btn.textContent =
         page;
 
 
       if (
-        page === currentPage
+        page ===
+        currentPage
       ) {
 
-        button.className =
-          "active";
+        btn.classList.add(
+          "active"
+        );
 
       }
 
 
-      button.onclick =
+      btn.addEventListener(
+        "click",
         () => {
 
           currentPage =
@@ -1472,36 +1563,40 @@ function renderPagination(
 
           scrollToTable();
 
-        };
+        }
+      );
 
 
       pagination.appendChild(
-        button
+        btn
       );
 
     }
   );
 
 
-  // ======================================
+  // ---------------------------------------------
   // NÚT SAU
-  // ======================================
+  // ---------------------------------------------
 
-  const next =
+  const nextBtn =
     document.createElement(
       "button"
     );
 
-  next.className =
+  nextBtn.className =
     "arrow";
 
-  next.textContent =
+  nextBtn.innerHTML =
     "›";
 
-  next.disabled =
-    currentPage === totalPages;
+  nextBtn.disabled =
+    currentPage ===
+    totalPages;
 
-  next.onclick =
+
+  nextBtn.addEventListener(
+    "click",
     () => {
 
       if (
@@ -1517,34 +1612,34 @@ function renderPagination(
 
       }
 
-    };
+    }
+  );
 
 
   pagination.appendChild(
-    next
+    nextBtn
   );
 
 }
 
 
-// ========================================
+// =====================================================
 // TẠO DANH SÁCH TRANG
-// ========================================
+// =====================================================
 
-function getPageNumbers(
+function getPaginationPages(
   current,
   total
 ) {
 
-  if (
-    total <= 7
-  ) {
+  if (total <= 7) {
 
     return Array.from(
       {
         length: total
       },
-      (_, i) => i + 1
+      (_, i) =>
+        i + 1
     );
 
   }
@@ -1556,9 +1651,7 @@ function getPageNumbers(
   pages.push(1);
 
 
-  if (
-    current > 4
-  ) {
+  if (current > 4) {
 
     pages.push("...");
 
@@ -1608,89 +1701,172 @@ function getPageNumbers(
 }
 
 
-// ========================================
-// SCROLL TABLE
-// ========================================
+// =====================================================
+// EXPORT EXCEL
+// =====================================================
 
-function scrollToTable() {
+if (exportBtn) {
 
-  const table =
-    document.querySelector(
-      ".table-wrap"
-    );
-
-
-  if (!table) {
-    return;
-  }
-
-
-  table.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
+  exportBtn.addEventListener(
+    "click",
+    exportExcel
+  );
 
 }
 
 
-// ========================================
-// LOGOUT
-// ========================================
+function exportExcel() {
 
-logoutBtn.addEventListener(
-  "click",
-  async () => {
+  if (
+    !filteredData.length
+  ) {
 
-    await client.auth.signOut();
-
-
-    allData = [];
-
-    filteredData = [];
-
-    currentPage = 1;
-
-
-    managerBox.style.display =
-      "none";
-
-    loginBox.style.display =
-      "block";
-
-
-    tableBody.innerHTML =
-      "";
-
-    pagination.innerHTML =
-      "";
-
-
-    totalReports.textContent =
-      "0";
-
-    totalAmount.textContent =
-      "0 đ";
-
-    submittedUserCount.textContent =
-      "0";
-
-
-    passwordInput.value =
-      "";
-
-
-    showLoginMessage(
-      "✅ Đã đăng xuất.",
-      "green"
+    alert(
+      "❌ Không có dữ liệu để xuất."
     );
 
+    return;
+
   }
-);
 
 
-// ========================================
-// PARSE MONEY
-// ========================================
+  if (
+    typeof XLSX ===
+    "undefined"
+  ) {
+
+    alert(
+      "❌ Chưa tải được thư viện Excel."
+    );
+
+    return;
+
+  }
+
+
+  const exportData =
+    filteredData.map(
+      row => ({
+
+        "Cán bộ":
+          row.user_name || "",
+
+        "Ngày field":
+          formatDate(
+            row.field_date
+          ),
+
+        "Số CIF":
+          row.cif || "",
+
+        "Tên khách hàng":
+          row.customer_name || "",
+
+        "Kết quả":
+          row.result || "",
+
+        "Kết nối":
+          row.connection || "",
+
+        "Kết quả chi tiết":
+          row.detail || "",
+
+        "Dự thu":
+          parseMoney(
+            row.expected_amount
+          ),
+
+        "Hướng tác động tiếp theo":
+          row.next_action || ""
+
+      })
+    );
+
+
+  const worksheet =
+    XLSX.utils.json_to_sheet(
+      exportData
+    );
+
+
+  const workbook =
+    XLSX.utils.book_new();
+
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    worksheet,
+    "Báo cáo ngày"
+  );
+
+
+  XLSX.writeFile(
+    workbook,
+    "bao_cao_ngay.xlsx"
+  );
+
+}
+
+
+// =====================================================
+// LOGOUT
+// =====================================================
+
+if (logoutBtn) {
+
+  logoutBtn.addEventListener(
+    "click",
+    async () => {
+
+      await client.auth.signOut();
+
+
+      allData = [];
+
+      filteredData = [];
+
+      currentPage = 1;
+
+
+      managerBox.style.display =
+        "none";
+
+      loginBox.style.display =
+        "block";
+
+
+      tableBody.innerHTML =
+        "";
+
+      pagination.innerHTML =
+        "";
+
+
+      totalReports.textContent =
+        "0";
+
+      totalAmount.textContent =
+        "0 đ";
+
+      submittedUserCount.textContent =
+        "0";
+
+
+      passwordInput.value =
+        "";
+
+      loginMessage.textContent =
+        "";
+
+    }
+  );
+
+}
+
+
+// =====================================================
+// FORMAT MONEY
+// =====================================================
 
 function parseMoney(value) {
 
@@ -1716,22 +1892,12 @@ function parseMoney(value) {
 
 
   let str =
-    String(value)
-      .trim();
+    String(value).trim();
 
 
-  // Xóa ký hiệu tiền
   str =
     str.replace(
-      /đ|₫|VND|VNĐ/gi,
-      ""
-    );
-
-
-  // Xử lý số có dấu chấm/phẩy
-  str =
-    str.replace(
-      /,/g,
+      /₫/g,
       ""
     );
 
@@ -1743,39 +1909,79 @@ function parseMoney(value) {
     );
 
 
-  const result =
+  /*
+    Xử lý:
+
+    6,000,000
+    6000000
+    6.000.000
+    6000000đ
+  */
+
+  if (
+    str.includes(",") &&
+    str.includes(".")
+  ) {
+
+    str =
+      str.replace(
+        /\./g,
+        ""
+      );
+
+    str =
+      str.replace(
+        /,/g,
+        "."
+      );
+
+  } else {
+
+    str =
+      str.replace(
+        /,/g,
+        ""
+      );
+
+  }
+
+
+  str =
+    str.replace(
+      /[^0-9.-]/g,
+      ""
+    );
+
+
+  const number =
     Number(str);
 
 
-  return isNaN(result)
-    ? 0
-    : result;
+  return Number.isFinite(
+    number
+  )
+    ? number
+    : 0;
 
 }
 
-
-// ========================================
-// FORMAT MONEY
-// ========================================
 
 function formatMoney(
   value
 ) {
 
-  const number =
-    Number(value) || 0;
-
-
-  return number.toLocaleString(
+  return new Intl.NumberFormat(
     "vi-VN"
+  ).format(
+    Number(value) || 0
   );
 
 }
 
 
-// ========================================
+// =====================================================
 // FORMAT DATE
-// ========================================
+// =====================================================
 
 function formatDate(
   value
@@ -1790,72 +1996,58 @@ function formatDate(
     String(value);
 
 
-  // Nếu đã là dd/mm/yyyy
   if (
-    /^\d{2}\/\d{2}\/\d{4}$/.test(
+    /^\d{4}-\d{2}-\d{2}/.test(
       str
     )
   ) {
 
-    return str;
-
-  }
-
-
-  // yyyy-mm-dd
-  if (
-    /^\d{4}-\d{2}-\d{2}$/.test(
+    const parts =
       str
-    )
-  ) {
-
-    const [
-      year,
-      month,
-      day
-    ] =
-      str.split("-");
+        .slice(0, 10)
+        .split("-");
 
 
-    return `${day}/${month}/${year}`;
-
-  }
-
-
-  const date =
-    new Date(value);
-
-
-  if (
-    isNaN(
-      date.getTime()
-    )
-  ) {
-
-    return str;
+    return (
+      parts[2] +
+      "/" +
+      parts[1] +
+      "/" +
+      parts[0]
+    );
 
   }
 
 
-  return [
-    String(
-      date.getDate()
-    ).padStart(2, "0"),
-
-    String(
-      date.getMonth() + 1
-    ).padStart(2, "0"),
-
-    date.getFullYear()
-
-  ].join("/");
+  return str;
 
 }
 
 
-// ========================================
+// =====================================================
+// NORMALIZE TEXT
+// =====================================================
+
+function normalizeText(
+  value
+) {
+
+  return String(
+    value || ""
+  )
+    .trim()
+    .toLowerCase()
+    .replace(
+      /\s+/g,
+      " "
+    );
+
+}
+
+
+// =====================================================
 // ESCAPE HTML
-// ========================================
+// =====================================================
 
 function escapeHtml(
   value
@@ -1888,121 +2080,41 @@ function escapeHtml(
 }
 
 
-// ========================================
-// ESCAPE JS
-// ========================================
+// =====================================================
+// ESCAPE ATTRIBUTE
+// =====================================================
 
-function escapeJs(
+function escapeAttribute(
   value
 ) {
 
-  return String(
-    value ?? ""
-  )
-    .replace(
-      /\\/g,
-      "\\\\"
-    )
-    .replace(
-      /'/g,
-      "\\'"
-    )
-    .replace(
-      /"/g,
-      '\\"'
-    )
-    .replace(
-      /\r/g,
-      "\\r"
-    )
-    .replace(
-      /\n/g,
-      "\\n"
+  return escapeHtml(
+    value
+  );
+
+}
+
+
+// =====================================================
+// SCROLL TABLE
+// =====================================================
+
+function scrollToTable() {
+
+  const table =
+    document.querySelector(
+      ".table-wrap"
     );
 
-}
 
-
-// ========================================
-// MESSAGE
-// ========================================
-
-function showLoginMessage(
-  message,
-  type
-) {
-
-  loginMessage.textContent =
-    message;
-
-
-  if (
-    type === "red"
-  ) {
-
-    loginMessage.style.color =
-      "#dc2626";
-
+  if (!table) {
+    return;
   }
-  else if (
-    type === "green"
-  ) {
 
-    loginMessage.style.color =
-      "#16a34a";
 
-  }
-  else {
-
-    loginMessage.style.color =
-      "#2563eb";
-
-  }
+  table.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 
 }
-
-
-function showManagerMessage(
-  message,
-  type
-) {
-
-  managerMessage.textContent =
-    message;
-
-
-  if (
-    type === "red"
-  ) {
-
-    managerMessage.style.color =
-      "#dc2626";
-
-  }
-  else if (
-    type === "green"
-  ) {
-
-    managerMessage.style.color =
-      "#16a34a";
-
-  }
-  else {
-
-    managerMessage.style.color =
-      "#2563eb";
-
-  }
-
-}
-
-
-// ========================================
-// CHO PHÉP HTML INLINE GỌI HÀM
-// ========================================
-
-window.editUserName =
-  editUserName;
-
-window.deleteReport =
-  deleteReport;
