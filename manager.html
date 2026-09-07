@@ -2,7 +2,6 @@
 <html lang="vi">
 
 <head>
-
   <meta charset="UTF-8">
 
   <meta
@@ -29,7 +28,122 @@
     }
 
     /* =====================================
-       THỐNG KÊ
+       HEADER + MENU
+    ===================================== */
+
+    .manager-header {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .menu-button {
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+      border: 0;
+      border-radius: 12px;
+      background: #2563eb;
+      color: white;
+      font-size: 25px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: none;
+    }
+
+    .menu-button:active {
+      transform: scale(.96);
+    }
+
+    /* =====================================
+       SIDE MENU
+    ===================================== */
+
+    .side-menu-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 99998;
+      display: none;
+    }
+
+    .side-menu-overlay.open {
+      display: block;
+    }
+
+    .side-menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: min(320px, 85vw);
+      height: 100%;
+      background: white;
+      z-index: 99999;
+      box-shadow: 10px 0 40px rgba(0,0,0,.25);
+      transform: translateX(-100%);
+      transition: transform .25s ease;
+      overflow-y: auto;
+    }
+
+    .side-menu.open {
+      transform: translateX(0);
+    }
+
+    .side-menu-header {
+      padding: 20px;
+      background: #2563eb;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .side-menu-header h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .side-menu-close {
+      width: 40px;
+      height: 40px;
+      border: 0;
+      border-radius: 10px;
+      background: rgba(255,255,255,.2);
+      color: white;
+      font-size: 25px;
+      cursor: pointer;
+    }
+
+    .side-menu-list {
+      padding: 12px;
+    }
+
+    .side-menu-item {
+      width: 100%;
+      min-height: 52px;
+      margin-bottom: 8px;
+      border: 0;
+      border-radius: 12px;
+      background: #f1f5f9;
+      color: #1e293b;
+      text-align: left;
+      padding: 12px 15px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .side-menu-item:hover {
+      background: #e2e8f0;
+    }
+
+    .side-menu-item:active {
+      transform: scale(.98);
+    }
+
+    /* =====================================
+       STATS
     ===================================== */
 
     .stats {
@@ -305,6 +419,157 @@
     }
 
     /* =====================================
+       PERMISSION MODAL
+    ===================================== */
+
+    .permission-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 12px;
+      z-index: 100001;
+    }
+
+    .permission-modal {
+      width: 100%;
+      max-width: 560px;
+      max-height: 90vh;
+      background: white;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+
+    .permission-header {
+      padding: 18px;
+      background: #2563eb;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .permission-header h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .permission-close {
+      width: 42px;
+      height: 42px;
+      border: 0;
+      border-radius: 10px;
+      background: rgba(255,255,255,.2);
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .permission-body {
+      padding: 18px;
+      max-height: 75vh;
+      overflow-y: auto;
+    }
+
+    .permission-info {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .permission-form {
+      display: grid;
+      gap: 10px;
+    }
+
+    .permission-form label {
+      font-weight: 800;
+      color: #334155;
+    }
+
+    .permission-form input {
+      width: 100%;
+      height: 50px;
+      box-sizing: border-box;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px 13px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .permission-form input:focus {
+      border-color: #2563eb;
+    }
+
+    .permission-list-title {
+      margin-top: 22px;
+      margin-bottom: 10px;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .permission-user {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+    }
+
+    .permission-user-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .permission-user-name {
+      font-weight: 900;
+      color: #0f172a;
+      word-break: break-word;
+    }
+
+    .permission-user-status {
+      font-size: 12px;
+      color: #16a34a;
+      margin-top: 3px;
+      font-weight: 700;
+    }
+
+    .revoke-btn {
+      flex-shrink: 0;
+      border: 0;
+      border-radius: 9px;
+      background: #dc2626;
+      color: white;
+      padding: 9px 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .revoke-btn:active {
+      transform: scale(.97);
+    }
+
+    .permission-empty {
+      text-align: center;
+      color: #64748b;
+      padding: 20px;
+    }
+
+    /* =====================================
        EDIT MODAL
     ===================================== */
 
@@ -383,7 +648,8 @@
       }
 
       .user-modal-overlay,
-      .edit-modal-overlay {
+      .edit-modal-overlay,
+      .permission-modal-overlay {
         padding: 10px;
       }
 
@@ -397,6 +663,23 @@
 
       .edit-modal {
         padding: 17px;
+      }
+
+      .permission-modal {
+        max-height: 92vh;
+      }
+
+      .permission-body {
+        max-height: 78vh;
+      }
+
+      .permission-user {
+        align-items: flex-start;
+      }
+
+      .revoke-btn {
+        padding: 8px;
+        font-size: 12px;
       }
 
     }
@@ -416,21 +699,34 @@
            HEADER
       ================================= -->
 
-      <div class="header">
+      <div class="manager-header">
 
-        <div class="logo">
-          📊
-        </div>
+        <button
+          id="menuBtn"
+          class="menu-button"
+          type="button"
+          style="display:none"
+        >
+          ☰
+        </button>
 
-        <div>
+        <div class="header">
 
-          <h1>
-            QUẢN LÝ BÁO CÁO NGÀY
-          </h1>
+          <div class="logo">
+            📊
+          </div>
 
-          <p>
-            Theo dõi và xuất báo cáo
-          </p>
+          <div>
+
+            <h1>
+              QUẢN LÝ BÁO CÁO NGÀY
+            </h1>
+
+            <p>
+              Theo dõi và xuất báo cáo
+            </p>
+
+          </div>
 
         </div>
 
@@ -446,13 +742,13 @@
         <div class="field">
 
           <label>
-            Email quản lý
+            User / Email
           </label>
 
           <input
-            id="email"
-            type="email"
-            placeholder="Nhập email"
+            id="loginId"
+            type="text"
+            placeholder="Nhập user hoặc email"
             autocomplete="username"
           >
 
@@ -619,23 +915,14 @@
               <tr>
 
                 <th>Cán bộ</th>
-
                 <th>Ngày field</th>
-
                 <th>Số CIF</th>
-
                 <th>Tên khách hàng</th>
-
                 <th>Kết quả</th>
-
                 <th>Kết nối</th>
-
                 <th>Kết quả chi tiết</th>
-
                 <th>Dự thu</th>
-
                 <th>Hướng tác động tiếp theo</th>
-
                 <th>Thao tác</th>
 
               </tr>
@@ -662,6 +949,69 @@
 
 
   <!-- =================================
+       SIDE MENU
+  ================================= -->
+
+  <div
+    id="sideMenuOverlay"
+    class="side-menu-overlay"
+  ></div>
+
+
+  <aside
+    id="sideMenu"
+    class="side-menu"
+  >
+
+    <div class="side-menu-header">
+
+      <h2>☰ MENU</h2>
+
+      <button
+        id="sideMenuClose"
+        class="side-menu-close"
+        type="button"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="side-menu-list">
+
+      <button
+        id="menuReportsBtn"
+        class="side-menu-item"
+        type="button"
+      >
+        📊 Quản lý báo cáo
+      </button>
+
+
+      <button
+        id="menuPermissionBtn"
+        class="side-menu-item"
+        type="button"
+      >
+        🔐 Phân quyền
+      </button>
+
+
+      <button
+        id="menuLogoutBtn"
+        class="side-menu-item"
+        type="button"
+      >
+        🚪 Đăng xuất
+      </button>
+
+    </div>
+
+  </aside>
+
+
+  <!-- =================================
        LIBRARIES
   ================================= -->
 
@@ -669,17 +1019,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
-
-  <!-- =================================
-       CONFIG
-  ================================= -->
-
   <script src="config.js"></script>
-
-
-  <!-- =================================
-       MANAGER JS
-  ================================= -->
 
   <script src="manager.js"></script>
 
