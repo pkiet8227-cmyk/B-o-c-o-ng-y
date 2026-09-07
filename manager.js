@@ -1,2302 +1,2986 @@
-// =====================================================
-// BÁO CÁO NGÀY - MANAGER.JS
-// PHÂN QUYỀN + QUẢN LÝ BÁO CÁO
-// =====================================================
+// ============================================================
+// MANAGER.JS
+// QUẢN LÝ BÁO CÁO NGÀY
+// ============================================================
 
-const client = window.supabase.createClient(
+(() => {
+  "use strict";
+
+  // ==========================================================
+  // SUPABASE
+  // ==========================================================
+
+  if (!window.supabase) {
+    alert("❌ Không tải được Supabase.");
+    return;
+  }
+
+  if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+    alert("❌ Chưa cấu hình Supabase trong config.js");
+    return;
+  }
+
+  const client = window.supabase.createClient(
     window.SUPABASE_URL,
     window.SUPABASE_ANON_KEY
-);
+  );
 
-// =====================================================
-// BIẾN
-// =====================================================
+  // ==========================================================
+  // GLOBAL DATA
+  // ==========================================================
 
-let currentUser = null;
-let reports = [];
-let filteredReports = [];
+  let currentUser = null;
+  let allReports = [];
+  let filteredReports = [];
 
-let currentPage = 1;
-const pageSize = 20;
+  let currentPage = 1;
+  const pageSize = 10;
 
-let editingReportId = null;
+  let editingReportId = null;
 
+  // ==========================================================
+  // ELEMENTS
+  // ==========================================================
 
-// =====================================================
-// ELEMENT
-// =====================================================
+  let loginBox;
+  let managerBox;
 
-const loginBox =
-    document.getElementById("loginBox");
+  let loginId;
+  let password;
+  let loginBtn;
+  let loginMessage;
 
-const managerBox =
-    document.getElementById("managerBox");
+  let menuBtn;
+  let sideMenu;
+  let sideMenuOverlay;
+  let sideMenuClose;
 
-const loginId =
-    document.getElementById("loginId");
+  let menuReportsBtn;
+  let menuPermissionBtn;
+  let menuLogoutBtn;
 
-const password =
-    document.getElementById("password");
+  let logoutBtn;
 
-const loginBtn =
-    document.getElementById("loginBtn");
+  let totalReports;
+  let totalAmount;
 
-const loginMessage =
-    document.getElementById("loginMessage");
+  let filterUser;
+  let filterDate;
+  let filterBtn;
+  let refreshBtn;
+  let exportBtn;
 
-const managerMessage =
-    document.getElementById("managerMessage");
+  let showSubmittedUsersBtn;
+  let submittedUserCount;
 
-const logoutBtn =
-    document.getElementById("logoutBtn");
+  let tableBody;
+  let pagination;
 
-const totalReports =
-    document.getElementById("totalReports");
+  let managerMessage;
 
-const totalAmount =
-    document.getElementById("totalAmount");
+  // ==========================================================
+  // INIT ELEMENTS
+  // ==========================================================
 
-const filterUser =
-    document.getElementById("filterUser");
+  function initElements() {
 
-const filterDate =
-    document.getElementById("filterDate");
+    loginBox =
+      document.getElementById("loginBox");
 
-const filterBtn =
-    document.getElementById("filterBtn");
+    managerBox =
+      document.getElementById("managerBox");
 
-const refreshBtn =
-    document.getElementById("refreshBtn");
+    loginId =
+      document.getElementById("loginId");
 
-const exportBtn =
-    document.getElementById("exportBtn");
+    password =
+      document.getElementById("password");
 
-const showSubmittedUsersBtn =
-    document.getElementById("showSubmittedUsersBtn");
+    loginBtn =
+      document.getElementById("loginBtn");
 
-const submittedUserCount =
-    document.getElementById("submittedUserCount");
+    loginMessage =
+      document.getElementById("loginMessage");
 
-const tableBody =
-    document.getElementById("tableBody");
+    menuBtn =
+      document.getElementById("menuBtn");
 
-const pagination =
-    document.getElementById("pagination");
+    sideMenu =
+      document.getElementById("sideMenu");
 
+    sideMenuOverlay =
+      document.getElementById("sideMenuOverlay");
 
-// =====================================================
-// MENU
-// =====================================================
+    sideMenuClose =
+      document.getElementById("sideMenuClose");
 
-const menuBtn =
-    document.getElementById("menuBtn");
+    menuReportsBtn =
+      document.getElementById("menuReportsBtn");
 
-const sideMenuOverlay =
-    document.getElementById("sideMenuOverlay");
+    menuPermissionBtn =
+      document.getElementById("menuPermissionBtn");
 
-const sideMenu =
-    document.getElementById("sideMenu");
+    menuLogoutBtn =
+      document.getElementById("menuLogoutBtn");
 
-const sideMenuClose =
-    document.getElementById("sideMenuClose");
+    logoutBtn =
+      document.getElementById("logoutBtn");
 
-const menuReportsBtn =
-    document.getElementById("menuReportsBtn");
+    totalReports =
+      document.getElementById("totalReports");
 
-const menuPermissionBtn =
-    document.getElementById("menuPermissionBtn");
+    totalAmount =
+      document.getElementById("totalAmount");
 
-const menuLogoutBtn =
-    document.getElementById("menuLogoutBtn");
+    filterUser =
+      document.getElementById("filterUser");
 
+    filterDate =
+      document.getElementById("filterDate");
 
-// =====================================================
-// KHỞI ĐỘNG
-// =====================================================
+    filterBtn =
+      document.getElementById("filterBtn");
 
-document.addEventListener("DOMContentLoaded", async () => {
+    refreshBtn =
+      document.getElementById("refreshBtn");
+
+    exportBtn =
+      document.getElementById("exportBtn");
+
+    showSubmittedUsersBtn =
+      document.getElementById("showSubmittedUsersBtn");
+
+    submittedUserCount =
+      document.getElementById("submittedUserCount");
+
+    tableBody =
+      document.getElementById("tableBody");
+
+    pagination =
+      document.getElementById("pagination");
+
+    managerMessage =
+      document.getElementById("managerMessage");
+  }
+
+  // ==========================================================
+  // INIT
+  // ==========================================================
+
+  async function initManager() {
+
+    initElements();
+
+    bindEvents();
+
+    // Ẩn khu vực quản lý lúc đầu
+    if (managerBox) {
+      managerBox.style.display = "none";
+    }
+
+    // Hiện menu button nhưng chỉ khi đã đăng nhập
+    if (menuBtn) {
+      menuBtn.style.display = "none";
+      menuBtn.style.position = "relative";
+      menuBtn.style.zIndex = "100000";
+    }
+
+    // Kiểm tra session hiện tại
+    try {
+
+      const {
+        data,
+        error
+      } = await client.auth.getSession();
+
+      if (error) {
+        console.error(error);
+        showLogin();
+        return;
+      }
+
+      const session = data?.session;
+
+      if (session?.user) {
+
+        currentUser = session.user;
+
+        const allowed =
+          await checkManagerPermission();
+
+        if (allowed) {
+          await showManager();
+        } else {
+          await client.auth.signOut();
+          showLogin();
+        }
+
+      } else {
+        showLogin();
+      }
+
+    } catch (error) {
+
+      console.error(
+        "INIT ERROR:",
+        error
+      );
+
+      showLogin();
+    }
+  }
+
+  // ==========================================================
+  // EVENT
+  // ==========================================================
+
+  function bindEvents() {
+
+    // ------------------------------
+    // LOGIN
+    // ------------------------------
 
     if (loginBtn) {
-        loginBtn.addEventListener("click", login);
+
+      loginBtn.addEventListener(
+        "click",
+        login
+      );
     }
 
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", logout);
+    if (password) {
+
+      password.addEventListener(
+        "keydown",
+        function (e) {
+
+          if (e.key === "Enter") {
+            login();
+          }
+
+        }
+      );
     }
 
-    if (filterBtn) {
-        filterBtn.addEventListener("click", applyFilter);
+    if (loginId) {
+
+      loginId.addEventListener(
+        "keydown",
+        function (e) {
+
+          if (e.key === "Enter") {
+            login();
+          }
+
+        }
+      );
     }
 
-    if (refreshBtn) {
-        refreshBtn.addEventListener("click", loadReports);
-    }
-
-    if (exportBtn) {
-        exportExcel();
-    }
-
-    if (showSubmittedUsersBtn) {
-        showSubmittedUsersBtn.addEventListener(
-            "click",
-            showSubmittedUsers
-        );
-    }
+    // ------------------------------
+    // MENU
+    // ------------------------------
 
     if (menuBtn) {
-        menuBtn.addEventListener(
-            "click",
-            openMenu
-        );
+
+      menuBtn.addEventListener(
+        "click",
+        function (e) {
+
+          e.preventDefault();
+          e.stopPropagation();
+
+          openMenu();
+        }
+      );
     }
 
     if (sideMenuClose) {
-        sideMenuClose.addEventListener(
-            "click",
-            closeMenu
-        );
+
+      sideMenuClose.addEventListener(
+        "click",
+        function (e) {
+
+          e.preventDefault();
+
+          closeMenu();
+        }
+      );
     }
 
     if (sideMenuOverlay) {
-        sideMenuOverlay.addEventListener(
-            "click",
-            closeMenu
-        );
+
+      sideMenuOverlay.addEventListener(
+        "click",
+        closeMenu
+      );
     }
 
+    // ------------------------------
+    // MENU ITEMS
+    // ------------------------------
+
     if (menuReportsBtn) {
-        menuReportsBtn.addEventListener(
-            "click",
-            () => {
-                closeMenu();
-                showManagerPage();
-            }
-        );
+
+      menuReportsBtn.addEventListener(
+        "click",
+        function () {
+
+          closeMenu();
+
+          showManager();
+        }
+      );
     }
 
     if (menuPermissionBtn) {
-        menuPermissionBtn.addEventListener(
-            "click",
-            () => {
-                closeMenu();
-                openPermissionModal();
-            }
-        );
+
+      menuPermissionBtn.addEventListener(
+        "click",
+        async function () {
+
+          closeMenu();
+
+          await openPermissionModal();
+        }
+      );
     }
 
     if (menuLogoutBtn) {
-        menuLogoutBtn.addEventListener(
-            "click",
-            logout
-        );
+
+      menuLogoutBtn.addEventListener(
+        "click",
+        logout
+      );
     }
 
-    // Enter để đăng nhập
-    if (password) {
-        password.addEventListener(
-            "keydown",
-            e => {
-                if (e.key === "Enter") {
-                    login();
-                }
-            }
-        );
+    if (logoutBtn) {
+
+      logoutBtn.addEventListener(
+        "click",
+        logout
+      );
     }
 
-    await checkSession();
-});
+    // ------------------------------
+    // FILTER
+    // ------------------------------
 
+    if (filterBtn) {
 
-// =====================================================
-// SESSION
-// =====================================================
-
-async function checkSession() {
-
-    const {
-        data,
-        error
-    } = await client.auth.getSession();
-
-    if (error) {
-        showLogin();
-        return;
+      filterBtn.addEventListener(
+        "click",
+        applyFilter
+      );
     }
 
-    if (
-        data &&
-        data.session &&
-        data.session.user
-    ) {
+    if (refreshBtn) {
 
-        const allowed =
-            await checkManagerPermission();
+      refreshBtn.addEventListener(
+        "click",
+        async function () {
 
-        if (allowed) {
-            currentUser =
-                data.session.user;
+          if (filterUser) {
+            filterUser.value = "";
+          }
 
-            showManager();
+          if (filterDate) {
+            filterDate.value = "";
+          }
 
-            await loadReports();
-
-        } else {
-
-            await client.auth.signOut();
-
-            showLogin();
-
-            showLoginMessage(
-                "❌ Tài khoản chưa được cấp quyền quản lý."
-            );
+          await loadReports();
         }
-
-    } else {
-
-        showLogin();
+      );
     }
-}
 
+    // ------------------------------
+    // EXPORT
+    // ------------------------------
 
-// =====================================================
-// KIỂM TRA QUYỀN MANAGER
-// =====================================================
-// KHÔNG query trực tiếp manager_permissions
-// vì bảng đang bật RLS.
-// Dùng RPC is_manager().
-// =====================================================
+    if (exportBtn) {
 
-async function checkManagerPermission() {
-
-    try {
-
-        const {
-            data,
-            error
-        } = await client.rpc(
-            "is_manager"
-        );
-
-        if (error) {
-
-            console.error(
-                "is_manager error:",
-                error
-            );
-
-            return false;
-        }
-
-        return data === true;
-
-    } catch (err) {
-
-        console.error(err);
-
-        return false;
+      exportBtn.addEventListener(
+        "click",
+        exportExcel
+      );
     }
-}
 
+    // ------------------------------
+    // SUBMITTED USERS
+    // ------------------------------
 
-// =====================================================
-// LOGIN
-// =====================================================
+    if (showSubmittedUsersBtn) {
 
-async function login() {
+      showSubmittedUsersBtn.addEventListener(
+        "click",
+        showSubmittedUsers
+      );
+    }
+  }
+
+  // ==========================================================
+  // LOGIN
+  // ==========================================================
+
+  async function login() {
 
     const identifier =
-        loginId.value.trim();
+      (loginId?.value || "").trim();
 
-    const pwd =
-        password.value;
+    const pass =
+      password?.value || "";
 
     if (!identifier) {
 
-        showLoginMessage(
-            "⚠️ Vui lòng nhập User hoặc Email."
-        );
+      setLoginMessage(
+        "❌ Vui lòng nhập User hoặc Email.",
+        "error"
+      );
 
-        return;
+      loginId?.focus();
+
+      return;
     }
 
-    if (!pwd) {
+    if (!pass) {
 
-        showLoginMessage(
-            "⚠️ Vui lòng nhập mật khẩu."
-        );
+      setLoginMessage(
+        "❌ Vui lòng nhập mật khẩu.",
+        "error"
+      );
 
-        return;
+      password?.focus();
+
+      return;
     }
 
-    setLoginLoading(true);
+    setLoginMessage(
+      "⏳ Đang đăng nhập...",
+      "info"
+    );
+
+    if (loginBtn) {
+      loginBtn.disabled = true;
+    }
 
     try {
 
-        let email = identifier;
+      // ======================================================
+      // BƯỚC 1:
+      // Nếu nhập USER thì Edge Function resolve sang email.
+      // Nếu nhập EMAIL thì dùng trực tiếp.
+      // ======================================================
 
-        // ---------------------------------------------
-        // Nếu nhập USER thì tìm email Auth qua Edge
-        // ---------------------------------------------
+      let email = identifier;
 
-        if (!identifier.includes("@")) {
+      if (!identifier.includes("@")) {
 
-            const result =
-                await callPermissionFunction(
-                    "resolve",
-                    {
-                        identifier: identifier
-                    },
-                    false
-                );
+        const result =
+          await callManagerFunction(
+            "resolve",
+            {
+              identifier
+            },
+            false
+          );
 
-            if (
-                !result ||
-                !result.auth_email
-            ) {
+        if (!result.success) {
 
-                throw new Error(
-                    "Không tìm thấy User hoặc tài khoản chưa được cấp quyền."
-                );
-            }
-
-            email =
-                result.auth_email;
+          throw new Error(
+            result.error ||
+            "Không tìm thấy tài khoản."
+          );
         }
 
-        // ---------------------------------------------
-        // Đăng nhập Supabase Auth
-        // ---------------------------------------------
+        email =
+          result.auth_email;
 
-        const {
-            data,
-            error
-        } = await client.auth.signInWithPassword({
+        if (!email) {
 
-            email: email,
+          throw new Error(
+            "Không xác định được email đăng nhập."
+          );
+        }
+      }
 
-            password: pwd
+      // ======================================================
+      // BƯỚC 2:
+      // Đăng nhập Supabase Auth
+      // ======================================================
+
+      const {
+        data,
+        error
+      } =
+        await client.auth.signInWithPassword({
+          email,
+          password: pass
         });
 
-        if (error) {
-            throw error;
-        }
+      if (error) {
+        throw error;
+      }
 
-        if (
-            !data ||
-            !data.user
-        ) {
+      if (!data?.user) {
 
-            throw new Error(
-                "Không lấy được thông tin tài khoản."
-            );
-        }
-
-        // ---------------------------------------------
-        // Kiểm tra quyền
-        // ---------------------------------------------
-
-        const allowed =
-            await checkManagerPermission();
-
-        if (!allowed) {
-
-            await client.auth.signOut();
-
-            throw new Error(
-                "Tài khoản chưa được cấp quyền quản lý."
-            );
-        }
-
-        currentUser =
-            data.user;
-
-        showManager();
-
-        clearLoginMessage();
-
-        await loadReports();
-
-    } catch (err) {
-
-        console.error(
-            "LOGIN ERROR:",
-            err
+        throw new Error(
+          "Không nhận được thông tin tài khoản."
         );
+      }
 
-        showLoginMessage(
-            "❌ " +
-            getErrorMessage(err)
+      currentUser =
+        data.user;
+
+      // ======================================================
+      // BƯỚC 3:
+      // KIỂM TRA QUYỀN MANAGER
+      // ======================================================
+
+      const allowed =
+        await checkManagerPermission();
+
+      if (!allowed) {
+
+        await client.auth.signOut();
+
+        currentUser = null;
+
+        throw new Error(
+          "Tài khoản này chưa được cấp quyền quản lý."
         );
+      }
+
+      // ======================================================
+      // THÀNH CÔNG
+      // ======================================================
+
+      if (password) {
+        password.value = "";
+      }
+
+      setLoginMessage(
+        "",
+        "info"
+      );
+
+      await showManager();
+
+    } catch (error) {
+
+      console.error(
+        "LOGIN ERROR:",
+        error
+      );
+
+      setLoginMessage(
+        "❌ " +
+        (
+          error?.message ||
+          "Đăng nhập thất bại."
+        ),
+        "error"
+      );
 
     } finally {
 
-        setLoginLoading(false);
+      if (loginBtn) {
+        loginBtn.disabled = false;
+      }
     }
-}
+  }
 
+  // ==========================================================
+  // CHECK MANAGER
+  // ==========================================================
 
-// =====================================================
-// LOGOUT
-// =====================================================
+  async function checkManagerPermission() {
 
-async function logout() {
+    try {
 
-    await client.auth.signOut();
+      const {
+        data,
+        error
+      } =
+        await client.rpc(
+          "is_manager"
+        );
 
-    currentUser = null;
+      if (error) {
 
-    reports = [];
-    filteredReports = [];
+        console.error(
+          "is_manager error:",
+          error
+        );
+
+        return false;
+      }
+
+      return data === true;
+
+    } catch (error) {
+
+      console.error(
+        "CHECK MANAGER ERROR:",
+        error
+      );
+
+      return false;
+    }
+  }
+
+  // ==========================================================
+  // SHOW LOGIN
+  // ==========================================================
+
+  function showLogin() {
+
+    if (loginBox) {
+      loginBox.style.display = "block";
+    }
+
+    if (managerBox) {
+      managerBox.style.display = "none";
+    }
+
+    if (menuBtn) {
+      menuBtn.style.display = "none";
+    }
 
     closeMenu();
+  }
 
-    showLogin();
-}
+  // ==========================================================
+  // SHOW MANAGER
+  // ==========================================================
 
-
-// =====================================================
-// GIAO DIỆN
-// =====================================================
-
-function showLogin() {
-
-    if (loginBox) {
-        loginBox.style.display = "block";
-    }
-
-    if (managerBox) {
-        managerBox.style.display = "none";
-    }
-
-    if (menuBtn) {
-        menuBtn.style.display = "none";
-    }
-}
-
-
-function showManager() {
-
-    if (loginBox) {
-        loginBox.style.display = "none";
-    }
-
-    if (managerBox) {
-        managerBox.style.display = "block";
-    }
-
-    if (menuBtn) {
-        menuBtn.style.display = "flex";
-    }
-}
-
-
-function showManagerPage() {
-
-    if (managerBox) {
-        managerBox.style.display = "block";
-    }
-
-    if (menuBtn) {
-        menuBtn.style.display = "flex";
-    }
-}
-
-
-// =====================================================
-// MENU
-// =====================================================
-
-function openMenu() {
-
-    if (sideMenuOverlay) {
-        sideMenuOverlay.classList.add("show");
-    }
-
-    if (sideMenu) {
-        sideMenu.classList.add("show");
-    }
-}
-
-
-function closeMenu() {
-
-    if (sideMenuOverlay) {
-        sideMenuOverlay.classList.remove("show");
-    }
-
-    if (sideMenu) {
-        sideMenu.classList.remove("show");
-    }
-}
-
-
-// =====================================================
-// LOAD REPORTS
-// =====================================================
-
-async function loadReports() {
+  async function showManager() {
 
     if (!currentUser) {
-        return;
+
+      const {
+        data
+      } =
+        await client.auth.getUser();
+
+      currentUser =
+        data?.user || null;
+    }
+
+    if (!currentUser) {
+
+      showLogin();
+
+      return;
+    }
+
+    if (loginBox) {
+      loginBox.style.display = "none";
+    }
+
+    if (managerBox) {
+      managerBox.style.display = "block";
+    }
+
+    // QUAN TRỌNG:
+    // HTML đang style display:none
+    // nên phải bật lại ở đây.
+
+    if (menuBtn) {
+
+      menuBtn.style.display = "flex";
+      menuBtn.style.visibility = "visible";
+      menuBtn.style.pointerEvents = "auto";
+      menuBtn.style.position = "relative";
+      menuBtn.style.zIndex = "100000";
+    }
+
+    await loadReports();
+  }
+
+  // ==========================================================
+  // MENU
+  // ==========================================================
+
+  function openMenu() {
+
+    if (!sideMenu || !sideMenuOverlay) {
+      console.error(
+        "Không tìm thấy side menu."
+      );
+
+      return;
+    }
+
+    sideMenu.classList.add("open");
+
+    sideMenuOverlay.classList.add("open");
+
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeMenu() {
+
+    if (sideMenu) {
+      sideMenu.classList.remove("open");
+    }
+
+    if (sideMenuOverlay) {
+      sideMenuOverlay.classList.remove("open");
+    }
+
+    document.body.style.overflow = "";
+  }
+
+  // ==========================================================
+  // LOAD REPORTS
+  // ==========================================================
+
+  async function loadReports() {
+
+    if (!currentUser) {
+      return;
     }
 
     showManagerMessage(
-        "⏳ Đang tải dữ liệu..."
+      "⏳ Đang tải dữ liệu...",
+      "info"
     );
 
     try {
 
-        const {
-            data,
-            error
-        } = await client
-            .from("bao_cao_ngay")
-            .select("*")
-            .order(
-                "created_at",
-                {
-                    ascending: false
-                }
-            );
-
-        if (error) {
-            throw error;
-        }
-
-        reports =
-            Array.isArray(data)
-                ? data
-                : [];
-
-        filteredReports =
-            [...reports];
-
-        currentPage = 1;
-
-        renderStats();
-
-        renderSubmittedUserCount();
-
-        renderTable();
-
-        clearManagerMessage();
-
-    } catch (err) {
-
-        console.error(
-            "LOAD REPORTS ERROR:",
-            err
-        );
-
-        showManagerMessage(
-            "❌ Không tải được dữ liệu: " +
-            getErrorMessage(err)
-        );
-    }
-}
-
-
-// =====================================================
-// STATS
-// =====================================================
-
-function renderStats() {
-
-    if (totalReports) {
-
-        totalReports.textContent =
-            reports.length;
-    }
-
-    if (totalAmount) {
-
-        let total = 0;
-
-        reports.forEach(
-            report => {
-
-                total +=
-                    parseMoney(
-                        report.amount
-                    );
+      const {
+        data,
+        error
+      } =
+        await client
+          .from("bao_cao_ngay")
+          .select("*")
+          .order(
+            "created_at",
+            {
+              ascending: false
             }
-        );
+          );
 
-        totalAmount.textContent =
-            formatMoney(total);
+      if (error) {
+        throw error;
+      }
+
+      allReports =
+        Array.isArray(data)
+          ? data
+          : [];
+
+      filteredReports =
+        [...allReports];
+
+      currentPage = 1;
+
+      updateStats();
+
+      renderTable();
+
+      updateSubmittedUserCount();
+
+      showManagerMessage(
+        "",
+        "info"
+      );
+
+    } catch (error) {
+
+      console.error(
+        "LOAD REPORTS ERROR:",
+        error
+      );
+
+      showManagerMessage(
+        "❌ Không tải được báo cáo: " +
+        (
+          error?.message ||
+          "Lỗi không xác định"
+        ),
+        "error"
+      );
     }
-}
+  }
 
+  // ==========================================================
+  // FILTER
+  // ==========================================================
 
-// =====================================================
-// USER COUNT
-// =====================================================
+  function applyFilter() {
 
-function renderSubmittedUserCount() {
+    const userKeyword =
+      (
+        filterUser?.value ||
+        ""
+      )
+        .trim()
+        .toLowerCase();
 
-    if (!submittedUserCount) {
-        return;
-    }
-
-    const users =
-        new Set();
-
-    reports.forEach(
-        r => {
-
-            const user =
-                r.username ||
-                r.user_name ||
-                r.email ||
-                r.user_email ||
-                r.user_id;
-
-            if (user) {
-                users.add(user);
-            }
-        }
-    );
-
-    submittedUserCount.textContent =
-        users.size;
-}
-
-
-// =====================================================
-// FILTER
-// =====================================================
-
-function applyFilter() {
-
-    const user =
-        filterUser
-            ? filterUser.value
-                .trim()
-                .toLowerCase()
-            : "";
-
-    const date =
-        filterDate
-            ? filterDate.value
-            : "";
+    const dateKeyword =
+      (
+        filterDate?.value ||
+        ""
+      ).trim();
 
     filteredReports =
-        reports.filter(
-            report => {
+      allReports.filter(
+        report => {
 
-                let okUser = true;
-                let okDate = true;
+          // ----------------------------------------------
+          // TÌM CÁN BỘ
+          // ----------------------------------------------
 
-                // -------------------------------------
-                // USER
-                // -------------------------------------
+          const userText =
+            getReportUser(report)
+              .toLowerCase();
 
-                if (user) {
+          const userOK =
+            !userKeyword ||
+            userText.includes(
+              userKeyword
+            );
 
-                    const value = (
+          // ----------------------------------------------
+          // TÌM NGÀY FIELD
+          // ----------------------------------------------
 
-                        report.username ||
-                        report.user_name ||
-                        report.email ||
-                        report.user_email ||
-                        report.full_name ||
-                        report.ho_ten ||
-                        ""
+          const reportDate =
+            getReportDate(report);
 
-                    )
-                        .toString()
-                        .toLowerCase();
+          const dateOK =
+            !dateKeyword ||
+            reportDate === dateKeyword;
 
-                    okUser =
-                        value.includes(user);
-                }
-
-                // -------------------------------------
-                // DATE
-                // -------------------------------------
-
-                if (date) {
-
-                    const reportDate =
-                        getReportDate(report);
-
-                    okDate =
-                        reportDate === date;
-                }
-
-                return (
-                    okUser &&
-                    okDate
-                );
-            }
-        );
+          return (
+            userOK &&
+            dateOK
+          );
+        }
+      );
 
     currentPage = 1;
 
+    updateStats();
+
     renderTable();
-}
+  }
 
+  // ==========================================================
+  // GET USER
+  // ==========================================================
 
-// =====================================================
-// TABLE
-// =====================================================
+  function getReportUser(report) {
 
-function renderTable() {
+    return String(
+      report.user_name ??
+      report.username ??
+      report.full_name ??
+      report.canh_bo ??
+      report.can_bo ??
+      report.ho_ten ??
+      report.email ??
+      report.user_email ??
+      report.user_id ??
+      ""
+    );
+  }
+
+  // ==========================================================
+  // GET DATE
+  // ==========================================================
+
+  function getReportDate(report) {
+
+    const value =
+      report.field_date ??
+      report.ngay_field ??
+      report.fieldDate ??
+      report.date ??
+      report.report_date ??
+      report.created_at ??
+      "";
+
+    if (!value) {
+      return "";
+    }
+
+    // Nếu là YYYY-MM-DD
+    if (
+      typeof value === "string" &&
+      /^\d{4}-\d{2}-\d{2}/.test(value)
+    ) {
+      return value.substring(
+        0,
+        10
+      );
+    }
+
+    try {
+
+      const d =
+        new Date(value);
+
+      if (isNaN(d.getTime())) {
+        return String(value);
+      }
+
+      return [
+        d.getFullYear(),
+        String(
+          d.getMonth() + 1
+        ).padStart(2, "0"),
+        String(
+          d.getDate()
+        ).padStart(2, "0")
+      ].join("-");
+
+    } catch {
+
+      return String(value);
+    }
+  }
+
+  // ==========================================================
+  // GET AMOUNT
+  // ==========================================================
+
+  function getReportAmount(report) {
+
+    const value =
+      report.amount ??
+      report.du_thu ??
+      report.duthu ??
+      report.duThu ??
+      report.expected_amount ??
+      report.expectedAmount ??
+      0;
+
+    if (
+      typeof value === "number"
+    ) {
+      return value;
+    }
+
+    if (
+      typeof value === "string"
+    ) {
+
+      const cleaned =
+        value
+          .replace(/[^\d.-]/g, "");
+
+      const number =
+        Number(cleaned);
+
+      return isNaN(number)
+        ? 0
+        : number;
+    }
+
+    return 0;
+  }
+
+  // ==========================================================
+  // UPDATE STATS
+  // ==========================================================
+
+  function updateStats() {
+
+    if (totalReports) {
+
+      totalReports.textContent =
+        filteredReports.length
+          .toLocaleString("vi-VN");
+    }
+
+    const total =
+      filteredReports.reduce(
+        (
+          sum,
+          report
+        ) => {
+
+          return (
+            sum +
+            getReportAmount(report)
+          );
+
+        },
+        0
+      );
+
+    if (totalAmount) {
+
+      totalAmount.textContent =
+        formatMoney(total);
+    }
+  }
+
+  // ==========================================================
+  // RENDER TABLE
+  // ==========================================================
+
+  function renderTable() {
 
     if (!tableBody) {
-        return;
+      return;
     }
 
     tableBody.innerHTML = "";
 
-    if (
-        !filteredReports ||
-        filteredReports.length === 0
-    ) {
+    if (!filteredReports.length) {
 
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="99"
-                    style="text-align:center;padding:30px">
-                    Không có dữ liệu
-                </td>
-            </tr>
-        `;
+      tableBody.innerHTML = `
+        <tr>
+          <td
+            colspan="10"
+            style="
+              text-align:center;
+              padding:30px;
+              color:#64748b;
+              font-weight:bold;
+            "
+          >
+            Không có dữ liệu
+          </td>
+        </tr>
+      `;
 
-        renderPagination();
+      renderPagination();
 
-        return;
+      return;
     }
 
     const start =
-        (currentPage - 1) *
-        pageSize;
+      (
+        currentPage - 1
+      ) * pageSize;
 
     const end =
-        start + pageSize;
+      start + pageSize;
 
     const pageData =
-        filteredReports.slice(
-            start,
-            end
-        );
+      filteredReports.slice(
+        start,
+        end
+      );
 
     pageData.forEach(
-        (report, index) => {
+      report => {
 
-            const tr =
-                document.createElement("tr");
+        const tr =
+          document.createElement("tr");
 
-            const realIndex =
-                start + index + 1;
+        const user =
+          getReportUser(report);
 
-            tr.innerHTML = `
-                <td>${realIndex}</td>
+        const date =
+          getReportDate(report);
 
-                <td>
-                    ${escapeHtml(
-                        getUserName(report)
-                    )}
-                </td>
+        const cif =
+          report.cif ??
+          report.so_cif ??
+          report.cif_number ??
+          "";
 
-                <td>
-                    ${escapeHtml(
-                        getReportDate(report)
-                    )}
-                </td>
+        const customerName =
+          report.customer_name ??
+          report.ten_khach_hang ??
+          report.customer ??
+          report.ho_ten_khach_hang ??
+          "";
 
-                <td>
-                    ${escapeHtml(
-                        getField(
-                            report,
-                            [
-                                "customer_name",
-                                "khach_hang",
-                                "ho_ten",
-                                "name"
-                            ]
-                        )
-                    )}
-                </td>
+        const result =
+          report.result ??
+          report.ket_qua ??
+          "";
 
-                <td>
-                    ${escapeHtml(
-                        getField(
-                            report,
-                            [
-                                "content",
-                                "noi_dung",
-                                "note",
-                                "ghi_chu"
-                            ]
-                        )
-                    )}
-                </td>
+        const connection =
+          report.connection ??
+          report.ket_noi ??
+          "";
 
-                <td>
-                    ${formatMoney(
-                        parseMoney(
-                            report.amount
-                        )
-                    )}
-                </td>
+        const detail =
+          report.detail_result ??
+          report.ket_qua_chi_tiet ??
+          report.result_detail ??
+          report.chi_tiet ??
+          "";
 
-                <td>
-                    ${escapeHtml(
-                        getField(
-                            report,
-                            [
-                                "time",
-                                "gio",
-                                "created_time"
-                            ]
-                        )
-                    )}
-                </td>
+        const amount =
+          getReportAmount(report);
 
-                <td>
-                    <button
-                        class="manager-edit-btn"
-                        onclick="editReport('${report.id}')">
-                        ✏️ Sửa
-                    </button>
+        const nextAction =
+          report.next_action ??
+          report.huong_tac_dong_tiep_theo ??
+          report.huong_tac_dong ??
+          "";
 
-                    <button
-                        class="manager-delete-btn"
-                        onclick="deleteReport('${report.id}')">
-                        🗑️ Xóa
-                    </button>
-                </td>
-            `;
+        tr.innerHTML = `
+          <td>${escapeHtml(user)}</td>
 
-            tableBody.appendChild(tr);
+          <td>${escapeHtml(
+            formatDisplayDate(date)
+          )}</td>
+
+          <td>${escapeHtml(
+            cif
+          )}</td>
+
+          <td>${escapeHtml(
+            customerName
+          )}</td>
+
+          <td>${escapeHtml(
+            result
+          )}</td>
+
+          <td>${escapeHtml(
+            connection
+          )}</td>
+
+          <td>${escapeHtml(
+            detail
+          )}</td>
+
+          <td>${escapeHtml(
+            formatMoney(amount)
+          )}</td>
+
+          <td>${escapeHtml(
+            nextAction
+          )}</td>
+
+          <td>
+            <button
+              class="edit-btn"
+              data-action="edit"
+            >
+              ✏️ Sửa
+            </button>
+
+            <button
+              class="delete-btn"
+              data-action="delete"
+            >
+              🗑️ Xóa
+            </button>
+          </td>
+        `;
+
+        const editButton =
+          tr.querySelector(
+            '[data-action="edit"]'
+          );
+
+        const deleteButton =
+          tr.querySelector(
+            '[data-action="delete"]'
+          );
+
+        if (editButton) {
+
+          editButton.addEventListener(
+            "click",
+            function () {
+
+              openEditModal(
+                report
+              );
+            }
+          );
         }
+
+        if (deleteButton) {
+
+          deleteButton.addEventListener(
+            "click",
+            function () {
+
+              deleteReport(
+                report
+              );
+            }
+          );
+        }
+
+        tableBody.appendChild(tr);
+      }
     );
 
     renderPagination();
-}
+  }
 
+  // ==========================================================
+  // PAGINATION
+  // ==========================================================
 
-// =====================================================
-// PAGINATION
-// =====================================================
-
-function renderPagination() {
+  function renderPagination() {
 
     if (!pagination) {
-        return;
+      return;
     }
 
     pagination.innerHTML = "";
 
     const totalPages =
-        Math.ceil(
-            filteredReports.length /
-            pageSize
-        );
+      Math.ceil(
+        filteredReports.length /
+        pageSize
+      );
 
     if (totalPages <= 1) {
-        return;
+      return;
     }
 
+    // Nút trước
     const prev =
-        document.createElement("button");
+      document.createElement("button");
+
+    prev.className = "arrow";
 
     prev.textContent = "‹";
 
     prev.disabled =
-        currentPage === 1;
+      currentPage === 1;
 
-    prev.onclick = () => {
+    prev.addEventListener(
+      "click",
+      function () {
 
-        if (currentPage > 1) {
+        if (
+          currentPage > 1
+        ) {
 
-            currentPage--;
+          currentPage--;
 
-            renderTable();
+          renderTable();
+
+          scrollToTable();
         }
-    };
+      }
+    );
 
     pagination.appendChild(prev);
 
+    // Tính khoảng page hiển thị
+    let startPage =
+      Math.max(
+        1,
+        currentPage - 2
+      );
 
-    for (
-        let i = 1;
-        i <= totalPages;
-        i++
+    let endPage =
+      Math.min(
+        totalPages,
+        currentPage + 2
+      );
+
+    if (
+      endPage - startPage < 4
     ) {
 
-        const btn =
-            document.createElement("button");
+      if (startPage === 1) {
 
-        btn.textContent = i;
+        endPage =
+          Math.min(
+            totalPages,
+            5
+          );
 
-        if (i === currentPage) {
-            btn.classList.add("active");
-        }
+      } else {
 
-        btn.onclick = () => {
-
-            currentPage = i;
-
-            renderTable();
-        };
-
-        pagination.appendChild(btn);
+        startPage =
+          Math.max(
+            1,
+            totalPages - 4
+          );
+      }
     }
 
+    for (
+      let i = startPage;
+      i <= endPage;
+      i++
+    ) {
 
-    const next =
+      const button =
         document.createElement("button");
+
+      button.textContent =
+        i;
+
+      if (
+        i === currentPage
+      ) {
+
+        button.classList.add(
+          "active"
+        );
+      }
+
+      button.addEventListener(
+        "click",
+        function () {
+
+          currentPage = i;
+
+          renderTable();
+
+          scrollToTable();
+        }
+      );
+
+      pagination.appendChild(
+        button
+      );
+    }
+
+    // Nút sau
+    const next =
+      document.createElement("button");
+
+    next.className = "arrow";
 
     next.textContent = "›";
 
     next.disabled =
-        currentPage === totalPages;
+      currentPage === totalPages;
 
-    next.onclick = () => {
+    next.addEventListener(
+      "click",
+      function () {
 
         if (
-            currentPage <
-            totalPages
+          currentPage <
+          totalPages
         ) {
 
-            currentPage++;
+          currentPage++;
 
-            renderTable();
+          renderTable();
+
+          scrollToTable();
         }
-    };
+      }
+    );
 
     pagination.appendChild(next);
-}
+  }
 
+  // ==========================================================
+  // SCROLL TABLE
+  // ==========================================================
 
-// =====================================================
-// EDIT REPORT
-// =====================================================
+  function scrollToTable() {
 
-window.editReport = async function(id) {
+    const table =
+      document.querySelector(
+        ".table-wrap"
+      );
 
-    const report =
-        reports.find(
-            r => String(r.id) === String(id)
-        );
+    if (table) {
 
-    if (!report) {
-        alert("Không tìm thấy báo cáo.");
-        return;
+      table.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }
+  }
+
+  // ==========================================================
+  // EDIT MODAL
+  // ==========================================================
+
+  function openEditModal(report) {
+
+    editingReportId =
+      report.id;
+
+    const currentAmount =
+      getReportAmount(report);
+
+    const overlay =
+      document.createElement("div");
+
+    overlay.className =
+      "edit-modal-overlay";
+
+    overlay.id =
+      "dynamicEditModal";
+
+    overlay.innerHTML = `
+
+      <div class="edit-modal">
+
+        <h2>
+          ✏️ Sửa báo cáo
+        </h2>
+
+        <div
+          style="
+            display:grid;
+            gap:12px;
+          "
+        >
+
+          <div>
+
+            <label
+              style="
+                display:block;
+                font-weight:800;
+                margin-bottom:6px;
+              "
+            >
+              Dự thu
+            </label>
+
+            <input
+              id="editAmount"
+              type="number"
+              inputmode="numeric"
+              value="${escapeAttribute(
+                currentAmount
+              )}"
+              placeholder="Nhập dự thu"
+            >
+
+          </div>
+
+        </div>
+
+        <div class="edit-modal-buttons">
+
+          <button
+            id="editCancelBtn"
+            class="edit-cancel-btn"
+          >
+            HỦY
+          </button>
+
+          <button
+            id="editSaveBtn"
+            class="edit-save-btn"
+          >
+            💾 LƯU
+          </button>
+
+        </div>
+
+        <div
+          id="editMessage"
+          style="
+            margin-top:12px;
+            text-align:center;
+            font-weight:bold;
+          "
+        ></div>
+
+      </div>
+    `;
+
+    document.body.appendChild(
+      overlay
+    );
+
+    const cancelBtn =
+      document.getElementById(
+        "editCancelBtn"
+      );
+
+    const saveBtn =
+      document.getElementById(
+        "editSaveBtn"
+      );
+
+    if (cancelBtn) {
+
+      cancelBtn.addEventListener(
+        "click",
+        closeEditModal
+      );
+    }
+
+    if (saveBtn) {
+
+      saveBtn.addEventListener(
+        "click",
+        function () {
+
+          saveEditReport(
+            report
+          );
+        }
+      );
+    }
+
+    overlay.addEventListener(
+      "click",
+      function (e) {
+
+        if (
+          e.target === overlay
+        ) {
+          closeEditModal();
+        }
+      }
+    );
+  }
+
+  // ==========================================================
+  // SAVE EDIT
+  // ==========================================================
+
+  async function saveEditReport(report) {
+
+    const input =
+      document.getElementById(
+        "editAmount"
+      );
+
+    const message =
+      document.getElementById(
+        "editMessage"
+      );
+
+    const saveBtn =
+      document.getElementById(
+        "editSaveBtn"
+      );
+
+    if (!input) {
+      return;
+    }
+
+    const amount =
+      Number(input.value);
+
+    if (
+      isNaN(amount) ||
+      amount < 0
+    ) {
+
+      if (message) {
+
+        message.textContent =
+          "❌ Số tiền không hợp lệ.";
+
+        message.style.color =
+          "#dc2626";
+      }
+
+      return;
+    }
+
+    if (saveBtn) {
+      saveBtn.disabled = true;
+    }
+
+    if (message) {
+
+      message.textContent =
+        "⏳ Đang lưu...";
+
+      message.style.color =
+        "#2563eb";
+    }
+
+    try {
+
+      // ======================================================
+      // Cột dự thu hiện tại của hệ thống là amount.
+      // Nếu dữ liệu cũ dùng du_thu thì cập nhật theo cột đó.
+      // ======================================================
+
+      let updateData;
+
+      if (
+        Object.prototype.hasOwnProperty.call(
+          report,
+          "amount"
+        )
+      ) {
+
+        updateData = {
+          amount
+        };
+
+      } else if (
+        Object.prototype.hasOwnProperty.call(
+          report,
+          "du_thu"
+        )
+      ) {
+
+        updateData = {
+          du_thu: amount
+        };
+
+      } else {
+
+        // Mặc định hệ thống mới dùng amount
+        updateData = {
+          amount
+        };
+      }
+
+      const {
+        error
+      } =
+        await client
+          .from("bao_cao_ngay")
+          .update(updateData)
+          .eq(
+            "id",
+            report.id
+          );
+
+      if (error) {
+        throw error;
+      }
+
+      closeEditModal();
+
+      await loadReports();
+
+      showManagerMessage(
+        "✅ Đã cập nhật báo cáo.",
+        "success"
+      );
+
+    } catch (error) {
+
+      console.error(
+        "SAVE EDIT ERROR:",
+        error
+      );
+
+      if (message) {
+
+        message.textContent =
+          "❌ " +
+          (
+            error?.message ||
+            "Không thể lưu."
+          );
+
+        message.style.color =
+          "#dc2626";
+      }
+
+    } finally {
+
+      if (saveBtn) {
+        saveBtn.disabled = false;
+      }
+    }
+  }
+
+  // ==========================================================
+  // CLOSE EDIT MODAL
+  // ==========================================================
+
+  function closeEditModal() {
+
+    const modal =
+      document.getElementById(
+        "dynamicEditModal"
+      );
+
+    if (modal) {
+      modal.remove();
     }
 
     editingReportId =
-        report.id;
-
-    openEditModal(report);
-};
-
-
-// =====================================================
-// EDIT MODAL
-// =====================================================
-
-function openEditModal(report) {
-
-    closeExistingEditModal();
-
-    const modal =
-        document.createElement("div");
-
-    modal.id =
-        "managerEditModal";
-
-    modal.innerHTML = `
-        <div class="manager-modal-overlay">
-
-            <div class="manager-modal">
-
-                <h3>✏️ Sửa báo cáo</h3>
-
-                <label>Khách hàng</label>
-
-                <input
-                    id="editCustomerName"
-                    value="${escapeAttribute(
-                        getField(
-                            report,
-                            [
-                                "customer_name",
-                                "khach_hang",
-                                "ho_ten",
-                                "name"
-                            ]
-                        )
-                    )}"
-                >
-
-                <label>Nội dung</label>
-
-                <textarea
-                    id="editContent"
-                >${escapeHtml(
-                    getField(
-                        report,
-                        [
-                            "content",
-                            "noi_dung",
-                            "note",
-                            "ghi_chu"
-                        ]
-                    )
-                )}</textarea>
-
-                <label>Số tiền</label>
-
-                <input
-                    id="editAmount"
-                    inputmode="decimal"
-                    value="${escapeAttribute(
-                        getField(
-                            report,
-                            [
-                                "amount",
-                                "so_tien"
-                            ]
-                        )
-                    )}"
-                >
-
-                <div class="manager-modal-actions">
-
-                    <button
-                        onclick="saveEditedReport()">
-                        💾 Lưu
-                    </button>
-
-                    <button
-                        onclick="closeExistingEditModal()">
-                        Hủy
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-}
-
-
-window.closeExistingEditModal =
-    function() {
-
-        const modal =
-            document.getElementById(
-                "managerEditModal"
-            );
-
-        if (modal) {
-            modal.remove();
-        }
-
-        editingReportId = null;
-    };
-
-
-// =====================================================
-// SAVE EDIT
-// =====================================================
-
-window.saveEditedReport =
-    async function() {
-
-        if (!editingReportId) {
-            return;
-        }
-
-        const customerName =
-            document.getElementById(
-                "editCustomerName"
-            )?.value.trim();
-
-        const content =
-            document.getElementById(
-                "editContent"
-            )?.value.trim();
-
-        const amountRaw =
-            document.getElementById(
-                "editAmount"
-            )?.value;
-
-        const amount =
-            parseMoney(amountRaw);
-
-        const oldReport =
-            reports.find(
-                r =>
-                    String(r.id) ===
-                    String(editingReportId)
-            );
-
-        if (!oldReport) {
-            return;
-        }
-
-        const updateData = {};
-
-        // ---------------------------------------------
-        // Chỉ cập nhật những cột thực sự tồn tại
-        // ---------------------------------------------
-
-        setExistingField(
-            updateData,
-            oldReport,
-            [
-                "customer_name",
-                "khach_hang",
-                "ho_ten",
-                "name"
-            ],
-            customerName
-        );
-
-        setExistingField(
-            updateData,
-            oldReport,
-            [
-                "content",
-                "noi_dung",
-                "note",
-                "ghi_chu"
-            ],
-            content
-        );
-
-        setExistingField(
-            updateData,
-            oldReport,
-            [
-                "amount",
-                "so_tien"
-            ],
-            amount
-        );
-
-        try {
-
-            const {
-                error
-            } = await client
-                .from("bao_cao_ngay")
-                .update(updateData)
-                .eq(
-                    "id",
-                    editingReportId
-                );
-
-            if (error) {
-                throw error;
-            }
-
-            closeExistingEditModal();
-
-            await loadReports();
-
-            alert(
-                "✅ Đã cập nhật báo cáo."
-            );
-
-        } catch (err) {
-
-            console.error(err);
-
-            alert(
-                "❌ Cập nhật thất bại:\n" +
-                getErrorMessage(err)
-            );
-        }
-    };
-
-
-// =====================================================
-// DELETE
-// =====================================================
-
-window.deleteReport =
-    async function(id) {
-
-        const ok =
-            confirm(
-                "Bạn có chắc muốn xóa báo cáo này?"
-            );
-
-        if (!ok) {
-            return;
-        }
-
-        try {
-
-            const {
-                error
-            } = await client
-                .from("bao_cao_ngay")
-                .delete()
-                .eq(
-                    "id",
-                    id
-                );
-
-            if (error) {
-                throw error;
-            }
-
-            await loadReports();
-
-            alert(
-                "✅ Đã xóa báo cáo."
-            );
-
-        } catch (err) {
-
-            console.error(err);
-
-            alert(
-                "❌ Xóa thất bại:\n" +
-                getErrorMessage(err)
-            );
-        }
-    };
-
-
-// =====================================================
-// XUẤT EXCEL
-// =====================================================
-
-async function exportExcel() {
-
-    if (!exportBtn) {
-        return;
+      null;
+  }
+
+  // ==========================================================
+  // DELETE
+  // ==========================================================
+
+  async function deleteReport(report) {
+
+    const name =
+      getReportUser(report);
+
+    const customer =
+      report.customer_name ??
+      report.ten_khach_hang ??
+      "";
+
+    const confirmed =
+      confirm(
+        `Bạn có chắc muốn xóa báo cáo này?\n\n` +
+        `Cán bộ: ${name}\n` +
+        `Khách hàng: ${customer}`
+      );
+
+    if (!confirmed) {
+      return;
     }
 
-    exportBtn.addEventListener(
-        "click",
-        () => {
+    try {
 
-            if (
-                !filteredReports ||
-                filteredReports.length === 0
-            ) {
+      showManagerMessage(
+        "⏳ Đang xóa...",
+        "info"
+      );
 
-                alert(
-                    "Không có dữ liệu để xuất."
-                );
+      const {
+        error
+      } =
+        await client
+          .from("bao_cao_ngay")
+          .delete()
+          .eq(
+            "id",
+            report.id
+          );
 
-                return;
-            }
+      if (error) {
+        throw error;
+      }
 
-            const data =
-                filteredReports.map(
-                    (r, index) => ({
+      await loadReports();
 
-                        STT:
-                            index + 1,
+      showManagerMessage(
+        "✅ Đã xóa báo cáo.",
+        "success"
+      );
 
-                        "Người báo cáo":
-                            getUserName(r),
+    } catch (error) {
 
-                        "Ngày":
-                            getReportDate(r),
+      console.error(
+        "DELETE ERROR:",
+        error
+      );
 
-                        "Khách hàng":
-                            getField(
-                                r,
-                                [
-                                    "customer_name",
-                                    "khach_hang",
-                                    "ho_ten",
-                                    "name"
-                                ]
-                            ),
+      showManagerMessage(
+        "❌ Xóa thất bại: " +
+        (
+          error?.message ||
+          "Lỗi"
+        ),
+        "error"
+      );
+    }
+  }
 
-                        "Nội dung":
-                            getField(
-                                r,
-                                [
-                                    "content",
-                                    "noi_dung",
-                                    "note",
-                                    "ghi_chu"
-                                ]
-                            ),
+  // ==========================================================
+  // EXPORT EXCEL
+  // ==========================================================
 
-                        "Số tiền":
-                            parseMoney(
-                                r.amount
-                            ),
+  function exportExcel() {
 
-                        "Giờ":
-                            getField(
-                                r,
-                                [
-                                    "time",
-                                    "gio",
-                                    "created_time"
-                                ]
-                            )
-                    })
-                );
+    if (
+      typeof XLSX ===
+      "undefined"
+    ) {
 
-            const worksheet =
-                XLSX.utils.json_to_sheet(
-                    data
-                );
+      alert(
+        "❌ Chưa tải được thư viện Excel."
+      );
 
-            const workbook =
-                XLSX.utils.book_new();
+      return;
+    }
 
-            XLSX.utils.book_append_sheet(
-                workbook,
-                worksheet,
-                "BaoCao"
-            );
+    if (
+      !filteredReports.length
+    ) {
 
-            XLSX.writeFile(
-                workbook,
-                "Bao_Cao_Ngay.xlsx"
-            );
-        }
-    );
-}
+      alert(
+        "Không có dữ liệu để xuất Excel."
+      );
 
+      return;
+    }
 
-// =====================================================
-// DANH SÁCH NGƯỜI ĐÃ NỘP
-// =====================================================
+    try {
 
-async function showSubmittedUsers() {
+      const rows =
+        filteredReports.map(
+          report => {
+
+            return {
+              "Cán bộ":
+                getReportUser(
+                  report
+                ),
+
+              "Ngày field":
+                formatDisplayDate(
+                  getReportDate(
+                    report
+                  )
+                ),
+
+              "Số CIF":
+                report.cif ??
+                report.so_cif ??
+                report.cif_number ??
+                "",
+
+              "Tên khách hàng":
+                report.customer_name ??
+                report.ten_khach_hang ??
+                report.customer ??
+                "",
+
+              "Kết quả":
+                report.result ??
+                report.ket_qua ??
+                "",
+
+              "Kết nối":
+                report.connection ??
+                report.ket_noi ??
+                "",
+
+              "Kết quả chi tiết":
+                report.detail_result ??
+                report.ket_qua_chi_tiet ??
+                report.result_detail ??
+                "",
+
+              "Dự thu":
+                getReportAmount(
+                  report
+                ),
+
+              "Hướng tác động tiếp theo":
+                report.next_action ??
+                report.huong_tac_dong_tiep_theo ??
+                report.huong_tac_dong ??
+                ""
+            };
+          }
+        );
+
+      const worksheet =
+        XLSX.utils.json_to_sheet(
+          rows
+        );
+
+      const workbook =
+        XLSX.utils.book_new();
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        worksheet,
+        "BaoCaoNgay"
+      );
+
+      const now =
+        new Date();
+
+      const filename =
+        `BaoCaoNgay_${now.getFullYear()}-` +
+        `${String(
+          now.getMonth() + 1
+        ).padStart(2, "0")}-` +
+        `${String(
+          now.getDate()
+        ).padStart(2, "0")}.xlsx`;
+
+      XLSX.writeFile(
+        workbook,
+        filename
+      );
+
+      showManagerMessage(
+        "✅ Đã xuất Excel.",
+        "success"
+      );
+
+    } catch (error) {
+
+      console.error(
+        "EXPORT ERROR:",
+        error
+      );
+
+      alert(
+        "❌ Xuất Excel thất bại."
+      );
+    }
+  }
+
+  // ==========================================================
+  // SUBMITTED USERS COUNT
+  // ==========================================================
+
+  function updateSubmittedUserCount() {
 
     const users =
-        new Map();
+      new Set();
 
-    reports.forEach(
-        report => {
+    allReports.forEach(
+      report => {
 
-            const userId =
-                report.user_id ||
-                report.username ||
-                report.user_name ||
-                report.email ||
-                report.user_email;
+        const user =
+          getReportUser(
+            report
+          ).trim();
 
-            if (!userId) {
-                return;
-            }
-
-            if (!users.has(userId)) {
-
-                users.set(
-                    userId,
-                    {
-                        user: getUserName(report),
-                        count: 0
-                    }
-                );
-            }
-
-            users.get(userId).count++;
+        if (user) {
+          users.add(
+            user
+          );
         }
+      }
     );
 
-    let html = `
-        <div class="submitted-users-modal">
-            <div class="submitted-users-box">
+    if (submittedUserCount) {
 
-                <h3>
-                    👥 Người đã nộp báo cáo
-                </h3>
+      submittedUserCount.textContent =
+        users.size;
+    }
+  }
 
-                <div class="submitted-users-list">
-    `;
+  // ==========================================================
+  // SHOW SUBMITTED USERS
+  // ==========================================================
 
-    if (users.size === 0) {
+  function showSubmittedUsers() {
 
-        html += `
-            <p>Chưa có dữ liệu.</p>
-        `;
+    const users =
+      Array.from(
+        new Set(
+          allReports
+            .map(
+              report =>
+                getReportUser(
+                  report
+                ).trim()
+            )
+            .filter(Boolean)
+        )
+      ).sort(
+        (a, b) =>
+          a.localeCompare(
+            b,
+            "vi"
+          )
+      );
+
+    const overlay =
+      document.createElement("div");
+
+    overlay.className =
+      "user-modal-overlay";
+
+    overlay.id =
+      "submittedUsersModal";
+
+    let content = "";
+
+    if (!users.length) {
+
+      content = `
+        <div class="no-user">
+          Chưa có cán bộ nào nhập báo cáo.
+        </div>
+      `;
 
     } else {
 
-        Array.from(
-            users.values()
-        ).forEach(
-            item => {
+      content =
+        users
+          .map(
+            (
+              user,
+              index
+            ) => {
 
-                html += `
-                    <div class="submitted-user-item">
+              return `
+                <div class="submitted-user-item">
 
-                        <span>
-                            ${escapeHtml(
-                                item.user
-                            )}
-                        </span>
+                  <div
+                    class="submitted-user-number"
+                  >
+                    ${index + 1}
+                  </div>
 
-                        <b>
-                            ${item.count}
-                            báo cáo
-                        </b>
+                  <div>
+                    ${escapeHtml(user)}
+                  </div>
 
-                    </div>
-                `;
+                </div>
+              `;
             }
-        );
+          )
+          .join("");
     }
 
-    html += `
-                </div>
+    overlay.innerHTML = `
 
-                <button
-                    onclick="closeSubmittedUsersModal()">
-                    Đóng
-                </button>
+      <div class="user-modal">
 
-            </div>
+        <div class="user-modal-header">
+
+          <h2>
+            👥 CÁN BỘ ĐÃ NHẬP BÁO CÁO
+          </h2>
+
+          <button
+            class="user-modal-close"
+            id="submittedUsersClose"
+          >
+            ×
+          </button>
+
         </div>
+
+        <div class="user-modal-body">
+
+          ${content}
+
+        </div>
+
+      </div>
     `;
 
-    const modal =
-        document.createElement("div");
+    document.body.appendChild(
+      overlay
+    );
 
-    modal.id =
-        "submittedUsersModal";
+    const closeBtn =
+      document.getElementById(
+        "submittedUsersClose"
+      );
 
-    modal.innerHTML =
-        html;
+    if (closeBtn) {
 
-    document.body.appendChild(modal);
-}
+      closeBtn.addEventListener(
+        "click",
+        function () {
 
-
-window.closeSubmittedUsersModal =
-    function() {
-
-        const modal =
-            document.getElementById(
-                "submittedUsersModal"
-            );
-
-        if (modal) {
-            modal.remove();
+          overlay.remove();
         }
-    };
-
-
-// =====================================================
-// PHÂN QUYỀN
-// =====================================================
-
-async function openPermissionModal() {
-
-    const allowed =
-        await checkManagerPermission();
-
-    if (!allowed) {
-
-        alert(
-            "❌ Tài khoản không có quyền."
-        );
-
-        return;
+      );
     }
 
-    closeExistingPermissionModal();
+    overlay.addEventListener(
+      "click",
+      function (e) {
 
-    const modal =
-        document.createElement("div");
+        if (
+          e.target === overlay
+        ) {
 
-    modal.id =
-        "permissionModal";
+          overlay.remove();
+        }
+      }
+    );
+  }
 
-    modal.innerHTML = `
+  // ==========================================================
+  // PERMISSION MODAL
+  // ==========================================================
 
-        <div class="manager-modal-overlay">
+  async function openPermissionModal() {
 
-            <div class="manager-modal permission-modal">
+    const overlay =
+      document.createElement("div");
 
-                <h3>
-                    🔐 Phân quyền quản lý
-                </h3>
+    overlay.className =
+      "permission-modal-overlay";
 
-                <p style="font-size:13px;color:#666">
-                    Cấp quyền đăng nhập trang quản lý
-                    cho User hoặc Email.
-                </p>
+    overlay.id =
+      "permissionModal";
 
-                <label>
-                    User hoặc Email
-                </label>
+    overlay.innerHTML = `
 
-                <input
-                    id="permissionIdentifier"
-                    type="text"
-                    placeholder="Ví dụ: hoinv12 hoặc email@gmail.com"
-                    autocomplete="off"
-                >
+      <div class="permission-modal">
 
-                <label>
-                    Mật khẩu
-                </label>
+        <div class="permission-header">
 
-                <input
-                    id="permissionPassword"
-                    type="password"
-                    placeholder="Nhập mật khẩu"
-                    autocomplete="new-password"
-                >
+          <h2>
+            🔐 PHÂN QUYỀN QUẢN LÝ
+          </h2>
 
-                <button
-                    id="grantPermissionBtn"
-                    class="permission-primary-btn">
-                    ➕ Cấp quyền
-                </button>
-
-                <hr>
-
-                <h4>
-                    👥 Tài khoản đã được cấp quyền
-                </h4>
-
-                <div
-                    id="permissionList"
-                    style="margin-top:10px">
-                    Đang tải...
-                </div>
-
-                <button
-                    onclick="closeExistingPermissionModal()">
-                    Đóng
-                </button>
-
-            </div>
+          <button
+            class="permission-close"
+            id="permissionClose"
+          >
+            ×
+          </button>
 
         </div>
+
+        <div class="permission-body">
+
+          <div class="permission-info">
+
+            Tại đây bạn có thể cấp quyền
+            quản lý cho cán bộ.
+            <br><br>
+
+            Người được cấp quyền có thể
+            đăng nhập trang quản lý và
+            sử dụng đầy đủ chức năng
+            giống tài khoản quản lý hiện tại.
+
+            <br><br>
+
+            <b>
+              Mật khẩu được Supabase Auth
+              quản lý, không lưu trực tiếp
+              trong bảng phân quyền.
+            </b>
+
+          </div>
+
+          <div class="permission-form">
+
+            <label>
+              User hoặc Email
+            </label>
+
+            <input
+              id="permissionIdentifier"
+              type="text"
+              placeholder="Ví dụ: hoinv12 hoặc abc@gmail.com"
+              autocomplete="off"
+            >
+
+            <label>
+              Mật khẩu
+            </label>
+
+            <input
+              id="permissionPassword"
+              type="password"
+              placeholder="Nhập mật khẩu"
+              autocomplete="new-password"
+            >
+
+            <button
+              id="grantPermissionBtn"
+              class="green"
+            >
+              ✅ CẤP QUYỀN
+            </button>
+
+          </div>
+
+          <div
+            id="permissionMessage"
+            style="
+              margin-top:12px;
+              text-align:center;
+              font-weight:bold;
+            "
+          ></div>
+
+          <div class="permission-list-title">
+            👥 Tài khoản đang được cấp quyền
+          </div>
+
+          <div id="permissionList">
+
+            <div class="permission-empty">
+              ⏳ Đang tải...
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
     `;
 
-    document.body.appendChild(modal);
+    document.body.appendChild(
+      overlay
+    );
 
-    document
-        .getElementById(
-            "grantPermissionBtn"
-        )
-        .addEventListener(
-            "click",
-            grantPermission
-        );
+    const closeBtn =
+      document.getElementById(
+        "permissionClose"
+      );
+
+    if (closeBtn) {
+
+      closeBtn.addEventListener(
+        "click",
+        function () {
+
+          overlay.remove();
+        }
+      );
+    }
+
+    overlay.addEventListener(
+      "click",
+      function (e) {
+
+        if (
+          e.target === overlay
+        ) {
+
+          overlay.remove();
+        }
+      }
+    );
+
+    const grantBtn =
+      document.getElementById(
+        "grantPermissionBtn"
+      );
+
+    if (grantBtn) {
+
+      grantBtn.addEventListener(
+        "click",
+        grantPermission
+      );
+    }
 
     await loadPermissionList();
-}
+  }
 
+  // ==========================================================
+  // GRANT PERMISSION
+  // ==========================================================
 
-window.openPermissionModal =
-    openPermissionModal;
+  async function grantPermission() {
 
+    const identifierInput =
+      document.getElementById(
+        "permissionIdentifier"
+      );
 
-// =====================================================
-// CLOSE PERMISSION
-// =====================================================
+    const passwordInput =
+      document.getElementById(
+        "permissionPassword"
+      );
 
-window.closeExistingPermissionModal =
-    function() {
+    const message =
+      document.getElementById(
+        "permissionMessage"
+      );
 
-        const modal =
-            document.getElementById(
-                "permissionModal"
+    const button =
+      document.getElementById(
+        "grantPermissionBtn"
+      );
+
+    const identifier =
+      (
+        identifierInput?.value ||
+        ""
+      ).trim();
+
+    const pass =
+      passwordInput?.value ||
+      "";
+
+    if (!identifier) {
+
+      setPermissionMessage(
+        "❌ Vui lòng nhập User hoặc Email.",
+        "error"
+      );
+
+      return;
+    }
+
+    if (!pass) {
+
+      setPermissionMessage(
+        "❌ Vui lòng nhập mật khẩu.",
+        "error"
+      );
+
+      return;
+    }
+
+    if (button) {
+      button.disabled = true;
+    }
+
+    setPermissionMessage(
+      "⏳ Đang cấp quyền...",
+      "info"
+    );
+
+    try {
+
+      const result =
+        await callManagerFunction(
+          "grant",
+          {
+            identifier,
+            password: pass
+          },
+          true
+        );
+
+      if (!result.success) {
+
+        throw new Error(
+          result.error ||
+          "Không thể cấp quyền."
+        );
+      }
+
+      if (passwordInput) {
+        passwordInput.value = "";
+      }
+
+      setPermissionMessage(
+        "✅ Đã cấp quyền thành công.",
+        "success"
+      );
+
+      await loadPermissionList();
+
+    } catch (error) {
+
+      console.error(
+        "GRANT PERMISSION ERROR:",
+        error
+      );
+
+      setPermissionMessage(
+        "❌ " +
+        (
+          error?.message ||
+          "Cấp quyền thất bại."
+        ),
+        "error"
+      );
+
+    } finally {
+
+      if (button) {
+        button.disabled = false;
+      }
+    }
+  }
+
+  // ==========================================================
+  // LOAD PERMISSION LIST
+  // ==========================================================
+
+  async function loadPermissionList() {
+
+    const list =
+      document.getElementById(
+        "permissionList"
+      );
+
+    if (!list) {
+      return;
+    }
+
+    list.innerHTML = `
+      <div class="permission-empty">
+        ⏳ Đang tải...
+      </div>
+    `;
+
+    try {
+
+      const result =
+        await callManagerFunction(
+          "list",
+          {},
+          true
+        );
+
+      if (!result.success) {
+
+        throw new Error(
+          result.error ||
+          "Không thể tải danh sách."
+        );
+      }
+
+      const users =
+        Array.isArray(
+          result.users
+        )
+          ? result.users
+          : [];
+
+      if (!users.length) {
+
+        list.innerHTML = `
+          <div class="permission-empty">
+            Chưa có tài khoản được cấp quyền.
+          </div>
+        `;
+
+        return;
+      }
+
+      list.innerHTML =
+        users
+          .map(
+            user => {
+
+              const identifier =
+                user.display_identifier ||
+                user.auth_email ||
+                user.email ||
+                "";
+
+              const enabled =
+                user.enabled === true;
+
+              const isCurrent =
+                currentUser &&
+                user.auth_user_id ===
+                currentUser.id;
+
+              return `
+
+                <div class="permission-user">
+
+                  <div class="permission-user-info">
+
+                    <div
+                      class="permission-user-name"
+                    >
+                      ${escapeHtml(
+                        identifier
+                      )}
+                    </div>
+
+                    <div
+                      style="
+                        font-size:12px;
+                        color:#64748b;
+                        margin-top:2px;
+                        word-break:break-all;
+                      "
+                    >
+                      ${escapeHtml(
+                        user.auth_email ||
+                        user.email ||
+                        ""
+                      )}
+                    </div>
+
+                    <div
+                      class="permission-user-status"
+                      style="
+                        color:${
+                          enabled
+                            ? "#16a34a"
+                            : "#dc2626"
+                        };
+                      "
+                    >
+                      ${
+                        enabled
+                          ? "● Đang hoạt động"
+                          : "● Đã khóa"
+                      }
+                    </div>
+
+                  </div>
+
+                  ${
+                    isCurrent
+                      ? `
+                        <span
+                          style="
+                            color:#2563eb;
+                            font-size:12px;
+                            font-weight:900;
+                            white-space:nowrap;
+                          "
+                        >
+                          Tài khoản của bạn
+                        </span>
+                      `
+                      : `
+                        <button
+                          class="revoke-btn"
+                          data-user-id="${escapeAttribute(
+                            user.auth_user_id
+                          )}"
+                          data-identifier="${escapeAttribute(
+                            identifier
+                          )}"
+                        >
+                          🚫 Thu hồi
+                        </button>
+                      `
+                  }
+
+                </div>
+              `;
+            }
+          )
+          .join("");
+
+      // Gắn event thu hồi
+      list
+        .querySelectorAll(
+          ".revoke-btn"
+        )
+        .forEach(
+          button => {
+
+            button.addEventListener(
+              "click",
+              function () {
+
+                revokePermission(
+                  button.dataset.userId,
+                  button.dataset.identifier
+                );
+              }
             );
+          }
+        );
 
-        if (modal) {
-            modal.remove();
-        }
-    };
+    } catch (error) {
 
+      console.error(
+        "LOAD PERMISSION LIST ERROR:",
+        error
+      );
 
-// =====================================================
-// EDGE FUNCTION HELPER
-// =====================================================
+      list.innerHTML = `
+        <div
+          class="permission-empty"
+          style="color:#dc2626;"
+        >
+          ❌ ${
+            escapeHtml(
+              error?.message ||
+              "Không tải được danh sách."
+            )
+          }
+        </div>
+      `;
+    }
+  }
 
-async function callPermissionFunction(
+  // ==========================================================
+  // REVOKE
+  // ==========================================================
+
+  async function revokePermission(
+    userId,
+    identifier
+  ) {
+
+    if (!userId) {
+      return;
+    }
+
+    if (
+      currentUser &&
+      userId === currentUser.id
+    ) {
+
+      alert(
+        "❌ Không thể thu hồi chính tài khoản đang đăng nhập."
+      );
+
+      return;
+    }
+
+    const confirmed =
+      confirm(
+        `Bạn có chắc muốn thu hồi quyền của:\n\n${identifier || userId}?`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+
+      const result =
+        await callManagerFunction(
+          "revoke",
+          {
+            auth_user_id: userId
+          },
+          true
+        );
+
+      if (!result.success) {
+
+        throw new Error(
+          result.error ||
+          "Không thể thu hồi."
+        );
+      }
+
+      alert(
+        "✅ Đã thu hồi quyền."
+      );
+
+      await loadPermissionList();
+
+    } catch (error) {
+
+      console.error(
+        "REVOKE ERROR:",
+        error
+      );
+
+      alert(
+        "❌ Thu hồi thất bại:\n" +
+        (
+          error?.message ||
+          "Lỗi"
+        )
+      );
+    }
+  }
+
+  // ==========================================================
+  // EDGE FUNCTION
+  // ==========================================================
+
+  async function callManagerFunction(
     action,
-    payload = {},
-    requireAuth = true
-) {
-
-    const url =
-        `${window.SUPABASE_URL}/functions/v1/manager-permission`;
+    body = {},
+    authenticated = true
+  ) {
 
     const headers = {
-
-        "Content-Type":
-            "application/json"
+      "Content-Type":
+        "application/json"
     };
 
-    if (requireAuth) {
+    // ======================================================
+    // Lấy access token hiện tại
+    // ======================================================
 
-        const {
-            data
-        } = await client.auth.getSession();
+    if (authenticated) {
 
-        const session =
-            data?.session;
+      const {
+        data
+      } =
+        await client.auth.getSession();
 
-        if (!session) {
+      const session =
+        data?.session;
 
-            throw new Error(
-                "Phiên đăng nhập đã hết hạn."
-            );
-        }
+      if (!session?.access_token) {
 
-        headers.Authorization =
-            `Bearer ${session.access_token}`;
+        throw new Error(
+          "Phiên đăng nhập đã hết hạn."
+        );
+      }
+
+      headers.Authorization =
+        `Bearer ${session.access_token}`;
     }
 
     const response =
-        await fetch(
-            url,
-            {
-                method: "POST",
-                headers,
-                body: JSON.stringify({
-                    action,
-                    ...payload
-                })
-            }
-        );
+      await fetch(
+        `${window.SUPABASE_URL}/functions/v1/manager-permission`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            action,
+            ...body
+          })
+        }
+      );
 
     let result = null;
 
     try {
-        result =
-            await response.json();
+
+      result =
+        await response.json();
+
     } catch {
-        result = {};
+
+      result = null;
     }
 
     if (!response.ok) {
 
-        throw new Error(
-            result?.error ||
-            result?.message ||
-            `HTTP ${response.status}`
-        );
+      throw new Error(
+        result?.error ||
+        result?.message ||
+        `HTTP ${response.status}`
+      );
     }
-
-    if (result?.error) {
-
-        throw new Error(
-            result.error
-        );
-    }
-
-    return result;
-}
-
-
-// =====================================================
-// CẤP QUYỀN
-// =====================================================
-
-async function grantPermission() {
-
-    const identifier =
-        document
-            .getElementById(
-                "permissionIdentifier"
-            )
-            ?.value
-            .trim();
-
-    const pwd =
-        document
-            .getElementById(
-                "permissionPassword"
-            )
-            ?.value;
-
-    if (!identifier) {
-
-        alert(
-            "Vui lòng nhập User hoặc Email."
-        );
-
-        return;
-    }
-
-    if (!pwd) {
-
-        alert(
-            "Vui lòng nhập mật khẩu."
-        );
-
-        return;
-    }
-
-    const btn =
-        document.getElementById(
-            "grantPermissionBtn"
-        );
-
-    if (btn) {
-
-        btn.disabled = true;
-
-        btn.textContent =
-            "⏳ Đang cấp quyền...";
-    }
-
-    try {
-
-        await callPermissionFunction(
-            "grant",
-            {
-                identifier,
-                password: pwd
-            },
-            true
-        );
-
-        // Xóa mật khẩu khỏi ô nhập ngay
-        const passwordInput =
-            document.getElementById(
-                "permissionPassword"
-            );
-
-        if (passwordInput) {
-            passwordInput.value = "";
-        }
-
-        alert(
-            "✅ Cấp quyền thành công!"
-        );
-
-        await loadPermissionList();
-
-    } catch (err) {
-
-        console.error(err);
-
-        alert(
-            "❌ Cấp quyền thất bại:\n" +
-            getErrorMessage(err)
-        );
-
-    } finally {
-
-        if (btn) {
-
-            btn.disabled = false;
-
-            btn.textContent =
-                "➕ Cấp quyền";
-        }
-    }
-}
-
-
-// =====================================================
-// LOAD PERMISSION LIST
-// =====================================================
-
-async function loadPermissionList() {
-
-    const box =
-        document.getElementById(
-            "permissionList"
-        );
-
-    if (!box) {
-        return;
-    }
-
-    box.innerHTML =
-        "⏳ Đang tải...";
-
-    try {
-
-        const result =
-            await callPermissionFunction(
-                "list",
-                {},
-                true
-            );
-
-        const users =
-            Array.isArray(
-                result?.users
-            )
-                ? result.users
-                : [];
-
-        if (users.length === 0) {
-
-            box.innerHTML =
-                `<p>Chưa có tài khoản nào.</p>`;
-
-            return;
-        }
-
-        box.innerHTML = "";
-
-        users.forEach(
-            user => {
-
-                const item =
-                    document.createElement(
-                        "div"
-                    );
-
-                item.className =
-                    "permission-user-item";
-
-                const display =
-                    user.display_identifier ||
-                    user.auth_email ||
-                    "Không xác định";
-
-                const email =
-                    user.auth_email || "";
-
-                const isInternal =
-                    email.endsWith(
-                        "@manager.local"
-                    );
-
-                item.innerHTML = `
-
-                    <div>
-
-                        <strong>
-                            ${escapeHtml(
-                                display
-                            )}
-                        </strong>
-
-                        ${
-                            email &&
-                            !isInternal
-                                ? `
-                                    <div
-                                      style="font-size:12px;color:#777">
-                                      ${escapeHtml(
-                                          email
-                                      )}
-                                    </div>
-                                  `
-                                : ""
-                        }
-
-                        <div
-                            style="font-size:12px;color:${
-                                user.enabled
-                                    ? "#16803c"
-                                    : "#999"
-                            }">
-
-                            ${
-                                user.enabled
-                                    ? "● Đang hoạt động"
-                                    : "● Đã thu hồi"
-                            }
-
-                        </div>
-
-                    </div>
-
-                    ${
-                        user.enabled
-                            ? `
-                                <button
-                                    class="permission-revoke-btn"
-                                    onclick="revokePermission('${user.auth_user_id}')">
-                                    🚫 Thu hồi
-                                </button>
-                              `
-                            : `
-                                <span>
-                                    Đã thu hồi
-                                </span>
-                              `
-                    }
-                `;
-
-                box.appendChild(item);
-            }
-        );
-
-    } catch (err) {
-
-        console.error(err);
-
-        box.innerHTML = `
-            <p style="color:red">
-                ❌ ${escapeHtml(
-                    getErrorMessage(err)
-                )}
-            </p>
-        `;
-    }
-}
-
-
-// =====================================================
-// THU HỒI QUYỀN
-// =====================================================
-
-window.revokePermission =
-    async function(authUserId) {
-
-        if (!authUserId) {
-            return;
-        }
-
-        const ok =
-            confirm(
-                "Bạn có chắc muốn thu hồi quyền tài khoản này?"
-            );
-
-        if (!ok) {
-            return;
-        }
-
-        try {
-
-            await callPermissionFunction(
-                "revoke",
-                {
-                    auth_user_id:
-                        authUserId
-                },
-                true
-            );
-
-            alert(
-                "✅ Đã thu hồi quyền."
-            );
-
-            await loadPermissionList();
-
-        } catch (err) {
-
-            console.error(err);
-
-            alert(
-                "❌ Thu hồi thất bại:\n" +
-                getErrorMessage(err)
-            );
-        }
-    };
-
-
-// =====================================================
-// HELPER
-// =====================================================
-
-function getUserName(report) {
 
     return (
-        report.username ||
-        report.user_name ||
-        report.full_name ||
-        report.ho_ten ||
-        report.email ||
-        report.user_email ||
-        report.user_id ||
-        "Không xác định"
+      result || {
+        success: true
+      }
     );
-}
+  }
 
+  // ==========================================================
+  // LOGOUT
+  // ==========================================================
 
-function getReportDate(report) {
+  async function logout() {
 
-    const value =
-        report.report_date ||
-        report.date ||
-        report.ngay ||
-        report.created_at;
+    closeMenu();
+
+    try {
+
+      await client.auth.signOut();
+
+    } catch (error) {
+
+      console.error(
+        "LOGOUT ERROR:",
+        error
+      );
+    }
+
+    currentUser = null;
+
+    allReports = [];
+
+    filteredReports = [];
+
+    currentPage = 1;
+
+    showLogin();
+
+    if (loginId) {
+      loginId.value = "";
+    }
+
+    if (password) {
+      password.value = "";
+    }
+
+    setLoginMessage(
+      "✅ Đã đăng xuất.",
+      "success"
+    );
+  }
+
+  // ==========================================================
+  // MESSAGE
+  // ==========================================================
+
+  function setLoginMessage(
+    text,
+    type = "info"
+  ) {
+
+    if (!loginMessage) {
+      return;
+    }
+
+    loginMessage.textContent =
+      text;
+
+    loginMessage.style.color =
+      getMessageColor(type);
+  }
+
+  function setPermissionMessage(
+    text,
+    type = "info"
+  ) {
+
+    const element =
+      document.getElementById(
+        "permissionMessage"
+      );
+
+    if (!element) {
+      return;
+    }
+
+    element.textContent =
+      text;
+
+    element.style.color =
+      getMessageColor(type);
+  }
+
+  function showManagerMessage(
+    text,
+    type = "info"
+  ) {
+
+    if (!managerMessage) {
+      return;
+    }
+
+    managerMessage.textContent =
+      text;
+
+    managerMessage.style.color =
+      getMessageColor(type);
+  }
+
+  function getMessageColor(type) {
+
+    if (
+      type === "error"
+    ) {
+      return "#dc2626";
+    }
+
+    if (
+      type === "success"
+    ) {
+      return "#16a34a";
+    }
+
+    return "#2563eb";
+  }
+
+  // ==========================================================
+  // MONEY
+  // ==========================================================
+
+  function formatMoney(value) {
+
+    const number =
+      Number(value) || 0;
+
+    return (
+      number.toLocaleString(
+        "vi-VN"
+      ) +
+      " đ"
+    );
+  }
+
+  // ==========================================================
+  // DATE DISPLAY
+  // ==========================================================
+
+  function formatDisplayDate(
+    value
+  ) {
 
     if (!value) {
-        return "";
+      return "";
     }
 
-    const d =
-        new Date(value);
-
-    if (isNaN(d.getTime())) {
-
-        return String(value)
-            .substring(0, 10);
-    }
-
-    return [
-        d.getFullYear(),
-        String(
-            d.getMonth() + 1
-        ).padStart(2, "0"),
-        String(
-            d.getDate()
-        ).padStart(2, "0")
-    ].join("-");
-}
-
-
-function getField(
-    obj,
-    fields
-) {
-
-    for (
-        const field of fields
-    ) {
-
-        if (
-            obj[field] !== undefined &&
-            obj[field] !== null
-        ) {
-
-            return String(
-                obj[field]
-            );
-        }
-    }
-
-    return "";
-}
-
-
-function setExistingField(
-    target,
-    source,
-    fields,
-    value
-) {
-
-    for (
-        const field of fields
-    ) {
-
-        if (
-            Object.prototype.hasOwnProperty
-                .call(
-                    source,
-                    field
-                )
-        ) {
-
-            target[field] =
-                value;
-
-            return;
-        }
-    }
-}
-
-
-function parseMoney(value) {
+    const str =
+      String(value);
 
     if (
-        value === null ||
-        value === undefined ||
-        value === ""
+      /^\d{4}-\d{2}-\d{2}$/.test(
+        str
+      )
     ) {
-        return 0;
+
+      const [
+        y,
+        m,
+        d
+      ] =
+        str.split("-");
+
+      return `${d}/${m}/${y}`;
     }
 
-    if (typeof value === "number") {
-        return value;
-    }
-
-    let text =
-        String(value)
-            .trim()
-            .replace(/\s/g, "");
-
-    // 1.000.000
     if (
-        text.includes(".") &&
-        !text.includes(",")
+      /^\d{4}-\d{2}-\d{2}/.test(
+        str
+      )
     ) {
 
-        text =
-            text.replace(
-                /\./g,
-                ""
-            );
-    }
-
-    // 1,000,000
-    if (
-        text.includes(",") &&
-        !text.includes(".")
-    ) {
-
-        text =
-            text.replace(
-                /,/g,
-                ""
-            );
-    }
-
-    // 1.000.000,50
-    if (
-        text.includes(".") &&
-        text.includes(",")
-    ) {
-
-        text =
-            text
-                .replace(
-                    /\./g,
-                    ""
-                )
-                .replace(
-                    ",",
-                    "."
-                );
-    }
-
-    const result =
-        Number(text);
-
-    return isNaN(result)
-        ? 0
-        : result;
-}
-
-
-function formatMoney(value) {
-
-    return new Intl.NumberFormat(
-        "vi-VN"
-    ).format(
-        Number(value) || 0
-    );
-}
-
-
-function escapeHtml(value) {
-
-    return String(
-        value ?? ""
-    )
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
+      const date =
+        str.substring(
+          0,
+          10
         );
-}
 
+      const [
+        y,
+        m,
+        d
+      ] =
+        date.split("-");
 
-function escapeAttribute(value) {
-
-    return escapeHtml(value);
-}
-
-
-function getErrorMessage(err) {
-
-    if (!err) {
-        return "Lỗi không xác định.";
+      return `${d}/${m}/${y}`;
     }
 
-    return (
-        err.message ||
-        err.error_description ||
-        err.error ||
-        String(err)
+    return str;
+  }
+
+  // ==========================================================
+  // ESCAPE HTML
+  // ==========================================================
+
+  function escapeHtml(
+    value
+  ) {
+
+    if (
+      value === null ||
+      value === undefined
+    ) {
+      return "";
+    }
+
+    return String(value)
+      .replace(
+        /&/g,
+        "&amp;"
+      )
+      .replace(
+        /</g,
+        "&lt;"
+      )
+      .replace(
+        />/g,
+        "&gt;"
+      )
+      .replace(
+        /"/g,
+        "&quot;"
+      )
+      .replace(
+        /'/g,
+        "&#039;"
+      );
+  }
+
+  // ==========================================================
+  // ESCAPE ATTRIBUTE
+  // ==========================================================
+
+  function escapeAttribute(
+    value
+  ) {
+
+    return escapeHtml(
+      value
     );
-}
+  }
 
+  // ==========================================================
+  // START
+  // ==========================================================
 
-// =====================================================
-// MESSAGE
-// =====================================================
+  if (
+    document.readyState ===
+    "loading"
+  ) {
 
-function showLoginMessage(message) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      initManager
+    );
 
-    if (loginMessage) {
+  } else {
 
-        loginMessage.textContent =
-            message;
+    initManager();
+  }
 
-        loginMessage.style.display =
-            "block";
-    }
-}
-
-
-function clearLoginMessage() {
-
-    if (loginMessage) {
-
-        loginMessage.textContent =
-            "";
-
-        loginMessage.style.display =
-            "none";
-    }
-}
-
-
-function showManagerMessage(message) {
-
-    if (managerMessage) {
-
-        managerMessage.textContent =
-            message;
-
-        managerMessage.style.display =
-            "block";
-    }
-}
-
-
-function clearManagerMessage() {
-
-    if (managerMessage) {
-
-        managerMessage.textContent =
-            "";
-
-        managerMessage.style.display =
-            "none";
-    }
-}
-
-
-function setLoginLoading(loading) {
-
-    if (!loginBtn) {
-        return;
-    }
-
-    loginBtn.disabled =
-        loading;
-
-    loginBtn.textContent =
-        loading
-            ? "⏳ Đang đăng nhập..."
-            : "Đăng nhập";
-}
+})();
