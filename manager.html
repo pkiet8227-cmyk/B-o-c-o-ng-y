@@ -2,27 +2,38 @@
 <html lang="vi">
 
 <head>
-
   <meta charset="UTF-8">
 
   <meta
     name="viewport"
-    content="width=device-width,initial-scale=1">
+    content="width=device-width,initial-scale=1"
+  >
 
   <title>Quản Lý Báo Cáo Ngày</title>
 
-  <link rel="stylesheet" href="style.css">
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
 
   <style>
+
+    /* ================================
+       MANAGER
+    ================================= */
 
     .manager-card {
       max-width: 1250px;
       margin: auto;
     }
 
+    /* ================================
+       THỐNG KÊ
+    ================================= */
+
     .stats {
       display: grid;
-      grid-template-columns: repeat(2,1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 12px;
       margin: 20px 0;
     }
@@ -45,10 +56,18 @@
       margin-top: 6px;
     }
 
+    /* ================================
+       FILTER
+    ================================= */
+
     .filters {
       display: grid;
       gap: 10px;
     }
+
+    /* ================================
+       TABLE
+    ================================= */
 
     .table-wrap {
       overflow-x: auto;
@@ -73,6 +92,10 @@
       background: #f1f5f9;
     }
 
+    /* ================================
+       BUTTON
+    ================================= */
+
     .danger {
       background: #dc2626;
     }
@@ -95,6 +118,10 @@
       cursor: pointer;
     }
 
+    /* ================================
+       MESSAGE
+    ================================= */
+
     #managerMessage,
     #loginMessage {
       margin-top: 15px;
@@ -102,11 +129,9 @@
       font-weight: bold;
     }
 
-    /*
-      PHÂN TRANG
-      Không cần sửa style.css
-      manager.js sẽ tự tạo nút phân trang
-    */
+    /* ================================
+       PAGINATION
+    ================================= */
 
     #pagination {
       display: flex;
@@ -150,7 +175,112 @@
       cursor: not-allowed;
     }
 
-    @media (max-width:600px) {
+    /* ================================
+       CÁN BỘ ĐÃ NHẬP BÁO CÁO
+    ================================= */
+
+    #showSubmittedUsersBtn {
+      font-weight: 800;
+    }
+
+    #submittedUserCount {
+      font-weight: 900;
+    }
+
+    /* ================================
+       MODAL DANH SÁCH CÁN BỘ
+    ================================= */
+
+    .user-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .55);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      z-index: 99999;
+    }
+
+    .user-modal {
+      width: 100%;
+      max-width: 500px;
+      max-height: 80vh;
+      background: white;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+    }
+
+    .user-modal-header {
+      padding: 18px;
+      background: #f1f5f9;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-modal-header h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .user-modal-close {
+      width: 40px;
+      height: 40px;
+      border: 0;
+      border-radius: 10px;
+      background: #dc2626;
+      color: white;
+      font-size: 22px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .user-modal-body {
+      padding: 15px;
+      max-height: 55vh;
+      overflow-y: auto;
+    }
+
+    .submitted-user-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px;
+      margin-bottom: 8px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .submitted-user-number {
+      min-width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: #2563eb;
+      color: white;
+      font-weight: 800;
+    }
+
+    .no-user {
+      text-align: center;
+      padding: 30px 10px;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    /* ================================
+       MOBILE
+    ================================= */
+
+    @media (max-width: 600px) {
 
       .stats {
         grid-template-columns: 1fr;
@@ -165,6 +295,14 @@
         height: 34px;
       }
 
+      .user-modal-overlay {
+        padding: 12px;
+      }
+
+      .user-modal {
+        max-height: 85vh;
+      }
+
     }
 
   </style>
@@ -174,318 +312,322 @@
 
 <body>
 
-<main class="container manager-card">
+  <main class="container manager-card">
 
-  <section class="card">
+    <section class="card">
 
-    <!-- HEADER -->
+      <!-- ============================
+           HEADER
+      ============================= -->
 
-    <div class="header">
+      <div class="header">
 
-      <div class="logo">
-        📊
-      </div>
-
-      <div>
-
-        <h1>
-          QUẢN LÝ BÁO CÁO NGÀY
-        </h1>
-
-        <p>
-          Theo dõi và xuất báo cáo
-        </p>
-
-      </div>
-
-    </div>
-
-
-    <!-- ========================= -->
-    <!-- LOGIN -->
-    <!-- ========================= -->
-
-    <div id="loginBox">
-
-      <div class="field">
-
-        <label>
-          Email quản lý
-        </label>
-
-        <input
-          id="email"
-          type="email"
-          placeholder="Nhập email">
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          Mật khẩu
-        </label>
-
-        <input
-          id="password"
-          type="password"
-          placeholder="Nhập mật khẩu">
-
-      </div>
-
-
-      <button id="loginBtn">
-
-        🔐 ĐĂNG NHẬP
-
-      </button>
-
-
-      <div id="loginMessage"></div>
-
-    </div>
-
-
-    <!-- ========================= -->
-    <!-- QUẢN LÝ -->
-    <!-- ========================= -->
-
-    <div
-      id="managerBox"
-      style="display:none">
-
-
-      <!-- ĐĂNG XUẤT -->
-
-      <button
-        id="logoutBtn"
-        class="danger">
-
-        🚪 ĐĂNG XUẤT
-
-      </button>
-
-
-      <!-- ========================= -->
-      <!-- THỐNG KÊ -->
-      <!-- ========================= -->
-
-      <div class="stats">
-
-        <div class="stat">
-
-          <div class="stat-title">
-            Tổng báo cáo
-          </div>
-
-          <div
-            class="stat-value"
-            id="totalReports">
-
-            0
-
-          </div>
-
+        <div class="logo">
+          📊
         </div>
 
+        <div>
 
-        <div class="stat">
+          <h1>
+            QUẢN LÝ BÁO CÁO NGÀY
+          </h1>
 
-          <div class="stat-title">
-            Tổng dự thu
-          </div>
-
-          <div
-            class="stat-value"
-            id="totalAmount">
-
-            0 đ
-
-          </div>
+          <p>
+            Theo dõi và xuất báo cáo
+          </p>
 
         </div>
 
       </div>
 
 
-      <!-- ========================= -->
-      <!-- BỘ LỌC -->
-      <!-- ========================= -->
+      <!-- ============================
+           LOGIN
+      ============================= -->
 
-      <div class="section-title">
-        🔎 BỘ LỌC
-      </div>
+      <div id="loginBox">
 
+        <div class="field">
 
-      <div class="filters">
+          <label>
+            Email quản lý
+          </label>
 
-        <label>
-          Lọc theo cán bộ
-        </label>
+          <input
+            id="email"
+            type="email"
+            placeholder="Nhập email"
+            autocomplete="username"
+          >
 
-        <input
-          id="filterUser"
-          type="text"
-          placeholder="Nhập tên cán bộ">
-
-
-        <label>
-          Lọc theo ngày field
-        </label>
-
-        <input
-          id="filterDate"
-          type="date">
+        </div>
 
 
-        <button
-          id="filterBtn"
-          class="gray">
+        <div class="field">
 
-          🔎 LỌC DỮ LIỆU
+          <label>
+            Mật khẩu
+          </label>
 
+          <input
+            id="password"
+            type="password"
+            placeholder="Nhập mật khẩu"
+            autocomplete="current-password"
+          >
+
+        </div>
+
+
+        <button id="loginBtn">
+          🔐 ĐĂNG NHẬP
         </button>
 
 
-        <button
-          id="refreshBtn"
-          class="green">
-
-          🔄 LÀM MỚI
-
-        </button>
-
-
-        <button
-          id="exportBtn">
-
-          📥 XUẤT EXCEL
-
-        </button>
-<button
-  id="showSubmittedUsersBtn"
-  class="gray">
-
-  👥 CÁN BỘ ĐÃ NHẬP BÁO CÁO
-
-</button>
-      </div>
-
-
-      <!-- ========================= -->
-      <!-- BẢNG DỮ LIỆU -->
-      <!-- ========================= -->
-
-      <div class="table-wrap">
-
-        <table>
-
-          <thead>
-
-            <tr>
-
-              <th>
-                Cán bộ
-              </th>
-
-              <th>
-                Ngày field
-              </th>
-
-              <th>
-                Số CIF
-              </th>
-
-              <th>
-                Tên khách hàng
-              </th>
-
-              <th>
-                Kết quả
-              </th>
-
-              <th>
-                Kết nối
-              </th>
-
-              <th>
-                Kết quả chi tiết
-              </th>
-
-              <th>
-                Dự thu
-              </th>
-
-              <th>
-                Hướng tác động tiếp theo
-              </th>
-
-              <th>
-                Xóa
-              </th>
-
-            </tr>
-
-          </thead>
-
-
-          <tbody id="tableBody">
-
-          </tbody>
-
-        </table>
+        <div id="loginMessage"></div>
 
       </div>
 
 
-      <!-- ========================= -->
-      <!-- PHÂN TRANG -->
-      <!-- ========================= -->
+      <!-- ============================
+           MANAGER
+      ============================= -->
 
-      <div id="pagination"></div>
+      <div
+        id="managerBox"
+        style="display:none"
+      >
 
+        <!-- ĐĂNG XUẤT -->
 
-      <!-- ========================= -->
-      <!-- THÔNG BÁO -->
-      <!-- ========================= -->
-
-      <div id="managerMessage"></div>
-
-
-    </div>
-
-  </section>
-
-</main>
+        <button
+          id="logoutBtn"
+          class="danger"
+        >
+          🚪 ĐĂNG XUẤT
+        </button>
 
 
-<!-- ========================= -->
-<!-- SUPABASE -->
-<!-- ========================= -->
+        <!-- ============================
+             STATS
+        ============================= -->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <div class="stats">
+
+          <div class="stat">
+
+            <div class="stat-title">
+              Tổng báo cáo
+            </div>
+
+            <div
+              class="stat-value"
+              id="totalReports"
+            >
+              0
+            </div>
+
+          </div>
 
 
-<!-- ========================= -->
-<!-- XUẤT EXCEL -->
-<!-- ========================= -->
+          <div class="stat">
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+            <div class="stat-title">
+              Tổng dự thu
+            </div>
+
+            <div
+              class="stat-value"
+              id="totalAmount"
+            >
+              0 đ
+            </div>
+
+          </div>
+
+        </div>
 
 
-<!-- ========================= -->
-<!-- CONFIG -->
-<!-- ========================= -->
+        <!-- ============================
+             BỘ LỌC
+        ============================= -->
 
-<script src="config.js"></script>
+        <div class="section-title">
+          🔎 BỘ LỌC
+        </div>
 
 
-<!-- ========================= -->
-<!-- JAVASCRIPT -->
-<!-- ========================= -->
+        <div class="filters">
 
-<script src="manager.js"></script>
+          <label>
+            Lọc theo cán bộ
+          </label>
+
+          <input
+            id="filterUser"
+            type="text"
+            placeholder="Nhập tên cán bộ"
+          >
+
+
+          <label>
+            Lọc theo ngày field
+          </label>
+
+          <input
+            id="filterDate"
+            type="date"
+          >
+
+
+          <button
+            id="filterBtn"
+            class="gray"
+          >
+            🔎 LỌC DỮ LIỆU
+          </button>
+
+
+          <button
+            id="refreshBtn"
+            class="green"
+          >
+            🔄 LÀM MỚI
+          </button>
+
+
+          <button id="exportBtn">
+            📥 XUẤT EXCEL
+          </button>
+
+
+          <!-- ============================
+               CÁN BỘ ĐÃ NHẬP
+          ============================= -->
+
+          <button
+            id="showSubmittedUsersBtn"
+            class="gray"
+          >
+            👥 CÁN BỘ ĐÃ NHẬP BÁO CÁO
+            (<span id="submittedUserCount">0</span>)
+          </button>
+
+        </div>
+
+
+        <!-- ============================
+             TABLE
+        ============================= -->
+
+        <div class="table-wrap">
+
+          <table>
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Cán bộ
+                </th>
+
+                <th>
+                  Ngày field
+                </th>
+
+                <th>
+                  Số CIF
+                </th>
+
+                <th>
+                  Tên khách hàng
+                </th>
+
+                <th>
+                  Kết quả
+                </th>
+
+                <th>
+                  Kết nối
+                </th>
+
+                <th>
+                  Kết quả chi tiết
+                </th>
+
+                <th>
+                  Dự thu
+                </th>
+
+                <th>
+                  Hướng tác động tiếp theo
+                </th>
+
+                <th>
+                  Xóa
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody id="tableBody">
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+
+        <!-- ============================
+             PAGINATION
+        ============================= -->
+
+        <div id="pagination"></div>
+
+
+        <!-- ============================
+             MESSAGE
+        ============================= -->
+
+        <div id="managerMessage"></div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- ================================
+       LIBRARIES
+  ================================= -->
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+  </script>
+
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js">
+  </script>
+
+
+  <!-- ================================
+       CONFIG
+  ================================= -->
+
+  <script src="config.js"></script>
+
+
+  <!-- ================================
+       MANAGER JS
+  ================================= -->
+
+  <script src="manager.js"></script>
 
 
 </body>
