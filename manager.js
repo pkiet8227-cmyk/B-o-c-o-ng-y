@@ -89,7 +89,9 @@ const totalAmount =
   document.getElementById("totalAmount");
 
 
+// =====================================================
 // MENU
+// =====================================================
 
 const menuBtn =
   document.getElementById("menuBtn");
@@ -129,6 +131,15 @@ let currentSessionUser = null;
 
 
 // =====================================================
+// EDGE FUNCTION
+// =====================================================
+
+const PERMISSION_FUNCTION_URL =
+  window.SUPABASE_URL +
+  "/functions/v1/manager-permission";
+
+
+// =====================================================
 // KHỞI ĐỘNG
 // =====================================================
 
@@ -157,28 +168,39 @@ async function checkExistingSession() {
       await client.auth.getSession();
 
     if (error) {
+
       console.error(error);
+
       return;
+
     }
 
     const session =
       data?.session;
 
     if (!session) {
+
+      showLogin();
+
       return;
+
     }
 
     currentSessionUser =
       session.user;
+
 
     const allowed =
       await checkManagerPermission(
         session.user.id
       );
 
+
     if (!allowed) {
 
       await client.auth.signOut();
+
+      showLogin();
 
       loginMessage.textContent =
         "❌ Tài khoản này chưa được cấp quyền quản lý.";
@@ -190,9 +212,11 @@ async function checkExistingSession() {
 
     }
 
+
     showManager();
 
     await loadData();
+
 
   } catch (error) {
 
@@ -200,6 +224,8 @@ async function checkExistingSession() {
       "Lỗi kiểm tra session:",
       error
     );
+
+    showLogin();
 
   }
 
@@ -215,8 +241,11 @@ async function checkManagerPermission(
 ) {
 
   if (!userId) {
+
     return false;
+
   }
+
 
   try {
 
@@ -226,7 +255,9 @@ async function checkManagerPermission(
     } =
       await client
         .from("manager_permissions")
-        .select("id,enabled")
+        .select(
+          "auth_user_id,enabled"
+        )
         .eq(
           "auth_user_id",
           userId
@@ -236,6 +267,7 @@ async function checkManagerPermission(
           true
         )
         .maybeSingle();
+
 
     if (error) {
 
@@ -248,7 +280,9 @@ async function checkManagerPermission(
 
     }
 
+
     return !!data;
+
 
   } catch (error) {
 
@@ -267,15 +301,27 @@ async function checkManagerPermission(
 
 function showManager() {
 
-  loginBox.style.display =
-    "none";
+  if (loginBox) {
 
-  managerBox.style.display =
-    "block";
+    loginBox.style.display =
+      "none";
+
+  }
+
+
+  if (managerBox) {
+
+    managerBox.style.display =
+      "block";
+
+  }
+
 
   if (menuBtn) {
+
     menuBtn.style.display =
       "block";
+
   }
 
 }
@@ -287,22 +333,34 @@ function showManager() {
 
 function showLogin() {
 
-  loginBox.style.display =
-    "block";
+  if (loginBox) {
 
-  managerBox.style.display =
-    "none";
+    loginBox.style.display =
+      "block";
+
+  }
+
+
+  if (managerBox) {
+
+    managerBox.style.display =
+      "none";
+
+  }
+
 
   if (menuBtn) {
+
     menuBtn.style.display =
       "none";
+
   }
 
 }
 
 
 // =====================================================
-// LOGIN
+// LOGIN BUTTON
 // =====================================================
 
 if (loginBtn) {
@@ -315,6 +373,10 @@ if (loginBtn) {
 }
 
 
+// =====================================================
+// ENTER LOGIN USER
+// =====================================================
+
 if (loginIdInput) {
 
   loginIdInput.addEventListener(
@@ -326,6 +388,8 @@ if (loginIdInput) {
         "Enter"
       ) {
 
+        event.preventDefault();
+
         login();
 
       }
@@ -335,6 +399,10 @@ if (loginIdInput) {
 
 }
 
+
+// =====================================================
+// ENTER LOGIN PASSWORD
+// =====================================================
 
 if (passwordInput) {
 
@@ -347,6 +415,8 @@ if (passwordInput) {
         "Enter"
       ) {
 
+        event.preventDefault();
+
         login();
 
       }
@@ -357,12 +427,68 @@ if (passwordInput) {
 }
 
 
+// =====================================================
+// CHUẨN HÓA USERNAME
+// =====================================================
+
+function normalizeLoginUsername(
+  value
+) {
+
+  return String(
+    value || ""
+  )
+    .trim()
+    .toLowerCase()
+    .replace(
+      /\s+/g,
+      ""
+    );
+
+}
+
+
+// =====================================================
+// USERNAME → EMAIL NỘI BỘ
+// =====================================================
+//
+// Tài khoản username được Edge Function
+// tạo dưới dạng:
+//
+// username@manager.local
+//
+// Không hiển thị email này cho người dùng.
+// =====================================================
+
+function usernameToInternalEmail(
+  username
+) {
+
+  const normalized =
+    normalizeLoginUsername(
+      username
+    );
+
+
+  return (
+    normalized +
+    "@manager.local"
+  );
+
+}
+
+
+// =====================================================
+// LOGIN
+// =====================================================
+
 async function login() {
 
   const loginId =
     loginIdInput
       ? loginIdInput.value.trim()
       : "";
+
 
   const password =
     passwordInput
@@ -390,67 +516,39 @@ async function login() {
     "⏳ ĐANG ĐĂNG NHẬP...";
 
 
+  loginMessage.textContent =
+    "";
+
+
   try {
 
-    /*
-      Nếu nhập email:
-      → đăng nhập trực tiếp.
+    let email;
 
-      Nếu nhập username:
-      → tìm email Auth tương ứng
-      thông qua bảng manager_permissions.
+
+    /*
+      Nếu nhập Email
+      → dùng trực tiếp.
+
+      Nếu nhập User
+      → chuyển sang email nội bộ
+      → username@manager.local
     */
 
-    let email =
-      loginId;
-
-
-    const looksLikeEmail =
-      loginId.includes("@");
-
-
-    if (!looksLikeEmail) {
-
-      const {
-        data,
-        error
-      } =
-        await client
-          .from("manager_permissions")
-          .select("auth_email")
-          .eq(
-            "login_name",
-            loginId
-          )
-          .eq(
-            "enabled",
-            true
-          )
-          .maybeSingle();
-
-
-      if (error) {
-
-        console.error(error);
-
-        throw new Error(
-          "Không tìm thấy tài khoản được cấp quyền."
-        );
-
-      }
-
-
-      if (!data?.auth_email) {
-
-        throw new Error(
-          "Tài khoản chưa được cấp quyền quản lý."
-        );
-
-      }
-
+    if (
+      loginId.includes("@")
+    ) {
 
       email =
-        data.auth_email;
+        loginId
+          .trim()
+          .toLowerCase();
+
+    } else {
+
+      email =
+        usernameToInternalEmail(
+          loginId
+        );
 
     }
 
@@ -467,7 +565,10 @@ async function login() {
 
     if (error) {
 
-      console.error(error);
+      console.error(
+        "Login error:",
+        error
+      );
 
       throw new Error(
         "Tài khoản hoặc mật khẩu không đúng."
@@ -490,8 +591,8 @@ async function login() {
 
 
     /*
-      Kiểm tra quyền lần nữa
-      sau khi đăng nhập.
+      Đăng nhập thành công nhưng
+      vẫn phải kiểm tra quyền.
     */
 
     const allowed =
@@ -503,6 +604,9 @@ async function login() {
     if (!allowed) {
 
       await client.auth.signOut();
+
+      currentSessionUser =
+        null;
 
       throw new Error(
         "Tài khoản này chưa được cấp quyền quản lý."
@@ -531,12 +635,14 @@ async function login() {
 
     console.error(error);
 
+
     loginMessage.textContent =
       "❌ " +
       (
         error.message ||
         "Đăng nhập thất bại."
       );
+
 
     loginMessage.style.color =
       "#dc2626";
@@ -588,6 +694,7 @@ async function loadData() {
       error
     );
 
+
     managerMessage.textContent =
       "❌ Không tải được dữ liệu: " +
       error.message;
@@ -606,7 +713,9 @@ async function loadData() {
       : [];
 
 
-  currentPage = 1;
+  currentPage =
+    1;
+
 
   applyCurrentFilter();
 
@@ -643,7 +752,8 @@ if (filterBtn) {
     "click",
     () => {
 
-      currentPage = 1;
+      currentPage =
+        1;
 
       applyCurrentFilter();
 
@@ -653,6 +763,10 @@ if (filterBtn) {
 }
 
 
+// =====================================================
+// APPLY FILTER
+// =====================================================
+
 function applyCurrentFilter() {
 
   const userKeyword =
@@ -661,6 +775,7 @@ function applyCurrentFilter() {
         ? filterUser.value
         : ""
     );
+
 
   const selectedDate =
     filterDate
@@ -710,10 +825,15 @@ function applyCurrentFilter() {
 
 
 // =====================================================
-// HIỂN THỊ DỮ LIỆU
+// RENDER DATA
 // =====================================================
 
 function renderData() {
+
+  if (!tableBody) {
+    return;
+  }
+
 
   tableBody.innerHTML =
     "";
@@ -749,7 +869,9 @@ function renderData() {
   ) {
 
     tableBody.innerHTML = `
+
       <tr>
+
         <td
           colspan="10"
           style="
@@ -761,8 +883,11 @@ function renderData() {
         >
           Không có dữ liệu
         </td>
+
       </tr>
+
     `;
+
 
     renderPagination();
 
@@ -791,7 +916,8 @@ function renderData() {
 
   const start =
     (
-      currentPage - 1
+      currentPage -
+      1
     ) *
     rowsPerPage;
 
@@ -880,7 +1006,7 @@ function renderData() {
           <button
             class="edit-btn"
             type="button"
-            data-edit-id="${escapeHtml(
+            data-edit-id="${escapeAttribute(
               String(row.id)
             )}"
           >
@@ -890,7 +1016,7 @@ function renderData() {
           <button
             class="delete-btn"
             type="button"
-            data-delete-id="${escapeHtml(
+            data-delete-id="${escapeAttribute(
               String(row.id)
             )}"
           >
@@ -965,6 +1091,11 @@ function renderData() {
 
 function updateSubmittedUserCount() {
 
+  if (!submittedUserCount) {
+    return;
+  }
+
+
   const uniqueUsers =
     getUniqueUsers(
       filteredData
@@ -978,10 +1109,12 @@ function updateSubmittedUserCount() {
 
 
 // =====================================================
-// DANH SÁCH CÁN BỘ
+// GET UNIQUE USERS
 // =====================================================
 
-function getUniqueUsers(data) {
+function getUniqueUsers(
+  data
+) {
 
   const map =
     new Map();
@@ -1034,7 +1167,7 @@ function getUniqueUsers(data) {
 
 
 // =====================================================
-// HIỂN THỊ CÁN BỘ ĐÃ NHẬP
+// CÁN BỘ ĐÃ NHẬP
 // =====================================================
 
 if (showSubmittedUsersBtn) {
@@ -1085,7 +1218,10 @@ function showSubmittedUsers() {
       : users
           .map(
             (name, index) => `
-              <div class="submitted-user-item">
+
+              <div
+                class="submitted-user-item"
+              >
 
                 <div
                   class="submitted-user-number"
@@ -1098,6 +1234,7 @@ function showSubmittedUsers() {
                 </div>
 
               </div>
+
             `
           )
           .join("");
@@ -1134,6 +1271,7 @@ function showSubmittedUsers() {
   overlay.appendChild(
     modal
   );
+
 
   document.body.appendChild(
     overlay
@@ -1173,7 +1311,9 @@ function showSubmittedUsers() {
 // SỬA CÁN BỘ
 // =====================================================
 
-function openEditUserModal(id) {
+function openEditUserModal(
+  id
+) {
 
   const row =
     allData.find(
@@ -1236,6 +1376,7 @@ function openEditUserModal(id) {
       autocomplete="off"
     >
 
+
     <div class="edit-modal-buttons">
 
       <button
@@ -1245,6 +1386,7 @@ function openEditUserModal(id) {
       >
         HỦY
       </button>
+
 
       <button
         id="saveEditUserBtn"
@@ -1273,10 +1415,12 @@ function openEditUserModal(id) {
       "#editUserNameInput"
     );
 
+
   const saveBtn =
     modal.querySelector(
       "#saveEditUserBtn"
     );
+
 
   const cancelBtn =
     modal.querySelector(
@@ -1288,6 +1432,7 @@ function openEditUserModal(id) {
     () => {
 
       input.focus();
+
       input.select();
 
     },
@@ -1407,6 +1552,7 @@ async function updateUserName(
         error
       );
 
+
       saveBtn.disabled =
         false;
 
@@ -1460,11 +1606,10 @@ async function updateUserName(
 
     if (index !== -1) {
 
-      allData[index] =
-        {
-          ...allData[index],
-          ...updatedRow
-        };
+      allData[index] = {
+        ...allData[index],
+        ...updatedRow
+      };
 
     }
 
@@ -1499,6 +1644,7 @@ async function updateUserName(
 
     console.error(error);
 
+
     saveBtn.disabled =
       false;
 
@@ -1519,7 +1665,9 @@ async function updateUserName(
 // XÓA BÁO CÁO
 // =====================================================
 
-async function deleteReport(id) {
+async function deleteReport(
+  id
+) {
 
   const row =
     allData.find(
@@ -1556,7 +1704,9 @@ async function deleteReport(id) {
 
 
   if (!confirmDelete) {
+
     return;
+
   }
 
 
@@ -1575,6 +1725,7 @@ async function deleteReport(id) {
   if (error) {
 
     console.error(error);
+
 
     alert(
       "❌ Xóa thất bại:\n\n" +
@@ -1643,6 +1794,11 @@ if (refreshBtn) {
 
 function renderPagination() {
 
+  if (!pagination) {
+    return;
+  }
+
+
   pagination.innerHTML =
     "";
 
@@ -1668,11 +1824,14 @@ function renderPagination() {
       "button"
     );
 
+
   prevBtn.className =
     "arrow";
 
+
   prevBtn.innerHTML =
     "‹";
+
 
   prevBtn.disabled =
     currentPage === 1;
@@ -1713,22 +1872,28 @@ function renderPagination() {
   pages.forEach(
     page => {
 
-      if (page === "...") {
+      if (
+        page === "..."
+      ) {
 
         const dots =
           document.createElement(
             "span"
           );
 
+
         dots.textContent =
           "...";
+
 
         dots.style.padding =
           "0 5px";
 
+
         pagination.appendChild(
           dots
         );
+
 
         return;
 
@@ -1739,6 +1904,7 @@ function renderPagination() {
         document.createElement(
           "button"
         );
+
 
       btn.textContent =
         page;
@@ -1763,6 +1929,7 @@ function renderPagination() {
           currentPage =
             page;
 
+
           renderData();
 
           scrollToTable();
@@ -1784,11 +1951,14 @@ function renderPagination() {
       "button"
     );
 
+
   nextBtn.className =
     "arrow";
 
+
   nextBtn.innerHTML =
     "›";
+
 
   nextBtn.disabled =
     currentPage ===
@@ -1824,7 +1994,7 @@ function renderPagination() {
 
 
 // =====================================================
-// TẠO DANH SÁCH TRANG
+// DANH SÁCH TRANG
 // =====================================================
 
 function getPaginationPages(
@@ -1832,7 +2002,9 @@ function getPaginationPages(
   total
 ) {
 
-  if (total <= 7) {
+  if (
+    total <= 7
+  ) {
 
     return Array.from(
       {
@@ -1847,10 +2019,13 @@ function getPaginationPages(
 
   const pages = [];
 
+
   pages.push(1);
 
 
-  if (current > 4) {
+  if (
+    current > 4
+  ) {
 
     pages.push("...");
 
@@ -1893,6 +2068,7 @@ function getPaginationPages(
 
 
   pages.push(total);
+
 
   return pages;
 
@@ -2042,26 +2218,44 @@ if (sideMenuOverlay) {
 
 function openMenu() {
 
-  sideMenu.classList.add(
-    "open"
-  );
+  if (sideMenu) {
 
-  sideMenuOverlay.classList.add(
-    "open"
-  );
+    sideMenu.classList.add(
+      "open"
+    );
+
+  }
+
+
+  if (sideMenuOverlay) {
+
+    sideMenuOverlay.classList.add(
+      "open"
+    );
+
+  }
 
 }
 
 
 function closeMenu() {
 
-  sideMenu.classList.remove(
-    "open"
-  );
+  if (sideMenu) {
 
-  sideMenuOverlay.classList.remove(
-    "open"
-  );
+    sideMenu.classList.remove(
+      "open"
+    );
+
+  }
+
+
+  if (sideMenuOverlay) {
+
+    sideMenuOverlay.classList.remove(
+      "open"
+    );
+
+  }
 
 }
 
@@ -2077,6 +2271,7 @@ if (menuReportsBtn) {
     () => {
 
       closeMenu();
+
 
       window.scrollTo({
         top: 0,
@@ -2110,6 +2305,102 @@ if (menuPermissionBtn) {
 
 
 // =====================================================
+// EDGE FUNCTION CALL
+// =====================================================
+
+async function callPermissionFunction(
+  action,
+  payload = {}
+) {
+
+  const {
+    data: sessionData,
+    error: sessionError
+  } =
+    await client.auth.getSession();
+
+
+  if (
+    sessionError ||
+    !sessionData?.session
+  ) {
+
+    throw new Error(
+      "Phiên đăng nhập đã hết hạn."
+    );
+
+  }
+
+
+  const accessToken =
+    sessionData.session.access_token;
+
+
+  const response =
+    await fetch(
+      PERMISSION_FUNCTION_URL,
+      {
+        method: "POST",
+
+        headers: {
+
+          "Content-Type":
+            "application/json",
+
+          "Authorization":
+            "Bearer " +
+            accessToken,
+
+          "apikey":
+            window.SUPABASE_ANON_KEY
+
+        },
+
+        body:
+          JSON.stringify({
+
+            action,
+
+            ...payload
+
+          })
+
+      }
+    );
+
+
+  let result = {};
+
+
+  try {
+
+    result =
+      await response.json();
+
+  } catch {
+
+    result = {};
+
+  }
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      result.error ||
+      result.message ||
+      "Edge Function xử lý thất bại."
+    );
+
+  }
+
+
+  return result;
+
+}
+
+
+// =====================================================
 // MỞ MODAL PHÂN QUYỀN
 // =====================================================
 
@@ -2120,6 +2411,7 @@ async function openPermissionModal() {
       "div"
     );
 
+
   overlay.className =
     "permission-modal-overlay";
 
@@ -2128,6 +2420,7 @@ async function openPermissionModal() {
     document.createElement(
       "div"
     );
+
 
   modal.className =
     "permission-modal";
@@ -2140,6 +2433,7 @@ async function openPermissionModal() {
       <h2>
         🔐 PHÂN QUYỀN QUẢN LÝ
       </h2>
+
 
       <button
         class="permission-close"
@@ -2157,12 +2451,17 @@ async function openPermissionModal() {
 
         Cấp quyền cho tài khoản được
         đăng nhập vào trang quản lý.
+
         <br><br>
 
         Có thể nhập <b>User</b> hoặc
-        <b>Email</b>. Mật khẩu sẽ được
-        Supabase Auth quản lý, không lưu
-        trực tiếp vào bảng phân quyền.
+        <b>Email</b>.
+
+        <br><br>
+
+        🔒 Mật khẩu được Supabase Auth
+        quản lý và không lưu trực tiếp
+        trong bảng phân quyền.
 
       </div>
 
@@ -2172,6 +2471,7 @@ async function openPermissionModal() {
         <label>
           User / Email
         </label>
+
 
         <input
           id="permissionLogin"
@@ -2184,6 +2484,7 @@ async function openPermissionModal() {
         <label>
           Mật khẩu
         </label>
+
 
         <input
           id="permissionPassword"
@@ -2215,12 +2516,16 @@ async function openPermissionModal() {
 
 
       <div class="permission-list-title">
+
         👥 TÀI KHOẢN ĐƯỢC CẤP QUYỀN
+
       </div>
 
 
       <div id="permissionList">
+
         ⏳ Đang tải...
+
       </div>
 
     </div>
@@ -2231,6 +2536,7 @@ async function openPermissionModal() {
   overlay.appendChild(
     modal
   );
+
 
   document.body.appendChild(
     overlay
@@ -2280,6 +2586,36 @@ async function openPermissionModal() {
     );
 
 
+  /*
+    Cho phép nhấn Enter
+    ở ô mật khẩu để cấp quyền.
+  */
+
+  modal
+    .querySelector(
+      "#permissionPassword"
+    )
+    .addEventListener(
+      "keydown",
+      event => {
+
+        if (
+          event.key ===
+          "Enter"
+        ) {
+
+          event.preventDefault();
+
+          grantPermission(
+            modal
+          );
+
+        }
+
+      }
+    );
+
+
   await loadPermissionList(
     modal
   );
@@ -2300,15 +2636,18 @@ async function grantPermission(
       "#permissionLogin"
     );
 
+
   const passwordInput =
     modal.querySelector(
       "#permissionPassword"
     );
 
+
   const button =
     modal.querySelector(
       "#grantPermissionBtn"
     );
+
 
   const message =
     modal.querySelector(
@@ -2318,6 +2657,7 @@ async function grantPermission(
 
   const loginId =
     loginInput.value.trim();
+
 
   const password =
     passwordInput.value;
@@ -2354,11 +2694,14 @@ async function grantPermission(
   button.disabled =
     true;
 
+
   button.textContent =
     "⏳ ĐANG CẤP QUYỀN...";
 
+
   message.textContent =
     "⏳ Đang xử lý...";
+
 
   message.style.color =
     "#2563eb";
@@ -2366,88 +2709,17 @@ async function grantPermission(
 
   try {
 
-    /*
-      Gọi Edge Function.
-      Edge Function dùng Service Role
-      ở phía server để tạo tài khoản Auth.
-    */
-
-    const {
-      data: sessionData
-    } =
-      await client.auth.getSession();
-
-
-    const accessToken =
-      sessionData?.session?.access_token;
-
-
-    if (!accessToken) {
-
-      throw new Error(
-        "Phiên đăng nhập đã hết hạn."
-      );
-
-    }
-
-
-    const functionUrl =
-      window.SUPABASE_URL +
-      "/functions/v1/create-manager-user";
-
-
-    const response =
-      await fetch(
-        functionUrl,
+    const result =
+      await callPermissionFunction(
+        "grant",
         {
-          method: "POST",
+          identifier:
+            loginId,
 
-          headers: {
-            "Content-Type":
-              "application/json",
-
-            "Authorization":
-              "Bearer " +
-              accessToken,
-
-            "apikey":
-              window.SUPABASE_ANON_KEY
-          },
-
-          body:
-            JSON.stringify({
-              login_id:
-                loginId,
-
-              password:
-                password
-            })
+          password:
+            password
         }
       );
-
-
-    let result = {};
-
-    try {
-
-      result =
-        await response.json();
-
-    } catch {
-
-      result = {};
-
-    }
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        result.error ||
-        "Không thể cấp quyền."
-      );
-
-    }
 
 
     message.textContent =
@@ -2457,12 +2729,14 @@ async function grantPermission(
         "Đã cấp quyền thành công."
       );
 
+
     message.style.color =
       "#16a34a";
 
 
     loginInput.value =
       "";
+
 
     passwordInput.value =
       "";
@@ -2477,12 +2751,14 @@ async function grantPermission(
 
     console.error(error);
 
+
     message.textContent =
       "❌ " +
       (
         error.message ||
         "Cấp quyền thất bại."
       );
+
 
     message.style.color =
       "#dc2626";
@@ -2492,6 +2768,7 @@ async function grantPermission(
 
   button.disabled =
     false;
+
 
   button.textContent =
     "👤 CẤP QUYỀN";
@@ -2517,167 +2794,221 @@ async function loadPermissionList(
     "⏳ Đang tải...";
 
 
-  const {
-    data,
-    error
-  } =
-    await client
-      .from("manager_permissions")
-      .select(
-        "id,login_name,auth_email,enabled,created_at"
+  try {
+
+    const result =
+      await callPermissionFunction(
+        "list"
+      );
+
+
+    /*
+      Chấp nhận nhiều dạng response
+      để tránh lỗi nếu Edge Function
+      trả về data/users.
+    */
+
+    let users =
+      result?.users ||
+      result?.data ||
+      result?.managers ||
+      [];
+
+
+    if (
+      !Array.isArray(users)
+    ) {
+
+      users = [];
+
+    }
+
+
+    const activeUsers =
+      users.filter(
+        user =>
+          user.enabled !== false
+      );
+
+
+    if (
+      activeUsers.length === 0
+    ) {
+
+      list.innerHTML = `
+
+        <div class="permission-empty">
+
+          Chưa có tài khoản nào được
+          cấp quyền.
+
+        </div>
+
+      `;
+
+      return;
+
+    }
+
+
+    list.innerHTML =
+      activeUsers
+        .map(
+          user => {
+
+            const displayName =
+              user.display_identifier ||
+              user.login_name ||
+              user.identifier ||
+              user.auth_email ||
+              user.email ||
+              "";
+
+
+            const authEmail =
+              user.auth_email ||
+              user.email ||
+              "";
+
+
+            return `
+
+              <div
+                class="permission-user"
+              >
+
+                <div
+                  class="permission-user-info"
+                >
+
+                  <div
+                    class="permission-user-name"
+                  >
+
+                    ${escapeHtml(
+                      displayName
+                    )}
+
+                  </div>
+
+
+                  <div
+                    class="permission-user-status"
+                  >
+
+                    🟢 Được phép quản lý
+
+                  </div>
+
+
+                  ${
+                    authEmail &&
+                    normalizeText(
+                      authEmail
+                    ) !==
+                    normalizeText(
+                      displayName
+                    )
+
+                      ? `
+
+                        <div
+                          style="
+                            margin-top:3px;
+                            font-size:12px;
+                            color:#64748b;
+                          "
+                        >
+
+                          ${escapeHtml(
+                            authEmail
+                          )}
+
+                        </div>
+
+                      `
+
+                      : ""
+                  }
+
+                </div>
+
+
+                <button
+                  class="revoke-btn"
+                  type="button"
+                  data-revoke-user="${
+                    escapeAttribute(
+                      String(
+                        user.auth_user_id ||
+                        user.user_id ||
+                        user.id ||
+                        ""
+                      )
+                    )
+                  }"
+                >
+
+                  THU HỒI
+
+                </button>
+
+              </div>
+
+            `;
+
+          }
+        )
+        .join("");
+
+
+    list
+      .querySelectorAll(
+        "[data-revoke-user]"
       )
-      .order(
-        "created_at",
-        {
-          ascending: true
+      .forEach(
+        button => {
+
+          button.addEventListener(
+            "click",
+            async () => {
+
+              await revokePermission(
+                button.dataset.revokeUser,
+                modal
+              );
+
+            }
+          );
+
         }
       );
 
 
-  if (error) {
+  } catch (error) {
 
     console.error(error);
 
+
     list.innerHTML = `
-      <div class="permission-empty">
+
+      <div
+        class="permission-empty"
+      >
+
         ❌ Không tải được danh sách quyền.
+
         <br><br>
-        ${escapeHtml(error.message)}
+
+        ${escapeHtml(
+          error.message
+        )}
+
       </div>
+
     `;
 
-    return;
-
   }
-
-
-  const users =
-    Array.isArray(data)
-      ? data
-      : [];
-
-
-  const activeUsers =
-    users.filter(
-      user =>
-        user.enabled === true
-    );
-
-
-  if (
-    activeUsers.length === 0
-  ) {
-
-    list.innerHTML = `
-      <div class="permission-empty">
-        Chưa có tài khoản nào được cấp quyền.
-      </div>
-    `;
-
-    return;
-
-  }
-
-
-  list.innerHTML =
-    activeUsers
-      .map(
-        user => `
-
-          <div
-            class="permission-user"
-            data-permission-id="${escapeAttribute(
-              user.id
-            )}"
-          >
-
-            <div
-              class="permission-user-info"
-            >
-
-              <div
-                class="permission-user-name"
-              >
-                ${escapeHtml(
-                  user.login_name ||
-                  user.auth_email ||
-                  ""
-                )}
-              </div>
-
-              <div
-                class="permission-user-status"
-              >
-                🟢 Được phép quản lý
-
-              </div>
-
-              ${
-                user.auth_email &&
-                normalizeText(
-                  user.auth_email
-                ) !==
-                normalizeText(
-                  user.login_name
-                )
-
-                  ? `
-                    <div
-                      style="
-                        margin-top:3px;
-                        font-size:12px;
-                        color:#64748b;
-                      "
-                    >
-                      ${escapeHtml(
-                        user.auth_email
-                      )}
-                    </div>
-                  `
-                  : ""
-              }
-
-            </div>
-
-
-            <button
-              class="revoke-btn"
-              type="button"
-              data-revoke-id="${escapeAttribute(
-                user.id
-              )}"
-            >
-              THU HỒI
-            </button>
-
-          </div>
-
-        `
-      )
-      .join("");
-
-
-  list
-    .querySelectorAll(
-      "[data-revoke-id]"
-    )
-    .forEach(
-      button => {
-
-        button.addEventListener(
-          "click",
-          async () => {
-
-            await revokePermission(
-              button.dataset.revokeId,
-              modal
-            );
-
-          }
-        );
-
-      }
-    );
 
 }
 
@@ -2687,9 +3018,20 @@ async function loadPermissionList(
 // =====================================================
 
 async function revokePermission(
-  permissionId,
+  authUserId,
   modal
 ) {
+
+  if (!authUserId) {
+
+    alert(
+      "❌ Không xác định được tài khoản."
+    );
+
+    return;
+
+  }
+
 
   const confirmed =
     confirm(
@@ -2698,38 +3040,21 @@ async function revokePermission(
 
 
   if (!confirmed) {
+
     return;
+
   }
 
 
   try {
 
-    const {
-      error
-    } =
-      await client
-        .from("manager_permissions")
-        .update({
-          enabled: false
-        })
-        .eq(
-          "id",
-          permissionId
-        );
-
-
-    if (error) {
-
-      console.error(error);
-
-      alert(
-        "❌ Thu hồi quyền thất bại:\n\n" +
-        error.message
-      );
-
-      return;
-
-    }
+    await callPermissionFunction(
+      "revoke",
+      {
+        auth_user_id:
+          authUserId
+      }
+    );
 
 
     await loadPermissionList(
@@ -2746,8 +3071,13 @@ async function revokePermission(
 
     console.error(error);
 
+
     alert(
-      "❌ Có lỗi xảy ra."
+      "❌ Thu hồi quyền thất bại:\n\n" +
+      (
+        error.message ||
+        "Có lỗi xảy ra."
+      )
     );
 
   }
@@ -2797,6 +3127,7 @@ async function logout() {
   currentSessionUser =
     null;
 
+
   allData = [];
 
   filteredData = [];
@@ -2807,31 +3138,59 @@ async function logout() {
   showLogin();
 
 
-  tableBody.innerHTML =
-    "";
+  if (tableBody) {
 
-  pagination.innerHTML =
-    "";
+    tableBody.innerHTML =
+      "";
+
+  }
 
 
-  totalReports.textContent =
-    "0";
+  if (pagination) {
 
-  totalAmount.textContent =
-    "0 đ";
+    pagination.innerHTML =
+      "";
 
-  submittedUserCount.textContent =
-    "0";
+  }
+
+
+  if (totalReports) {
+
+    totalReports.textContent =
+      "0";
+
+  }
+
+
+  if (totalAmount) {
+
+    totalAmount.textContent =
+      "0 đ";
+
+  }
+
+
+  if (submittedUserCount) {
+
+    submittedUserCount.textContent =
+      "0";
+
+  }
 
 
   if (passwordInput) {
+
     passwordInput.value =
       "";
+
   }
 
+
   if (loginMessage) {
+
     loginMessage.textContent =
       "";
+
   }
 
 }
@@ -2841,7 +3200,9 @@ async function logout() {
 // FORMAT MONEY
 // =====================================================
 
-function parseMoney(value) {
+function parseMoney(
+  value
+) {
 
   if (
     value === null ||
@@ -2892,6 +3253,7 @@ function parseMoney(value) {
         /\./g,
         ""
       );
+
 
     str =
       str.replace(
@@ -2947,10 +3309,14 @@ function formatMoney(
 // FORMAT DATE
 // =====================================================
 
-function formatDate(value) {
+function formatDate(
+  value
+) {
 
   if (!value) {
+
     return "";
+
   }
 
 
@@ -2966,7 +3332,10 @@ function formatDate(value) {
 
     const parts =
       str
-        .slice(0, 10)
+        .slice(
+          0,
+          10
+        )
         .split("-");
 
 
@@ -2990,7 +3359,9 @@ function formatDate(value) {
 // NORMALIZE TEXT
 // =====================================================
 
-function normalizeText(value) {
+function normalizeText(
+  value
+) {
 
   return String(
     value || ""
@@ -3009,7 +3380,9 @@ function normalizeText(value) {
 // ESCAPE HTML
 // =====================================================
 
-function escapeHtml(value) {
+function escapeHtml(
+  value
+) {
 
   return String(
     value ?? ""
@@ -3042,7 +3415,9 @@ function escapeHtml(value) {
 // ESCAPE ATTRIBUTE
 // =====================================================
 
-function escapeAttribute(value) {
+function escapeAttribute(
+  value
+) {
 
   return escapeHtml(
     value
@@ -3064,7 +3439,9 @@ function scrollToTable() {
 
 
   if (!table) {
+
     return;
+
   }
 
 
