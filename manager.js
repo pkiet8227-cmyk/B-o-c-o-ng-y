@@ -1,9 +1,7 @@
 // =====================================================
 // QUẢN LÝ BÁO CÁO NGÀY - MANAGER.JS
+// Đăng nhập trực tiếp bằng tài khoản Supabase Auth
 // Phân trang 20 dòng / trang
-// Đăng nhập Email + Mật khẩu
-// Phân quyền bằng User Metadata trong Supabase
-// User Metadata: { "role": "manager" } hoặc { "role": "admin" }
 // =====================================================
 
 "use strict";
@@ -45,7 +43,7 @@ let currentPage = 1;
 const PAGE_SIZE = 20;
 
 // =====================================================
-// KHỞI THAO ELEMENTS UI
+// KHỞI TẠO ELEMENTS UI
 // =====================================================
 const loginBox = document.getElementById("loginBox");
 const managerBox = document.getElementById("managerBox");
@@ -81,7 +79,6 @@ const sideMenu = document.getElementById("sideMenu");
 const sideMenuOverlay = document.getElementById("sideMenuOverlay");
 const sideMenuClose = document.getElementById("sideMenuClose");
 const menuReportsBtn = document.getElementById("menuReportsBtn");
-const menuPermissionBtn = document.getElementById("menuPermissionBtn");
 const menuLogoutBtn = document.getElementById("menuLogoutBtn");
 
 // =====================================================
@@ -132,15 +129,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadData();
   });
 
-  menuPermissionBtn?.addEventListener("click", openPermission);
   menuLogoutBtn?.addEventListener("click", logout);
 
-  // Kiểm tra phiên đăng nhập
+  // Kiểm tra phiên đăng nhập hiện tại
   await checkSession();
 });
 
 // =====================================================
-// KIỂM TRA PHIÊN DÙNG (SESSION) & QUYỀN HẠN
+// KIỂM TRA PHIÊN DÙNG (SESSION)
 // =====================================================
 async function checkSession() {
   try {
@@ -154,34 +150,16 @@ async function checkSession() {
     if (userError || !userData?.user) {
       await db.auth.signOut();
       showLogin();
-      if (loginMessage) loginMessage.textContent = "❌ Không lấy được thông tin tài khoản.";
       return;
     }
 
-    const user = userData.user;
-    if (!checkManagerPermission(user)) {
-      await db.auth.signOut();
-      showLogin();
-      if (loginMessage) loginMessage.textContent = "❌ Tài khoản chưa được cấp quyền quản lý (Role: manager/admin).";
-      return;
-    }
-
+    // Đã đăng nhập thành công qua Supabase Auth
     showManager();
     await loadData();
   } catch (error) {
     console.error("Lỗi checkSession:", error);
     showLogin();
-    if (loginMessage) loginMessage.textContent = "❌ Có lỗi khi kiểm tra tài khoản.";
   }
-}
-
-function checkManagerPermission(user) {
-  if (!user) return false;
-  const metadata = user.user_metadata || {};
-  const role = String(metadata.role || "").trim().toLowerCase();
-  
-  console.log("🔐 User Login:", user.email, "| Role:", role);
-  return role === "manager" || role === "admin";
 }
 
 // =====================================================
@@ -206,7 +184,7 @@ async function login() {
   const password = passwordInput?.value || "";
 
   if (!email || !password) {
-    if (loginMessage) loginMessage.textContent = "❌ Vui lòng nhập email và mật khẩu.";
+    if (loginMessage) loginMessage.textContent = "❌ Vui lòng nhập Gmail và mật khẩu.";
     return;
   }
 
@@ -217,27 +195,13 @@ async function login() {
 
   try {
     const { data, error } = await db.auth.signInWithPassword({ email, password });
+    
     if (error) {
       if (loginMessage) loginMessage.textContent = "❌ Đăng nhập thất bại: " + error.message;
       return;
     }
 
-    const { data: userData } = await db.auth.getUser();
-    const user = userData?.user;
-
-    if (!user?.email_confirmed_at) {
-      await db.auth.signOut();
-      if (loginMessage) loginMessage.textContent = "❌ Email chưa được xác nhận trên hệ thống.";
-      return;
-    }
-
-    if (!checkManagerPermission(user)) {
-      await db.auth.signOut();
-      showLogin();
-      if (loginMessage) loginMessage.textContent = "❌ Tài khoản không có quyền truy cập.";
-      return;
-    }
-
+    // Đăng nhập hợp lệ trên Supabase Auth
     showManager();
     currentPage = 1;
     await loadData();
@@ -374,7 +338,7 @@ function render() {
       addCell(tr, formatMoney(getAmount(row)));
       addCell(tr, row.next_action);
 
-      // Thao tác
+      // Thao tác Sửa / Xóa
       const actionTd = document.createElement("td");
 
       const editBtn = document.createElement("button");
@@ -443,7 +407,7 @@ function renderPagination(totalPages) {
     return btn;
   }
 
-  // Nút Prev
+  // Nút Trang trước (Prev)
   wrapper.appendChild(createBtn("‹", currentPage - 1, false, currentPage === 1));
 
   // Danh sách trang
@@ -477,7 +441,7 @@ function renderPagination(totalPages) {
     }
   });
 
-  // Nút Next
+  // Nút Trang sau (Next)
   wrapper.appendChild(createBtn("›", currentPage + 1, false, currentPage === totalPages));
 
   pagination.appendChild(wrapper);
@@ -583,7 +547,7 @@ function exportExcel() {
   if (filteredData.length === 0) return alert("❌ Không có dữ liệu để xuất Excel.");
 
   if (typeof XLSX === "undefined") {
-    return alert("❌ Thư viện XLSX (SheetJS) chưa được nạp. Vui lòng thêm thư viện vào trang HTML.");
+    return alert("❌ Thư viện XLSX (SheetJS) chưa được nạp trong HTML.");
   }
 
   const exportData = filteredData.map((row, index) => ({
@@ -619,11 +583,6 @@ function openMenu() {
 function closeMenu() {
   sideMenu?.classList.remove("active");
   sideMenuOverlay?.classList.remove("active");
-}
-
-function openPermission() {
-  closeMenu();
-  alert("ℹ️ Phân quyền được quản lý bằng User Metadata trên Supabase Dashboard (Ví dụ: {\"role\": \"manager\"}).");
 }
 
 // =====================================================
