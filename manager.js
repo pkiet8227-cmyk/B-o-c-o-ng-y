@@ -4,9 +4,7 @@
 
 // QUẢN LÝ BÁO CÁO NGÀY
 
-// ĐĂNG NHẬP GOOGLE/GMAIL + PHÂN QUYỀN SUPABASE
-
-// GIỮ NGUYÊN MENU + QUẢN LÝ BÁO CÁO + SỬA/XÓA + LỌC + EXCEL
+// GOOGLE/GMAIL LOGIN + PHÂN QUYỀN SUPABASE
 
 // ============================================================
 
@@ -14,11 +12,11 @@
 
   "use strict";
 
-  // ==========================================================
+  // ============================================================
 
   // KIỂM TRA SUPABASE
 
-  // ==========================================================
+  // ============================================================
 
   if (!window.supabase) {
 
@@ -44,11 +42,11 @@
 
   );
 
-  // ==========================================================
+  // ============================================================
 
   // DATA
 
-  // ==========================================================
+  // ============================================================
 
   let currentUser = null;
 
@@ -60,15 +58,13 @@
 
   const pageSize = 10;
 
-  let editingReportId = null;
-
   let isLoggingIn = false;
 
-  // ==========================================================
+  // ============================================================
 
   // ELEMENTS
 
-  // ==========================================================
+  // ============================================================
 
   let loginBox;
 
@@ -87,6 +83,8 @@
   let sideMenuClose;
 
   let menuReportsBtn;
+
+  let menuPermissionBtn;
 
   let menuLogoutBtn;
 
@@ -116,125 +114,121 @@
 
   let managerMessage;
 
-  // ==========================================================
+  // ============================================================
 
   // INIT ELEMENTS
 
-  // ==========================================================
+  // ============================================================
 
   function initElements() {
 
-    loginBox =
+    loginBox = document.getElementById("loginBox");
 
-      document.getElementById("loginBox");
+    managerBox = document.getElementById("managerBox");
 
-    managerBox =
+    loginBtn = document.getElementById("loginBtn");
 
-      document.getElementById("managerBox");
+    loginMessage = document.getElementById("loginMessage");
 
-    loginBtn =
+    menuBtn = document.getElementById("menuBtn");
 
-      document.getElementById("loginBtn");
+    sideMenu = document.getElementById("sideMenu");
 
-    loginMessage =
+    sideMenuOverlay = document.getElementById("sideMenuOverlay");
 
-      document.getElementById("loginMessage");
+    sideMenuClose = document.getElementById("sideMenuClose");
 
-    menuBtn =
+    menuReportsBtn = document.getElementById("menuReportsBtn");
 
-      document.getElementById("menuBtn");
+    menuPermissionBtn = document.getElementById("menuPermissionBtn");
 
-    sideMenu =
+    menuLogoutBtn = document.getElementById("menuLogoutBtn");
 
-      document.getElementById("sideMenu");
+    logoutBtn = document.getElementById("logoutBtn");
 
-    sideMenuOverlay =
+    totalReports = document.getElementById("totalReports");
 
-      document.getElementById("sideMenuOverlay");
+    totalAmount = document.getElementById("totalAmount");
 
-    sideMenuClose =
+    filterUser = document.getElementById("filterUser");
 
-      document.getElementById("sideMenuClose");
+    filterDate = document.getElementById("filterDate");
 
-    menuReportsBtn =
+    filterBtn = document.getElementById("filterBtn");
 
-      document.getElementById("menuReportsBtn");
+    refreshBtn = document.getElementById("refreshBtn");
 
-    menuLogoutBtn =
-
-      document.getElementById("menuLogoutBtn");
-
-    logoutBtn =
-
-      document.getElementById("logoutBtn");
-
-    totalReports =
-
-      document.getElementById("totalReports");
-
-    totalAmount =
-
-      document.getElementById("totalAmount");
-
-    filterUser =
-
-      document.getElementById("filterUser");
-
-    filterDate =
-
-      document.getElementById("filterDate");
-
-    filterBtn =
-
-      document.getElementById("filterBtn");
-
-    refreshBtn =
-
-      document.getElementById("refreshBtn");
-
-    exportBtn =
-
-      document.getElementById("exportBtn");
+    exportBtn = document.getElementById("exportBtn");
 
     showSubmittedUsersBtn =
 
-      document.getElementById(
-
-        "showSubmittedUsersBtn"
-
-      );
+      document.getElementById("showSubmittedUsersBtn");
 
     submittedUserCount =
 
-      document.getElementById(
+      document.getElementById("submittedUserCount");
 
-        "submittedUserCount"
+    tableBody = document.getElementById("tableBody");
 
-      );
+    pagination = document.getElementById("pagination");
 
-    tableBody =
-
-      document.getElementById("tableBody");
-
-    pagination =
-
-      document.getElementById("pagination");
-
-    managerMessage =
-
-      document.getElementById("managerMessage");
+    managerMessage = document.getElementById("managerMessage");
 
   }
 
-  // ==========================================================
+  // ============================================================
+
+  // CHUYỂN LOGIN SANG GOOGLE
+
+  // ============================================================
+
+  function setupGoogleLoginUI() {
+
+    if (!loginBox) return;
+
+    // Xóa các ô login cũ nếu HTML vẫn còn
+
+    const oldLoginId = document.getElementById("loginId");
+
+    const oldPassword = document.getElementById("password");
+
+    if (oldLoginId) {
+
+      const wrapper = oldLoginId.closest(".field");
+
+      if (wrapper) wrapper.style.display = "none";
+
+    }
+
+    if (oldPassword) {
+
+      const wrapper = oldPassword.closest(".field");
+
+      if (wrapper) wrapper.style.display = "none";
+
+    }
+
+    if (loginBtn) {
+
+      loginBtn.type = "button";
+
+      loginBtn.innerHTML = "🔵 ĐĂNG NHẬP BẰNG GOOGLE";
+
+    }
+
+  }
+
+  // ============================================================
 
   // INIT
 
-  // ==========================================================
+  // ============================================================
 
   async function initManager() {
 
     initElements();
+
+    setupGoogleLoginUI();
 
     bindEvents();
 
@@ -270,13 +264,7 @@
 
       if (error) {
 
-        console.error(
-
-          "GET SESSION ERROR:",
-
-          error
-
-        );
+        console.error("GET SESSION ERROR:", error);
 
         showLogin();
 
@@ -284,9 +272,7 @@
 
       }
 
-      const session =
-
-        data?.session;
+      const session = data?.session;
 
       if (!session?.user) {
 
@@ -296,27 +282,17 @@
 
       }
 
-      currentUser =
+      currentUser = session.user;
 
-        session.user;
+      console.log("GOOGLE USER:", currentUser);
 
-      console.log(
+      // ----------------------------------------------------------
 
-        "CURRENT USER:",
+      // KIỂM TRA QUYỀN
 
-        currentUser
+      // ----------------------------------------------------------
 
-      );
-
-      // ======================================================
-
-      // KIỂM TRA QUYỀN QUẢN LÝ
-
-      // ======================================================
-
-      const allowed =
-
-        await checkManagerPermission();
+      const allowed = await checkManagerPermission();
 
       if (!allowed) {
 
@@ -342,13 +318,7 @@
 
     } catch (error) {
 
-      console.error(
-
-        "INIT ERROR:",
-
-        error
-
-      );
+      console.error("INIT ERROR:", error);
 
       currentUser = null;
 
@@ -356,7 +326,7 @@
 
       setLoginMessage(
 
-        "❌ Không thể khởi tạo trang quản lý: " +
+        "❌ Không thể khởi tạo: " +
 
         getErrorMessage(error),
 
@@ -366,21 +336,87 @@
 
     }
 
+    // ----------------------------------------------------------
+
+    // THEO DÕI LOGIN / LOGOUT
+
+    // ----------------------------------------------------------
+
+    client.auth.onAuthStateChange(async (event, session) => {
+
+      console.log("AUTH EVENT:", event);
+
+      if (event === "SIGNED_OUT") {
+
+        currentUser = null;
+
+        allReports = [];
+
+        filteredReports = [];
+
+        currentPage = 1;
+
+        showLogin();
+
+        return;
+
+      }
+
+      if (
+
+        (event === "SIGNED_IN" ||
+
+          event === "INITIAL_SESSION" ||
+
+          event === "TOKEN_REFRESHED") &&
+
+        session?.user
+
+      ) {
+
+        currentUser = session.user;
+
+        const allowed =
+
+          await checkManagerPermission();
+
+        if (!allowed) {
+
+          await client.auth.signOut();
+
+          currentUser = null;
+
+          showLogin();
+
+          setLoginMessage(
+
+            "❌ Gmail này chưa được cấp quyền quản lý.",
+
+            "error"
+
+          );
+
+          return;
+
+        }
+
+        await showManager();
+
+      }
+
+    });
+
   }
 
-  // ==========================================================
+  // ============================================================
 
   // EVENTS
 
-  // ==========================================================
+  // ============================================================
 
   function bindEvents() {
 
-    // ========================================================
-
     // GOOGLE LOGIN
-
-    // ========================================================
 
     if (loginBtn) {
 
@@ -394,209 +430,173 @@
 
     }
 
-    // ========================================================
-
     // MENU
-
-    // ========================================================
 
     if (menuBtn) {
 
-      menuBtn.onclick =
+      menuBtn.onclick = function (e) {
 
-        function (e) {
+        e.preventDefault();
 
-          e.preventDefault();
+        e.stopPropagation();
 
-          e.stopPropagation();
+        openMenu();
 
-          openMenu();
-
-        };
+      };
 
     }
 
     if (sideMenuClose) {
 
-      sideMenuClose.onclick =
-
-        function () {
-
-          closeMenu();
-
-        };
+      sideMenuClose.onclick = closeMenu;
 
     }
 
     if (sideMenuOverlay) {
 
-      sideMenuOverlay.onclick =
-
-        function () {
-
-          closeMenu();
-
-        };
+      sideMenuOverlay.onclick = closeMenu;
 
     }
 
-    // ========================================================
-
-    // REPORTS
-
-    // ========================================================
+    // QUẢN LÝ BÁO CÁO
 
     if (menuReportsBtn) {
 
-      menuReportsBtn.onclick =
+      menuReportsBtn.onclick = async function () {
 
-        async function () {
+        closeMenu();
 
-          closeMenu();
+        if (!currentUser) {
 
-          if (!currentUser) {
+          showLogin();
 
-            showLogin();
+          return;
 
-            return;
+        }
 
-          }
+        await showManager();
 
-          await showManager();
-
-        };
+      };
 
     }
 
-    // ========================================================
+    // PHÂN QUYỀN
+
+    if (menuPermissionBtn) {
+
+      menuPermissionBtn.onclick = function () {
+
+        closeMenu();
+
+        showPermissionInfo();
+
+      };
+
+    }
 
     // LOGOUT
 
-    // ========================================================
-
     if (menuLogoutBtn) {
 
-      menuLogoutBtn.onclick =
+      menuLogoutBtn.onclick = async function () {
 
-        async function () {
+        await logout();
 
-          await logout();
-
-        };
+      };
 
     }
 
     if (logoutBtn) {
 
-      logoutBtn.onclick =
+      logoutBtn.onclick = async function () {
 
-        async function () {
+        await logout();
 
-          await logout();
-
-        };
+      };
 
     }
-
-    // ========================================================
 
     // FILTER
 
-    // ========================================================
-
     if (filterBtn) {
 
-      filterBtn.onclick =
+      filterBtn.onclick = function () {
 
-        function () {
+        applyFilter();
+
+      };
+
+    }
+
+    // ENTER FILTER USER
+
+    if (filterUser) {
+
+      filterUser.addEventListener("keydown", function (e) {
+
+        if (e.key === "Enter") {
+
+          e.preventDefault();
 
           applyFilter();
 
-        };
+        }
+
+      });
 
     }
-
-    // ========================================================
 
     // REFRESH
 
-    // ========================================================
-
     if (refreshBtn) {
 
-      refreshBtn.onclick =
+      refreshBtn.onclick = async function () {
 
-        async function () {
+        if (filterUser) filterUser.value = "";
 
-          if (filterUser) {
+        if (filterDate) filterDate.value = "";
 
-            filterUser.value = "";
+        await loadReports();
 
-          }
-
-          if (filterDate) {
-
-            filterDate.value = "";
-
-          }
-
-          await loadReports();
-
-        };
+      };
 
     }
-
-    // ========================================================
 
     // EXPORT
 
-    // ========================================================
-
     if (exportBtn) {
 
-      exportBtn.onclick =
+      exportBtn.onclick = function () {
 
-        function () {
+        exportExcel();
 
-          exportExcel();
-
-        };
+      };
 
     }
 
-    // ========================================================
-
     // USERS
-
-    // ========================================================
 
     if (showSubmittedUsersBtn) {
 
-      showSubmittedUsersBtn.onclick =
+      showSubmittedUsersBtn.onclick = function () {
 
-        function () {
+        showSubmittedUsers();
 
-          showSubmittedUsers();
-
-        };
+      };
 
     }
 
   }
 
-  // ==========================================================
+  // ============================================================
 
-  // LOGIN GOOGLE
+  // GOOGLE LOGIN
 
-  // ==========================================================
+  // ============================================================
 
   async function loginWithGoogle() {
 
-    if (isLoggingIn) {
-
-      return;
-
-    }
+    if (isLoggingIn) return;
 
     isLoggingIn = true;
 
@@ -604,7 +604,7 @@
 
       loginBtn.disabled = true;
 
-      loginBtn.textContent =
+      loginBtn.innerHTML =
 
         "⏳ ĐANG CHUYỂN ĐẾN GOOGLE...";
 
@@ -636,45 +636,31 @@
 
       const {
 
-        data,
-
         error
 
-      } =
+      } = await client.auth.signInWithOAuth({
 
-        await client.auth.signInWithOAuth({
+        provider: "google",
 
-          provider: "google",
+        options: {
 
-          options: {
+          redirectTo: redirectTo,
 
-            redirectTo: redirectTo,
+          queryParams: {
 
-            queryParams: {
-
-              access_type: "offline",
-
-              prompt: "select_account"
-
-            }
+            prompt: "select_account"
 
           }
 
-        });
+        }
+
+      });
 
       if (error) {
 
         throw error;
 
       }
-
-      console.log(
-
-        "GOOGLE OAUTH STARTED:",
-
-        data
-
-      );
 
     } catch (error) {
 
@@ -688,9 +674,7 @@
 
       setLoginMessage(
 
-        "❌ " +
-
-        getErrorMessage(error),
+        "❌ " + getErrorMessage(error),
 
         "error"
 
@@ -702,9 +686,9 @@
 
         loginBtn.disabled = false;
 
-        loginBtn.textContent =
+        loginBtn.innerHTML =
 
-          "ĐĂNG NHẬP BẰNG GOOGLE";
+          "🔵 ĐĂNG NHẬP BẰNG GOOGLE";
 
       }
 
@@ -712,21 +696,21 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
-  // CHECK MANAGER
+  // KIỂM TRA QUYỀN MANAGER
 
-  // ==========================================================
+  // ============================================================
 
   async function checkManagerPermission() {
 
+    if (!currentUser) {
+
+      return false;
+
+    }
+
     try {
-
-      if (!currentUser) {
-
-        return false;
-
-      }
 
       const {
 
@@ -734,19 +718,13 @@
 
         error
 
-      } =
-
-        await client.rpc(
-
-          "is_manager"
-
-        );
+      } = await client.rpc("is_manager");
 
       if (error) {
 
         console.error(
 
-          "IS MANAGER ERROR:",
+          "IS_MANAGER ERROR:",
 
           error
 
@@ -768,7 +746,7 @@
 
       console.log(
 
-        "IS MANAGER RESULT:",
+        "IS_MANAGER RESULT:",
 
         data
 
@@ -792,11 +770,11 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
-  // SHOW LOGIN
+  // HIỂN THỊ LOGIN
 
-  // ==========================================================
+  // ============================================================
 
   function showLogin() {
 
@@ -820,13 +798,15 @@
 
     closeMenu();
 
+    setupGoogleLoginUI();
+
     if (loginBtn) {
 
       loginBtn.disabled = false;
 
-      loginBtn.textContent =
+      loginBtn.innerHTML =
 
-        "ĐĂNG NHẬP BẰNG GOOGLE";
+        "🔵 ĐĂNG NHẬP BẰNG GOOGLE";
 
     }
 
@@ -834,11 +814,11 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
-  // SHOW MANAGER
+  // HIỂN THỊ MANAGER
 
-  // ==========================================================
+  // ============================================================
 
   async function showManager() {
 
@@ -852,19 +832,9 @@
 
           error
 
-        } =
-
-          await client.auth.getUser();
+        } = await client.auth.getUser();
 
         if (error) {
-
-          console.error(
-
-            "GET USER ERROR:",
-
-            error
-
-          );
 
           showLogin();
 
@@ -872,9 +842,7 @@
 
         }
 
-        currentUser =
-
-          data?.user || null;
+        currentUser = data?.user || null;
 
       }
 
@@ -940,23 +908,15 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
-  // OPEN MENU
+  // MENU
 
-  // ==========================================================
+  // ============================================================
 
   function openMenu() {
 
-    if (!sideMenu ||
-
-        !sideMenuOverlay) {
-
-      console.error(
-
-        "SIDE MENU ELEMENT NOT FOUND"
-
-      );
+    if (!sideMenu || !sideMenuOverlay) {
 
       return;
 
@@ -966,59 +926,37 @@
 
     sideMenuOverlay.classList.add("open");
 
-    document.body.style.overflow =
-
-      "hidden";
+    document.body.style.overflow = "hidden";
 
   }
-
-  // ==========================================================
-
-  // CLOSE MENU
-
-  // ==========================================================
 
   function closeMenu() {
 
     if (sideMenu) {
 
-      sideMenu.classList.remove(
-
-        "open"
-
-      );
+      sideMenu.classList.remove("open");
 
     }
 
     if (sideMenuOverlay) {
 
-      sideMenuOverlay.classList.remove(
-
-        "open"
-
-      );
+      sideMenuOverlay.classList.remove("open");
 
     }
 
-    document.body.style.overflow =
-
-      "";
+    document.body.style.overflow = "";
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // LOAD REPORTS
 
-  // ==========================================================
+  // ============================================================
 
   async function loadReports() {
 
-    if (!currentUser) {
-
-      return;
-
-    }
+    if (!currentUser) return;
 
     showManagerMessage(
 
@@ -1036,25 +974,17 @@
 
         error
 
-      } =
+      } = await client
 
-        await client
+        .from("bao_cao_ngay")
 
-          .from("bao_cao_ngay")
+        .select("*")
 
-          .select("*")
+        .order("created_at", {
 
-          .order(
+          ascending: false
 
-            "created_at",
-
-            {
-
-              ascending: false
-
-            }
-
-          );
+        });
 
       if (error) {
 
@@ -1082,13 +1012,7 @@
 
       updateSubmittedUserCount();
 
-      showManagerMessage(
-
-        "",
-
-        "info"
-
-      );
+      showManagerMessage("", "info");
 
     } catch (error) {
 
@@ -1114,21 +1038,17 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // FILTER
 
-  // ==========================================================
+  // ============================================================
 
   function applyFilter() {
 
     const userKeyword =
 
-      (
-
-        filterUser?.value || ""
-
-      )
+      (filterUser?.value || "")
 
         .trim()
 
@@ -1136,49 +1056,39 @@
 
     const dateKeyword =
 
-      (
+      (filterDate?.value || "")
 
-        filterDate?.value || ""
-
-      ).trim();
+        .trim();
 
     filteredReports =
 
-      allReports.filter(
+      allReports.filter(report => {
 
-        report => {
+        const userText =
 
-          const userText =
+          getReportUser(report)
 
-            getReportUser(report)
+            .toLowerCase();
 
-              .toLowerCase();
+        const userOK =
 
-          const userOK =
+          !userKeyword ||
 
-            !userKeyword ||
+          userText.includes(userKeyword);
 
-            userText.includes(
+        const reportDate =
 
-              userKeyword
+          getReportDate(report);
 
-            );
+        const dateOK =
 
-          const reportDate =
+          !dateKeyword ||
 
-            getReportDate(report);
+          reportDate === dateKeyword;
 
-          const dateOK =
+        return userOK && dateOK;
 
-            !dateKeyword ||
-
-            reportDate === dateKeyword;
-
-          return userOK && dateOK;
-
-        }
-
-      );
+      });
 
     currentPage = 1;
 
@@ -1188,11 +1098,11 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // GET USER
 
-  // ==========================================================
+  // ============================================================
 
   function getReportUser(report) {
 
@@ -1222,11 +1132,11 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // GET DATE
 
-  // ==========================================================
+  // ============================================================
 
   function getReportDate(report) {
 
@@ -1246,11 +1156,7 @@
 
       "";
 
-    if (!value) {
-
-      return "";
-
-    }
+    if (!value) return "";
 
     if (
 
@@ -1260,59 +1166,35 @@
 
     ) {
 
-      return value.substring(
-
-        0,
-
-        10
-
-      );
+      return value.substring(0, 10);
 
     }
 
-    try {
+    const d = new Date(value);
 
-      const d =
-
-        new Date(value);
-
-      if (isNaN(d.getTime())) {
-
-        return String(value);
-
-      }
-
-      return [
-
-        d.getFullYear(),
-
-        String(
-
-          d.getMonth() + 1
-
-        ).padStart(2, "0"),
-
-        String(
-
-          d.getDate()
-
-        ).padStart(2, "0")
-
-      ].join("-");
-
-    } catch {
+    if (isNaN(d.getTime())) {
 
       return String(value);
 
     }
 
+    return [
+
+      d.getFullYear(),
+
+      String(d.getMonth() + 1).padStart(2, "0"),
+
+      String(d.getDate()).padStart(2, "0")
+
+    ].join("-");
+
   }
 
-  // ==========================================================
+  // ============================================================
 
   // GET AMOUNT
 
-  // ==========================================================
+  // ============================================================
 
   function getReportAmount(report) {
 
@@ -1342,17 +1224,9 @@
 
       const cleaned =
 
-        value.replace(
+        value.replace(/[^\d.-]/g, "");
 
-          /[^\d.-]/g,
-
-          ""
-
-        );
-
-      const number =
-
-        Number(cleaned);
+      const number = Number(cleaned);
 
       return isNaN(number)
 
@@ -1366,11 +1240,11 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // STATS
 
-  // ==========================================================
+  // ============================================================
 
   function updateStats() {
 
@@ -1388,17 +1262,9 @@
 
       filteredReports.reduce(
 
-        (sum, report) => {
+        (sum, report) =>
 
-          return (
-
-            sum +
-
-            getReportAmount(report)
-
-          );
-
-        },
+          sum + getReportAmount(report),
 
         0
 
@@ -1414,19 +1280,15 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // TABLE
 
-  // ==========================================================
+  // ============================================================
 
   function renderTable() {
 
-    if (!tableBody) {
-
-      return;
-
-    }
+    if (!tableBody) return;
 
     tableBody.innerHTML = "";
 
@@ -1436,9 +1298,7 @@
 
         <tr>
 
-          <td
-
-            colspan="10"
+          <td colspan="10"
 
             style="
 
@@ -1450,9 +1310,7 @@
 
               font-weight:bold;
 
-            "
-
-          >
+            ">
 
             Không có dữ liệu
 
@@ -1470,9 +1328,7 @@
 
     const start =
 
-      (currentPage - 1) *
-
-      pageSize;
+      (currentPage - 1) * pageSize;
 
     const end =
 
@@ -1480,255 +1336,189 @@
 
     const pageData =
 
-      filteredReports.slice(
+      filteredReports.slice(start, end);
 
-        start,
+    pageData.forEach(report => {
 
-        end
+      const tr =
 
-      );
+        document.createElement("tr");
 
-    pageData.forEach(
+      const user =
 
-      report => {
+        getReportUser(report);
 
-        const tr =
+      const date =
 
-          document.createElement("tr");
+        getReportDate(report);
 
-        const user =
+      const cif =
 
-          getReportUser(report);
+        report.cif ??
 
-        const date =
+        report.so_cif ??
 
-          getReportDate(report);
+        report.cif_number ??
 
-        const cif =
+        "";
 
-          report.cif ??
+      const customerName =
 
-          report.so_cif ??
+        report.customer_name ??
 
-          report.cif_number ??
+        report.ten_khach_hang ??
 
-          "";
+        report.customer ??
 
-        const customerName =
+        report.ho_ten_khach_hang ??
 
-          report.customer_name ??
+        "";
 
-          report.ten_khach_hang ??
+      const result =
 
-          report.customer ??
+        report.result ??
 
-          report.ho_ten_khach_hang ??
+        report.ket_qua ??
 
-          "";
+        "";
 
-        const result =
+      const connection =
 
-          report.result ??
+        report.connection ??
 
-          report.ket_qua ??
+        report.ket_noi ??
 
-          "";
+        "";
 
-        const connection =
+      const detail =
 
-          report.connection ??
+        report.detail_result ??
 
-          report.ket_noi ??
+        report.ket_qua_chi_tiet ??
 
-          "";
+        report.result_detail ??
 
-        const detail =
+        report.chi_tiet ??
 
-          report.detail_result ??
+        "";
 
-          report.ket_qua_chi_tiet ??
+      const amount =
 
-          report.result_detail ??
+        getReportAmount(report);
 
-          report.chi_tiet ??
+      const nextAction =
 
-          "";
+        report.next_action ??
 
-        const amount =
+        report.huong_tac_dong_tiep_theo ??
 
-          getReportAmount(report);
+        report.huong_tac_dong ??
 
-        const nextAction =
+        "";
 
-          report.next_action ??
+      tr.innerHTML = `
 
-          report.huong_tac_dong_tiep_theo ??
+        <td>${escapeHtml(user)}</td>
 
-          report.huong_tac_dong ??
+        <td>
 
-          "";
+          ${escapeHtml(
 
-        tr.innerHTML = `
+            formatDisplayDate(date)
 
-          <td>
+          )}
 
-            ${escapeHtml(user)}
+        </td>
 
-          </td>
+        <td>${escapeHtml(cif)}</td>
 
-          <td>
+        <td>${escapeHtml(customerName)}</td>
 
-            ${escapeHtml(
+        <td>${escapeHtml(result)}</td>
 
-              formatDisplayDate(date)
+        <td>${escapeHtml(connection)}</td>
 
-            )}
+        <td>${escapeHtml(detail)}</td>
 
-          </td>
+        <td>
 
-          <td>
+          ${escapeHtml(
 
-            ${escapeHtml(cif)}
+            formatMoney(amount)
 
-          </td>
+          )}
 
-          <td>
+        </td>
 
-            ${escapeHtml(customerName)}
+        <td>${escapeHtml(nextAction)}</td>
 
-          </td>
+        <td>
 
-          <td>
+          <button
 
-            ${escapeHtml(result)}
+            class="edit-btn"
 
-          </td>
+            type="button">
 
-          <td>
+            ✏️ Sửa
 
-            ${escapeHtml(connection)}
+          </button>
 
-          </td>
+          <button
 
-          <td>
+            class="delete-btn"
 
-            ${escapeHtml(detail)}
+            type="button">
 
-          </td>
+            🗑️ Xóa
 
-          <td>
+          </button>
 
-            ${escapeHtml(
+        </td>
 
-              formatMoney(amount)
+      `;
 
-            )}
+      const editButton =
 
-          </td>
+        tr.querySelector(".edit-btn");
 
-          <td>
+      const deleteButton =
 
-            ${escapeHtml(nextAction)}
+        tr.querySelector(".delete-btn");
 
-          </td>
+      if (editButton) {
 
-          <td>
+        editButton.onclick =
 
-            <button
-
-              class="edit-btn"
-
-              type="button"
-
-              data-action="edit"
-
-            >
-
-              ✏️ Sửa
-
-            </button>
-
-            <button
-
-              class="delete-btn"
-
-              type="button"
-
-              data-action="delete"
-
-            >
-
-              🗑️ Xóa
-
-            </button>
-
-          </td>
-
-        `;
-
-        const editButton =
-
-          tr.querySelector(
-
-            '[data-action="edit"]'
-
-          );
-
-        const deleteButton =
-
-          tr.querySelector(
-
-            '[data-action="delete"]'
-
-          );
-
-        if (editButton) {
-
-          editButton.onclick =
-
-            function () {
-
-              openEditModal(report);
-
-            };
-
-        }
-
-        if (deleteButton) {
-
-          deleteButton.onclick =
-
-            function () {
-
-              deleteReport(report);
-
-            };
-
-        }
-
-        tableBody.appendChild(tr);
+          () => openEditModal(report);
 
       }
 
-    );
+      if (deleteButton) {
+
+        deleteButton.onclick =
+
+          () => deleteReport(report);
+
+      }
+
+      tableBody.appendChild(tr);
+
+    });
 
     renderPagination();
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // PAGINATION
 
-  // ==========================================================
+  // ============================================================
 
   function renderPagination() {
 
-    if (!pagination) {
-
-      return;
-
-    }
+    if (!pagination) return;
 
     pagination.innerHTML = "";
 
@@ -1742,11 +1532,7 @@
 
       );
 
-    if (totalPages <= 1) {
-
-      return;
-
-    }
+    if (totalPages <= 1) return;
 
     const prev =
 
@@ -1760,21 +1546,19 @@
 
       currentPage === 1;
 
-    prev.onclick =
+    prev.onclick = () => {
 
-      function () {
+      if (currentPage > 1) {
 
-        if (currentPage > 1) {
+        currentPage--;
 
-          currentPage--;
+        renderTable();
 
-          renderTable();
+        scrollToTable();
 
-          scrollToTable();
+      }
 
-        }
-
-      };
+    };
 
     pagination.appendChild(prev);
 
@@ -1850,25 +1634,19 @@
 
       if (i === currentPage) {
 
-        button.classList.add(
-
-          "active"
-
-        );
+        button.classList.add("active");
 
       }
 
-      button.onclick =
+      button.onclick = () => {
 
-        function () {
+        currentPage = i;
 
-          currentPage = i;
+        renderTable();
 
-          renderTable();
+        scrollToTable();
 
-          scrollToTable();
-
-        };
+      };
 
       pagination.appendChild(button);
 
@@ -1886,47 +1664,35 @@
 
       currentPage === totalPages;
 
-    next.onclick =
+    next.onclick = () => {
 
-      function () {
+      if (currentPage < totalPages) {
 
-        if (
+        currentPage++;
 
-          currentPage <
+        renderTable();
 
-          totalPages
+        scrollToTable();
 
-        ) {
+      }
 
-          currentPage++;
-
-          renderTable();
-
-          scrollToTable();
-
-        }
-
-      };
+    };
 
     pagination.appendChild(next);
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // SCROLL
 
-  // ==========================================================
+  // ============================================================
 
   function scrollToTable() {
 
     const table =
 
-      document.querySelector(
-
-        ".table-wrap"
-
-      );
+      document.querySelector(".table-wrap");
 
     if (table) {
 
@@ -1942,17 +1708,13 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // EDIT MODAL
 
-  // ==========================================================
+  // ============================================================
 
   function openEditModal(report) {
-
-    editingReportId =
-
-      report.id;
 
     const currentAmount =
 
@@ -1988,23 +1750,9 @@
 
       <div class="edit-modal">
 
-        <h2>
+        <h2>✏️ Sửa báo cáo</h2>
 
-          ✏️ Sửa báo cáo
-
-        </h2>
-
-        <div
-
-          style="
-
-            display:grid;
-
-            gap:12px;
-
-          "
-
-        >
+        <div style="display:grid;gap:12px;">
 
           <div>
 
@@ -2018,9 +1766,7 @@
 
                 margin-bottom:6px;
 
-              "
-
-            >
+              ">
 
               Dự thu
 
@@ -2034,25 +1780,15 @@
 
               inputmode="numeric"
 
-              value="${escapeAttribute(
+              value="${escapeAttribute(currentAmount)}"
 
-                currentAmount
-
-              )}"
-
-              placeholder="Nhập dự thu"
-
-            >
+              placeholder="Nhập dự thu">
 
           </div>
 
         </div>
 
-        <div
-
-          class="edit-modal-buttons"
-
-        >
+        <div class="edit-modal-buttons">
 
           <button
 
@@ -2060,9 +1796,7 @@
 
             class="edit-cancel-btn"
 
-            type="button"
-
-          >
+            type="button">
 
             HỦY
 
@@ -2074,9 +1808,7 @@
 
             class="edit-save-btn"
 
-            type="button"
-
-          >
+            type="button">
 
             💾 LƯU
 
@@ -2096,75 +1828,47 @@
 
             font-weight:bold;
 
-          "
+          ">
 
-        ></div>
+        </div>
 
       </div>
 
     `;
 
-    document.body.appendChild(
+    document.body.appendChild(overlay);
 
-      overlay
+    document.getElementById(
 
-    );
+      "editCancelBtn"
 
-    const cancelBtn =
+    ).onclick = closeEditModal;
 
-      document.getElementById(
+    document.getElementById(
 
-        "editCancelBtn"
+      "editSaveBtn"
 
-      );
+    ).onclick = () =>
 
-    const saveBtn =
+      saveEditReport(report);
 
-      document.getElementById(
+    overlay.onclick = e => {
 
-        "editSaveBtn"
+      if (e.target === overlay) {
 
-      );
+        closeEditModal();
 
-    if (cancelBtn) {
+      }
 
-      cancelBtn.onclick =
-
-        closeEditModal;
-
-    }
-
-    if (saveBtn) {
-
-      saveBtn.onclick =
-
-        function () {
-
-          saveEditReport(report);
-
-        };
-
-    }
-
-    overlay.onclick =
-
-      function (e) {
-
-        if (e.target === overlay) {
-
-          closeEditModal();
-
-        }
-
-      };
+    };
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // SAVE EDIT
 
-  // ==========================================================
+  // ============================================================
 
   async function saveEditReport(report) {
 
@@ -2192,11 +1896,7 @@
 
       );
 
-    if (!input) {
-
-      return;
-
-    }
+    if (!input) return;
 
     const amount =
 
@@ -2262,7 +1962,7 @@
 
         updateData = {
 
-          amount
+          amount: amount
 
         };
 
@@ -2288,7 +1988,7 @@
 
         updateData = {
 
-          amount
+          amount: amount
 
         };
 
@@ -2298,21 +1998,13 @@
 
         error
 
-      } =
+      } = await client
 
-        await client
+        .from("bao_cao_ngay")
 
-          .from("bao_cao_ngay")
+        .update(updateData)
 
-          .update(updateData)
-
-          .eq(
-
-            "id",
-
-            report.id
-
-          );
+        .eq("id", report.id);
 
       if (error) {
 
@@ -2368,11 +2060,11 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // CLOSE EDIT
 
-  // ==========================================================
+  // ============================================================
 
   function closeEditModal() {
 
@@ -2390,15 +2082,13 @@
 
     }
 
-    editingReportId = null;
-
   }
 
-  // ==========================================================
+  // ============================================================
 
   // DELETE
 
-  // ==========================================================
+  // ============================================================
 
   async function deleteReport(report) {
 
@@ -2426,11 +2116,7 @@
 
       );
 
-    if (!confirmed) {
-
-      return;
-
-    }
+    if (!confirmed) return;
 
     try {
 
@@ -2446,21 +2132,13 @@
 
         error
 
-      } =
+      } = await client
 
-        await client
+        .from("bao_cao_ngay")
 
-          .from("bao_cao_ngay")
+        .delete()
 
-          .delete()
-
-          .eq(
-
-            "id",
-
-            report.id
-
-          );
+        .eq("id", report.id);
 
       if (error) {
 
@@ -2502,11 +2180,11 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // EXPORT EXCEL
 
-  // ==========================================================
+  // ============================================================
 
   function exportExcel() {
 
@@ -2542,109 +2220,85 @@
 
       const rows =
 
-        filteredReports.map(
+        filteredReports.map(report => ({
 
-          report => {
+          "Cán bộ":
 
-            return {
+            getReportUser(report),
 
-              "Cán bộ":
+          "Ngày field":
 
-                getReportUser(
+            formatDisplayDate(
 
-                  report
+              getReportDate(report)
 
-                ),
+            ),
 
-              "Ngày field":
+          "Số CIF":
 
-                formatDisplayDate(
+            report.cif ??
 
-                  getReportDate(
+            report.so_cif ??
 
-                    report
+            report.cif_number ??
 
-                  )
+            "",
 
-                ),
+          "Tên khách hàng":
 
-              "Số CIF":
+            report.customer_name ??
 
-                report.cif ??
+            report.ten_khach_hang ??
 
-                report.so_cif ??
+            report.customer ??
 
-                report.cif_number ??
+            "",
 
-                "",
+          "Kết quả":
 
-              "Tên khách hàng":
+            report.result ??
 
-                report.customer_name ??
+            report.ket_qua ??
 
-                report.ten_khach_hang ??
+            "",
 
-                report.customer ??
+          "Kết nối":
 
-                "",
+            report.connection ??
 
-              "Kết quả":
+            report.ket_noi ??
 
-                report.result ??
+            "",
 
-                report.ket_qua ??
+          "Kết quả chi tiết":
 
-                "",
+            report.detail_result ??
 
-              "Kết nối":
+            report.ket_qua_chi_tiet ??
 
-                report.connection ??
+            report.result_detail ??
 
-                report.ket_noi ??
+            "",
 
-                "",
+          "Dự thu":
 
-              "Kết quả chi tiết":
+            getReportAmount(report),
 
-                report.detail_result ??
+          "Hướng tác động tiếp theo":
 
-                report.ket_qua_chi_tiet ??
+            report.next_action ??
 
-                report.result_detail ??
+            report.huong_tac_dong_tiep_theo ??
 
-                "",
+            report.huong_tac_dong ??
 
-              "Dự thu":
+            ""
 
-                getReportAmount(
-
-                  report
-
-                ),
-
-              "Hướng tác động tiếp theo":
-
-                report.next_action ??
-
-                report.huong_tac_dong_tiep_theo ??
-
-                report.huong_tac_dong ??
-
-                ""
-
-            };
-
-          }
-
-        );
+        }));
 
       const worksheet =
 
-        XLSX.utils.json_to_sheet(
-
-          rows
-
-        );
+        XLSX.utils.json_to_sheet(rows);
 
       const workbook =
 
@@ -2660,13 +2314,13 @@
 
       );
 
-      const now =
-
-        new Date();
+      const now = new Date();
 
       const filename =
 
-        `BaoCaoNgay_${now.getFullYear()}-` +
+        `BaoCaoNgay_` +
+
+        `${now.getFullYear()}-` +
 
         `${String(
 
@@ -2716,39 +2370,29 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // COUNT USERS
 
-  // ==========================================================
+  // ============================================================
 
   function updateSubmittedUserCount() {
 
-    const users =
+    const users = new Set();
 
-      new Set();
+    allReports.forEach(report => {
 
-    allReports.forEach(
+      const user =
 
-      report => {
+        getReportUser(report).trim();
 
-        const user =
+      if (user) {
 
-          getReportUser(
-
-            report
-
-          ).trim();
-
-        if (user) {
-
-          users.add(user);
-
-        }
+        users.add(user);
 
       }
 
-    );
+    });
 
     if (submittedUserCount) {
 
@@ -2760,11 +2404,11 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // SHOW USERS
 
-  // ==========================================================
+  // ============================================================
 
   function showSubmittedUsers() {
 
@@ -2776,15 +2420,9 @@
 
           allReports
 
-            .map(
+            .map(report =>
 
-              report =>
-
-                getReportUser(
-
-                  report
-
-                ).trim()
+              getReportUser(report).trim()
 
             )
 
@@ -2792,17 +2430,9 @@
 
         )
 
-      ).sort(
+      ).sort((a, b) =>
 
-        (a, b) =>
-
-          a.localeCompare(
-
-            b,
-
-            "vi"
-
-          )
+        a.localeCompare(b, "vi")
 
       );
 
@@ -2850,47 +2480,29 @@
 
       content =
 
-        users
+        users.map(
 
-          .map(
+          (user, index) => `
 
-            (
+            <div class="submitted-user-item">
 
-              user,
+              <div class="submitted-user-number">
 
-              index
+                ${index + 1}
 
-            ) => {
+              </div>
 
-              return `
+              <div>
 
-                <div class="submitted-user-item">
+                ${escapeHtml(user)}
 
-                  <div
+              </div>
 
-                    class="submitted-user-number"
+            </div>
 
-                  >
+          `
 
-                    ${index + 1}
-
-                  </div>
-
-                  <div>
-
-                    ${escapeHtml(user)}
-
-                  </div>
-
-                </div>
-
-              `;
-
-            }
-
-          )
-
-          .join("");
+        ).join("");
 
     }
 
@@ -2910,11 +2522,7 @@
 
             class="user-modal-close"
 
-            id="submittedUsersClose"
-
-            type="button"
-
-          >
+            type="button">
 
             ×
 
@@ -2932,17 +2540,13 @@
 
     `;
 
-    document.body.appendChild(
-
-      overlay
-
-    );
+    document.body.appendChild(overlay);
 
     const closeBtn =
 
-      document.getElementById(
+      overlay.querySelector(
 
-        "submittedUsersClose"
+        ".user-modal-close"
 
       );
 
@@ -2950,33 +2554,177 @@
 
       closeBtn.onclick =
 
-        function () {
-
-          overlay.remove();
-
-        };
+        () => overlay.remove();
 
     }
 
-    overlay.onclick =
+    overlay.onclick = e => {
 
-      function (e) {
+      if (e.target === overlay) {
 
-        if (e.target === overlay) {
+        overlay.remove();
 
-          overlay.remove();
+      }
 
-        }
-
-      };
+    };
 
   }
 
-  // ==========================================================
+  // ============================================================
+
+  // PHÂN QUYỀN
+
+  // ============================================================
+
+  function showPermissionInfo() {
+
+    const old =
+
+      document.getElementById(
+
+        "permissionInfoModal"
+
+      );
+
+    if (old) old.remove();
+
+    const overlay =
+
+      document.createElement("div");
+
+    overlay.id =
+
+      "permissionInfoModal";
+
+    overlay.className =
+
+      "user-modal-overlay";
+
+    const email =
+
+      currentUser?.email || "";
+
+    overlay.innerHTML = `
+
+      <div class="user-modal">
+
+        <div class="user-modal-header">
+
+          <h2>
+
+            🔐 PHÂN QUYỀN
+
+          </h2>
+
+          <button
+
+            class="user-modal-close"
+
+            type="button">
+
+            ×
+
+          </button>
+
+        </div>
+
+        <div class="user-modal-body">
+
+          <div
+
+            style="
+
+              padding:15px;
+
+              line-height:1.7;
+
+            ">
+
+            <b>Gmail đang đăng nhập:</b>
+
+            <div
+
+              style="
+
+                margin-top:5px;
+
+                padding:10px;
+
+                background:#f1f5f9;
+
+                border-radius:10px;
+
+                word-break:break-all;
+
+              ">
+
+              ${escapeHtml(email)}
+
+            </div>
+
+            <p>
+
+              🔐 Quyền quản lý được kiểm tra
+
+              trực tiếp thông qua Supabase
+
+              bằng hàm <b>is_manager()</b>.
+
+            </p>
+
+            <p>
+
+              Nếu Gmail chưa được cấp quyền,
+
+              tài khoản sẽ không thể truy cập
+
+              trang quản lý.
+
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    `;
+
+    document.body.appendChild(overlay);
+
+    const closeBtn =
+
+      overlay.querySelector(
+
+        ".user-modal-close"
+
+      );
+
+    if (closeBtn) {
+
+      closeBtn.onclick =
+
+        () => overlay.remove();
+
+    }
+
+    overlay.onclick = e => {
+
+      if (e.target === overlay) {
+
+        overlay.remove();
+
+      }
+
+    };
+
+  }
+
+  // ============================================================
 
   // LOGOUT
 
-  // ==========================================================
+  // ============================================================
 
   async function logout() {
 
@@ -3018,11 +2766,11 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // MESSAGE
 
-  // ==========================================================
+  // ============================================================
 
   function setLoginMessage(
 
@@ -3032,15 +2780,9 @@
 
   ) {
 
-    if (!loginMessage) {
+    if (!loginMessage) return;
 
-      return;
-
-    }
-
-    loginMessage.textContent =
-
-      text;
+    loginMessage.textContent = text;
 
     loginMessage.style.color =
 
@@ -3056,15 +2798,9 @@
 
   ) {
 
-    if (!managerMessage) {
+    if (!managerMessage) return;
 
-      return;
-
-    }
-
-    managerMessage.textContent =
-
-      text;
+    managerMessage.textContent = text;
 
     managerMessage.style.color =
 
@@ -3090,11 +2826,11 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
-  // ERROR MESSAGE
+  // ERROR
 
-  // ==========================================================
+  // ============================================================
 
   function getErrorMessage(error) {
 
@@ -3128,76 +2864,6 @@
 
       lower.includes(
 
-        "invalid login credentials"
-
-      )
-
-    ) {
-
-      return "Email hoặc mật khẩu không đúng.";
-
-    }
-
-    if (
-
-      lower.includes(
-
-        "email not confirmed"
-
-      )
-
-    ) {
-
-      return "Email chưa được xác nhận trong Supabase.";
-
-    }
-
-    if (
-
-      lower.includes(
-
-        "failed to fetch"
-
-      )
-
-    ) {
-
-      return "Không kết nối được Supabase. Kiểm tra Internet hoặc config.js.";
-
-    }
-
-    if (
-
-      lower.includes(
-
-        "network"
-
-      )
-
-    ) {
-
-      return "Lỗi kết nối mạng.";
-
-    }
-
-    if (
-
-      lower.includes(
-
-        "is_manager"
-
-      )
-
-    ) {
-
-      return "Không gọi được chức năng kiểm tra quyền is_manager.";
-
-    }
-
-    if (
-
-      lower.includes(
-
         "provider is not enabled"
 
       )
@@ -3210,11 +2876,7 @@
 
     if (
 
-      lower.includes(
-
-        "redirect"
-
-      )
+      lower.includes("redirect")
 
     ) {
 
@@ -3222,15 +2884,45 @@
 
     }
 
+    if (
+
+      lower.includes("is_manager")
+
+    ) {
+
+      return "Supabase chưa có hàm is_manager() hoặc hàm đang bị lỗi.";
+
+    }
+
+    if (
+
+      lower.includes("failed to fetch")
+
+    ) {
+
+      return "Không kết nối được Supabase. Kiểm tra Internet hoặc config.js.";
+
+    }
+
+    if (
+
+      lower.includes("network")
+
+    ) {
+
+      return "Lỗi kết nối mạng.";
+
+    }
+
     return message;
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // MONEY
 
-  // ==========================================================
+  // ============================================================
 
   function formatMoney(value) {
 
@@ -3240,11 +2932,7 @@
 
     return (
 
-      number.toLocaleString(
-
-        "vi-VN"
-
-      ) +
+      number.toLocaleString("vi-VN") +
 
       " đ"
 
@@ -3252,31 +2940,21 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // DATE
 
-  // ==========================================================
+  // ============================================================
 
   function formatDisplayDate(value) {
 
-    if (!value) {
+    if (!value) return "";
 
-      return "";
-
-    }
-
-    const str =
-
-      String(value);
+    const str = String(value);
 
     if (
 
-      /^\d{4}-\d{2}-\d{2}$/.test(
-
-        str
-
-      )
+      /^\d{4}-\d{2}-\d{2}$/.test(str)
 
     ) {
 
@@ -3288,9 +2966,7 @@
 
         d
 
-      ] =
-
-        str.split("-");
+      ] = str.split("-");
 
       return `${d}/${m}/${y}`;
 
@@ -3298,23 +2974,13 @@
 
     if (
 
-      /^\d{4}-\d{2}-\d{2}/.test(
-
-        str
-
-      )
+      /^\d{4}-\d{2}-\d{2}/.test(str)
 
     ) {
 
       const date =
 
-        str.substring(
-
-          0,
-
-          10
-
-        );
+        str.substring(0, 10);
 
       const [
 
@@ -3324,9 +2990,7 @@
 
         d
 
-      ] =
-
-        date.split("-");
+      ] = date.split("-");
 
       return `${d}/${m}/${y}`;
 
@@ -3336,11 +3000,11 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // ESCAPE HTML
 
-  // ==========================================================
+  // ============================================================
 
   function escapeHtml(value) {
 
@@ -3358,53 +3022,17 @@
 
     return String(value)
 
-      .replace(
+      .replace(/&/g, "&amp;")
 
-        /&/g,
+      .replace(/</g, "&lt;")
 
-        "&amp;"
+      .replace(/>/g, "&gt;")
 
-      )
+      .replace(/"/g, "&quot;")
 
-      .replace(
-
-        /</g,
-
-        "&lt;"
-
-      )
-
-      .replace(
-
-        />/g,
-
-        "&gt;"
-
-      )
-
-      .replace(
-
-        /"/g,
-
-        "&quot;"
-
-      )
-
-      .replace(
-
-        /'/g,
-
-        "&#039;"
-
-      );
+      .replace(/'/g, "&#039;");
 
   }
-
-  // ==========================================================
-
-  // ESCAPE ATTRIBUTE
-
-  // ==========================================================
 
   function escapeAttribute(value) {
 
@@ -3412,17 +3040,15 @@
 
   }
 
-  // ==========================================================
+  // ============================================================
 
   // START
 
-  // ==========================================================
+  // ============================================================
 
   if (
 
-    document.readyState ===
-
-    "loading"
+    document.readyState === "loading"
 
   ) {
 
