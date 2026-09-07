@@ -3,7 +3,6 @@
 // ========================================
 
 if (!window.supabase) {
-
   alert(
     "❌ Không tải được Supabase. Hãy kiểm tra Internet."
   );
@@ -11,15 +10,12 @@ if (!window.supabase) {
   throw new Error(
     "Supabase library chưa được tải."
   );
-
 }
-
 
 if (
   !window.SUPABASE_URL ||
   !window.SUPABASE_ANON_KEY
 ) {
-
   alert(
     "❌ Chưa cấu hình Supabase. Kiểm tra config.js."
   );
@@ -27,9 +23,7 @@ if (
   throw new Error(
     "Thiếu SUPABASE_URL hoặc SUPABASE_ANON_KEY."
   );
-
 }
-
 
 const client =
   window.supabase.createClient(
@@ -209,25 +203,7 @@ function setupEvents() {
   }
 
 
-  // Enter để đăng nhập
-
-  if (passwordInput) {
-
-    passwordInput.addEventListener(
-      "keydown",
-      event => {
-
-        if (event.key === "Enter") {
-
-          login();
-
-        }
-
-      }
-    );
-
-  }
-
+  // ENTER ĐỂ ĐĂNG NHẬP
 
   if (emailInput) {
 
@@ -246,11 +222,29 @@ function setupEvents() {
 
   }
 
+
+  if (passwordInput) {
+
+    passwordInput.addEventListener(
+      "keydown",
+      event => {
+
+        if (event.key === "Enter") {
+
+          login();
+
+        }
+
+      }
+    );
+
+  }
+
 }
 
 
 // ========================================
-// KIỂM TRA ĐĂNG NHẬP
+// KIỂM TRA LOGIN
 // ========================================
 
 async function checkLogin() {
@@ -404,7 +398,7 @@ async function login() {
 
 
 // ========================================
-// HIỆN GIAO DIỆN QUẢN LÝ
+// HIỆN MANAGER
 // ========================================
 
 function showManager() {
@@ -504,8 +498,6 @@ async function loadData() {
 
     currentPage = 1;
 
-
-    // Cập nhật số cán bộ
 
     updateSubmittedUserCount();
 
@@ -621,7 +613,7 @@ function applyCurrentFilter() {
 
 
 // ========================================
-// RENDER DATA
+// RENDER TABLE
 // ========================================
 
 function renderData() {
@@ -647,8 +639,7 @@ function renderData() {
   // TỔNG DỰ THU
   // ======================================
 
-  let total =
-    0;
+  let total = 0;
 
 
   filteredData.forEach(row => {
@@ -694,7 +685,7 @@ function renderData() {
 
 
   // ======================================
-  // TABLE
+  // KHÔNG CÓ DỮ LIỆU
   // ======================================
 
   if (
@@ -716,6 +707,11 @@ function renderData() {
     `;
 
   } else {
+
+
+    // ====================================
+    // HIỂN THỊ DỮ LIỆU
+    // ====================================
 
     tableBody.innerHTML =
       pageData
@@ -790,16 +786,33 @@ function renderData() {
                 )}
               </td>
 
+              <!-- ======================
+                   THAO TÁC
+              ======================= -->
+
               <td>
 
-                <button
-                  class="delete-btn"
-                  onclick="deleteReport('${escapeJs(
-                    row.id
-                  )}')"
-                >
-                  🗑️ Xóa
-                </button>
+                <div class="action-buttons">
+
+                  <button
+                    class="edit-btn"
+                    onclick="editReport('${escapeJs(
+                      row.id
+                    )}')"
+                  >
+                    ✏️ Sửa
+                  </button>
+
+                  <button
+                    class="delete-btn"
+                    onclick="deleteReport('${escapeJs(
+                      row.id
+                    )}')"
+                  >
+                    🗑️ Xóa
+                  </button>
+
+                </div>
 
               </td>
 
@@ -812,17 +825,13 @@ function renderData() {
   }
 
 
-  // ======================================
-  // PAGINATION
-  // ======================================
-
   renderPagination();
 
 }
 
 
 // ========================================
-// ĐẾM CÁN BỘ KHÔNG TRÙNG
+// ĐẾM CÁN BỘ
 // ========================================
 
 function updateSubmittedUserCount() {
@@ -862,7 +871,7 @@ function updateSubmittedUserCount() {
 
 
 // ========================================
-// HIỆN DANH SÁCH CÁN BỘ
+// DANH SÁCH CÁN BỘ
 // ========================================
 
 function showSubmittedUsers() {
@@ -870,10 +879,6 @@ function showSubmittedUsers() {
   const usersMap =
     new Map();
 
-
-  // ======================================
-  // LẤY CÁN BỘ KHÔNG TRÙNG
-  // ======================================
 
   allData.forEach(row => {
 
@@ -910,8 +915,6 @@ function showSubmittedUsers() {
     );
 
 
-  // Sắp xếp A-Z
-
   users.sort(
     (a, b) =>
       a.localeCompare(
@@ -922,7 +925,7 @@ function showSubmittedUsers() {
 
 
   // ======================================
-  // TẠO MODAL
+  // MODAL
   // ======================================
 
   const overlay =
@@ -1015,7 +1018,9 @@ function showSubmittedUsers() {
     "user-modal-body";
 
 
-  if (users.length === 0) {
+  if (
+    users.length === 0
+  ) {
 
     body.innerHTML = `
       <div class="no-user">
@@ -1066,13 +1071,10 @@ function showSubmittedUsers() {
   }
 
 
-  // ======================================
-  // GHÉP MODAL
-  // ======================================
-
   modal.appendChild(
     header
   );
+
 
   modal.appendChild(
     body
@@ -1088,10 +1090,6 @@ function showSubmittedUsers() {
     overlay
   );
 
-
-  // ======================================
-  // CLICK RA NGOÀI MODAL ĐỂ ĐÓNG
-  // ======================================
 
   overlay.addEventListener(
     "click",
@@ -1113,6 +1111,200 @@ function showSubmittedUsers() {
 
 
 // ========================================
+// ✏️ SỬA BÁO CÁO
+// ========================================
+
+async function editReport(id) {
+
+  const row =
+    allData.find(
+      item =>
+        String(item.id) ===
+        String(id)
+    );
+
+
+  if (!row) {
+
+    alert(
+      "❌ Không tìm thấy báo cáo."
+    );
+
+    return;
+
+  }
+
+
+  const oldName =
+    String(
+      row.user_name || ""
+    ).trim();
+
+
+  const newName =
+    prompt(
+      "✏️ Nhập tên cán bộ đúng:",
+      oldName
+    );
+
+
+  // Người dùng bấm Hủy
+
+  if (
+    newName === null
+  ) {
+
+    return;
+
+  }
+
+
+  const cleanName =
+    newName.trim();
+
+
+  if (!cleanName) {
+
+    alert(
+      "❌ Tên cán bộ không được để trống."
+    );
+
+    return;
+
+  }
+
+
+  // Không thay đổi
+
+  if (
+    cleanName === oldName
+  ) {
+
+    return;
+
+  }
+
+
+  showManagerMessage(
+    "⏳ Đang cập nhật tên cán bộ..."
+  );
+
+
+  try {
+
+    const {
+      error
+    } =
+      await client
+        .from("bao_cao_ngay")
+        .update({
+          user_name: cleanName
+        })
+        .eq(
+          "id",
+          id
+        );
+
+
+    if (error) {
+
+      console.error(
+        "Lỗi cập nhật cán bộ:",
+        error
+      );
+
+
+      showManagerMessage(
+        "❌ Sửa thất bại: " +
+        error.message
+      );
+
+
+      alert(
+        "❌ Không thể sửa cán bộ.\n\n" +
+        error.message
+      );
+
+
+      return;
+
+    }
+
+
+    // ====================================
+    // CẬP NHẬT LOCAL DATA
+    // ====================================
+
+    const index =
+      allData.findIndex(
+        item =>
+          String(item.id) ===
+          String(id)
+      );
+
+
+    if (index !== -1) {
+
+      allData[index].user_name =
+        cleanName;
+
+    }
+
+
+    // Cập nhật số cán bộ
+
+    updateSubmittedUserCount();
+
+
+    // Lọc + render lại
+
+    applyCurrentFilter();
+
+
+    showManagerMessage(
+      "✅ Đã sửa tên cán bộ thành công."
+    );
+
+
+    setTimeout(
+      () => {
+
+        if (
+          managerMessage
+        ) {
+
+          managerMessage.textContent =
+            "";
+
+        }
+
+      },
+      2500
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      error
+    );
+
+
+    showManagerMessage(
+      "❌ Có lỗi khi sửa cán bộ."
+    );
+
+
+    alert(
+      "❌ Có lỗi khi sửa cán bộ."
+    );
+
+  }
+
+}
+
+
+// ========================================
 // ĐÓNG MODAL
 // ========================================
 
@@ -1129,288 +1321,6 @@ function closeSubmittedUsers() {
     modal.remove();
 
   }
-
-}
-
-
-// ========================================
-// PAGINATION
-// ========================================
-
-function renderPagination() {
-
-  if (!pagination) {
-    return;
-  }
-
-
-  pagination.innerHTML = "";
-
-
-  const totalPages =
-    Math.ceil(
-      filteredData.length /
-      rowsPerPage
-    );
-
-
-  if (totalPages <= 1) {
-    return;
-  }
-
-
-  // ======================================
-  // NÚT TRƯỚC
-  // ======================================
-
-  const prev =
-    document.createElement(
-      "button"
-    );
-
-
-  prev.className =
-    "arrow";
-
-
-  prev.textContent =
-    "‹";
-
-
-  prev.disabled =
-    currentPage === 1;
-
-
-  prev.onclick =
-    () => {
-
-      if (
-        currentPage > 1
-      ) {
-
-        currentPage--;
-
-        renderData();
-
-        scrollToTable();
-
-      }
-
-    };
-
-
-  pagination.appendChild(
-    prev
-  );
-
-
-  // ======================================
-  // TẠO DANH SÁCH TRANG
-  // ======================================
-
-  const pages =
-    getPaginationPages(
-      currentPage,
-      totalPages
-    );
-
-
-  pages.forEach(
-    page => {
-
-      if (
-        page === "..."
-      ) {
-
-        const dots =
-          document.createElement(
-            "button"
-          );
-
-
-        dots.textContent =
-          "...";
-
-
-        dots.disabled =
-          true;
-
-
-        pagination.appendChild(
-          dots
-        );
-
-
-        return;
-
-      }
-
-
-      const btn =
-        document.createElement(
-          "button"
-        );
-
-
-      btn.textContent =
-        page;
-
-
-      if (
-        page === currentPage
-      ) {
-
-        btn.classList.add(
-          "active"
-        );
-
-      }
-
-
-      btn.onclick =
-        () => {
-
-          currentPage =
-            page;
-
-          renderData();
-
-          scrollToTable();
-
-        };
-
-
-      pagination.appendChild(
-        btn
-      );
-
-    }
-  );
-
-
-  // ======================================
-  // NÚT SAU
-  // ======================================
-
-  const next =
-    document.createElement(
-      "button"
-    );
-
-
-  next.className =
-    "arrow";
-
-
-  next.textContent =
-    "›";
-
-
-  next.disabled =
-    currentPage ===
-    totalPages;
-
-
-  next.onclick =
-    () => {
-
-      if (
-        currentPage <
-        totalPages
-      ) {
-
-        currentPage++;
-
-        renderData();
-
-        scrollToTable();
-
-      }
-
-    };
-
-
-  pagination.appendChild(
-    next
-  );
-
-}
-
-
-// ========================================
-// DANH SÁCH TRANG
-// ========================================
-
-function getPaginationPages(
-  current,
-  total
-) {
-
-  if (total <= 7) {
-
-    return Array.from(
-      {
-        length: total
-      },
-      (_, i) =>
-        i + 1
-    );
-
-  }
-
-
-  const pages = [];
-
-
-  pages.push(1);
-
-
-  if (current > 4) {
-
-    pages.push("...");
-
-  }
-
-
-  const start =
-    Math.max(
-      2,
-      current - 1
-    );
-
-
-  const end =
-    Math.min(
-      total - 1,
-      current + 1
-    );
-
-
-  for (
-    let i = start;
-    i <= end;
-    i++
-  ) {
-
-    pages.push(i);
-
-  }
-
-
-  if (
-    current <
-    total - 3
-  ) {
-
-    pages.push("...");
-
-  }
-
-
-  pages.push(total);
-
-
-  return pages;
 
 }
 
@@ -1447,7 +1357,9 @@ async function deleteReport(id) {
 
 
   if (!confirmed) {
+
     return;
+
   }
 
 
@@ -1488,8 +1400,6 @@ async function deleteReport(id) {
     }
 
 
-    // Xóa khỏi dữ liệu đang có
-
     allData =
       allData.filter(
         item =>
@@ -1498,12 +1408,8 @@ async function deleteReport(id) {
       );
 
 
-    // Cập nhật số cán bộ
-
     updateSubmittedUserCount();
 
-
-    // Lọc lại
 
     applyCurrentFilter();
 
@@ -1761,7 +1667,7 @@ async function logout() {
 
 
 // ========================================
-// HIỂN THỊ THÔNG BÁO
+// MESSAGE
 // ========================================
 
 function showManagerMessage(
@@ -1781,7 +1687,7 @@ function showManagerMessage(
 
 
 // ========================================
-// FORMAT TIỀN
+// PARSE MONEY
 // ========================================
 
 function parseMoney(value) {
@@ -1814,22 +1720,18 @@ function parseMoney(value) {
 
 
   if (!text) {
+
     return 0;
+
   }
 
 
-  // Loại bỏ chữ "đ"
-
   text =
-    text
-      .replace(
-        /đ/gi,
-        ""
-      )
-      .trim();
+    text.replace(
+      /đ/gi,
+      ""
+    );
 
-
-  // Loại bỏ khoảng trắng
 
   text =
     text.replace(
@@ -1838,22 +1740,10 @@ function parseMoney(value) {
     );
 
 
-  /*
-    Xử lý:
-
-    6000000
-    6,000,000
-    6.000.000
-    6,000,000 đ
-  */
-
-
   if (
     text.includes(",") &&
     text.includes(".")
   ) {
-
-    // Trường hợp có cả . và ,
 
     const lastComma =
       text.lastIndexOf(",");
@@ -1891,8 +1781,6 @@ function parseMoney(value) {
 
   } else {
 
-    // Chỉ có dấu phẩy
-
     if (
       text.includes(",")
     ) {
@@ -1906,8 +1794,6 @@ function parseMoney(value) {
     }
 
 
-    // Chỉ có dấu chấm
-
     if (
       text.includes(".")
     ) {
@@ -1915,9 +1801,6 @@ function parseMoney(value) {
       const parts =
         text.split(".");
 
-
-      // Nếu phần sau có 3 số
-      // thì coi là phân cách hàng nghìn
 
       if (
         parts.length > 2 ||
@@ -1951,6 +1834,10 @@ function parseMoney(value) {
 }
 
 
+// ========================================
+// FORMAT MONEY
+// ========================================
+
 function formatMoney(
   value
 ) {
@@ -1975,15 +1862,15 @@ function formatDate(
 ) {
 
   if (!value) {
+
     return "";
+
   }
 
 
   const text =
     String(value);
 
-
-  // YYYY-MM-DD
 
   const match =
     text.match(
@@ -2047,7 +1934,7 @@ function escapeHtml(
 
 
 // ========================================
-// ESCAPE JAVASCRIPT
+// ESCAPE JS
 // ========================================
 
 function escapeJs(
@@ -2106,11 +1993,300 @@ function scrollToTable() {
 
 
 // ========================================
-// EXPORT HÀM RA WINDOW
+// PAGINATION
+// ========================================
+
+function renderPagination() {
+
+  if (!pagination) {
+
+    return;
+
+  }
+
+
+  pagination.innerHTML = "";
+
+
+  const totalPages =
+    Math.ceil(
+      filteredData.length /
+      rowsPerPage
+    );
+
+
+  if (
+    totalPages <= 1
+  ) {
+
+    return;
+
+  }
+
+
+  // TRANG TRƯỚC
+
+  const prev =
+    document.createElement(
+      "button"
+    );
+
+
+  prev.className =
+    "arrow";
+
+
+  prev.textContent =
+    "‹";
+
+
+  prev.disabled =
+    currentPage === 1;
+
+
+  prev.onclick =
+    () => {
+
+      if (
+        currentPage > 1
+      ) {
+
+        currentPage--;
+
+        renderData();
+
+        scrollToTable();
+
+      }
+
+    };
+
+
+  pagination.appendChild(
+    prev
+  );
+
+
+  // DANH SÁCH TRANG
+
+  const pages =
+    getPaginationPages(
+      currentPage,
+      totalPages
+    );
+
+
+  pages.forEach(
+    page => {
+
+      if (
+        page === "..."
+      ) {
+
+        const dots =
+          document.createElement(
+            "button"
+          );
+
+
+        dots.textContent =
+          "...";
+
+
+        dots.disabled =
+          true;
+
+
+        pagination.appendChild(
+          dots
+        );
+
+
+        return;
+
+      }
+
+
+      const btn =
+        document.createElement(
+          "button"
+        );
+
+
+      btn.textContent =
+        page;
+
+
+      if (
+        page === currentPage
+      ) {
+
+        btn.classList.add(
+          "active"
+        );
+
+      }
+
+
+      btn.onclick =
+        () => {
+
+          currentPage =
+            page;
+
+          renderData();
+
+          scrollToTable();
+
+        };
+
+
+      pagination.appendChild(
+        btn
+      );
+
+    }
+  );
+
+
+  // TRANG SAU
+
+  const next =
+    document.createElement(
+      "button"
+    );
+
+
+  next.className =
+    "arrow";
+
+
+  next.textContent =
+    "›";
+
+
+  next.disabled =
+    currentPage ===
+    totalPages;
+
+
+  next.onclick =
+    () => {
+
+      if (
+        currentPage <
+        totalPages
+      ) {
+
+        currentPage++;
+
+        renderData();
+
+        scrollToTable();
+
+      }
+
+    };
+
+
+  pagination.appendChild(
+    next
+  );
+
+}
+
+
+// ========================================
+// PAGINATION PAGES
+// ========================================
+
+function getPaginationPages(
+  current,
+  total
+) {
+
+  if (
+    total <= 7
+  ) {
+
+    return Array.from(
+      {
+        length: total
+      },
+      (_, i) =>
+        i + 1
+    );
+
+  }
+
+
+  const pages = [];
+
+
+  pages.push(1);
+
+
+  if (
+    current > 4
+  ) {
+
+    pages.push("...");
+
+  }
+
+
+  const start =
+    Math.max(
+      2,
+      current - 1
+    );
+
+
+  const end =
+    Math.min(
+      total - 1,
+      current + 1
+    );
+
+
+  for (
+    let i = start;
+    i <= end;
+    i++
+  ) {
+
+    pages.push(i);
+
+  }
+
+
+  if (
+    current <
+    total - 3
+  ) {
+
+    pages.push("...");
+
+  }
+
+
+  pages.push(total);
+
+
+  return pages;
+
+}
+
+
+// ========================================
+// WINDOW
 // ========================================
 
 window.deleteReport =
   deleteReport;
+
+window.editReport =
+  editReport;
 
 window.closeSubmittedUsers =
   closeSubmittedUsers;
