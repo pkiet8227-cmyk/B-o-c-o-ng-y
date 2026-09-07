@@ -1,4 +1,10 @@
 // =====================================================
+// BÁO CÁO NGÀY - MANAGER.JS
+// QUẢN LÝ + PHÂN QUYỀN
+// =====================================================
+
+
+// =====================================================
 // KHỞI TẠO SUPABASE
 // =====================================================
 
@@ -31,8 +37,8 @@ const loginBox =
 const managerBox =
   document.getElementById("managerBox");
 
-const emailInput =
-  document.getElementById("email");
+const loginIdInput =
+  document.getElementById("loginId");
 
 const passwordInput =
   document.getElementById("password");
@@ -83,6 +89,30 @@ const totalAmount =
   document.getElementById("totalAmount");
 
 
+// MENU
+
+const menuBtn =
+  document.getElementById("menuBtn");
+
+const sideMenu =
+  document.getElementById("sideMenu");
+
+const sideMenuOverlay =
+  document.getElementById("sideMenuOverlay");
+
+const sideMenuClose =
+  document.getElementById("sideMenuClose");
+
+const menuReportsBtn =
+  document.getElementById("menuReportsBtn");
+
+const menuPermissionBtn =
+  document.getElementById("menuPermissionBtn");
+
+const menuLogoutBtn =
+  document.getElementById("menuLogoutBtn");
+
+
 // =====================================================
 // BIẾN
 // =====================================================
@@ -95,6 +125,8 @@ let currentPage = 1;
 
 const rowsPerPage = 20;
 
+let currentSessionUser = null;
+
 
 // =====================================================
 // KHỞI ĐỘNG
@@ -104,35 +136,169 @@ document.addEventListener(
   "DOMContentLoaded",
   async () => {
 
-    try {
-
-      const {
-        data: {
-          session
-        }
-      } = await client.auth.getSession();
-
-      if (session) {
-
-        loginBox.style.display = "none";
-
-        managerBox.style.display = "block";
-
-        await loadData();
-
-      }
-
-    } catch (error) {
-
-      console.error(
-        "Lỗi kiểm tra session:",
-        error
-      );
-
-    }
+    await checkExistingSession();
 
   }
 );
+
+
+// =====================================================
+// KIỂM TRA SESSION
+// =====================================================
+
+async function checkExistingSession() {
+
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await client.auth.getSession();
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    const session =
+      data?.session;
+
+    if (!session) {
+      return;
+    }
+
+    currentSessionUser =
+      session.user;
+
+    const allowed =
+      await checkManagerPermission(
+        session.user.id
+      );
+
+    if (!allowed) {
+
+      await client.auth.signOut();
+
+      loginMessage.textContent =
+        "❌ Tài khoản này chưa được cấp quyền quản lý.";
+
+      loginMessage.style.color =
+        "#dc2626";
+
+      return;
+
+    }
+
+    showManager();
+
+    await loadData();
+
+  } catch (error) {
+
+    console.error(
+      "Lỗi kiểm tra session:",
+      error
+    );
+
+  }
+
+}
+
+
+// =====================================================
+// KIỂM TRA QUYỀN QUẢN LÝ
+// =====================================================
+
+async function checkManagerPermission(
+  userId
+) {
+
+  if (!userId) {
+    return false;
+  }
+
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await client
+        .from("manager_permissions")
+        .select("id,enabled")
+        .eq(
+          "auth_user_id",
+          userId
+        )
+        .eq(
+          "enabled",
+          true
+        )
+        .maybeSingle();
+
+    if (error) {
+
+      console.error(
+        "Lỗi kiểm tra quyền:",
+        error
+      );
+
+      return false;
+
+    }
+
+    return !!data;
+
+  } catch (error) {
+
+    console.error(error);
+
+    return false;
+
+  }
+
+}
+
+
+// =====================================================
+// HIỂN THỊ MANAGER
+// =====================================================
+
+function showManager() {
+
+  loginBox.style.display =
+    "none";
+
+  managerBox.style.display =
+    "block";
+
+  if (menuBtn) {
+    menuBtn.style.display =
+      "block";
+  }
+
+}
+
+
+// =====================================================
+// HIỂN THỊ LOGIN
+// =====================================================
+
+function showLogin() {
+
+  loginBox.style.display =
+    "block";
+
+  managerBox.style.display =
+    "none";
+
+  if (menuBtn) {
+    menuBtn.style.display =
+      "none";
+  }
+
+}
 
 
 // =====================================================
@@ -149,19 +315,65 @@ if (loginBtn) {
 }
 
 
+if (loginIdInput) {
+
+  loginIdInput.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key ===
+        "Enter"
+      ) {
+
+        login();
+
+      }
+
+    }
+  );
+
+}
+
+
+if (passwordInput) {
+
+  passwordInput.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key ===
+        "Enter"
+      ) {
+
+        login();
+
+      }
+
+    }
+  );
+
+}
+
+
 async function login() {
 
-  const email =
-    emailInput.value.trim();
+  const loginId =
+    loginIdInput
+      ? loginIdInput.value.trim()
+      : "";
 
   const password =
-    passwordInput.value;
+    passwordInput
+      ? passwordInput.value
+      : "";
 
 
-  if (!email || !password) {
+  if (!loginId || !password) {
 
     loginMessage.textContent =
-      "❌ Vui lòng nhập email và mật khẩu.";
+      "❌ Vui lòng nhập User/Email và mật khẩu.";
 
     loginMessage.style.color =
       "#dc2626";
@@ -171,75 +383,172 @@ async function login() {
   }
 
 
-  loginBtn.disabled = true;
+  loginBtn.disabled =
+    true;
 
   loginBtn.textContent =
     "⏳ ĐANG ĐĂNG NHẬP...";
 
 
-  const {
-    data,
-    error
-  } =
-    await client.auth.signInWithPassword({
-      email,
-      password
-    });
+  try {
+
+    /*
+      Nếu nhập email:
+      → đăng nhập trực tiếp.
+
+      Nếu nhập username:
+      → tìm email Auth tương ứng
+      thông qua bảng manager_permissions.
+    */
+
+    let email =
+      loginId;
 
 
-  if (error) {
+    const looksLikeEmail =
+      loginId.includes("@");
+
+
+    if (!looksLikeEmail) {
+
+      const {
+        data,
+        error
+      } =
+        await client
+          .from("manager_permissions")
+          .select("auth_email")
+          .eq(
+            "login_name",
+            loginId
+          )
+          .eq(
+            "enabled",
+            true
+          )
+          .maybeSingle();
+
+
+      if (error) {
+
+        console.error(error);
+
+        throw new Error(
+          "Không tìm thấy tài khoản được cấp quyền."
+        );
+
+      }
+
+
+      if (!data?.auth_email) {
+
+        throw new Error(
+          "Tài khoản chưa được cấp quyền quản lý."
+        );
+
+      }
+
+
+      email =
+        data.auth_email;
+
+    }
+
+
+    const {
+      data,
+      error
+    } =
+      await client.auth.signInWithPassword({
+        email,
+        password
+      });
+
+
+    if (error) {
+
+      console.error(error);
+
+      throw new Error(
+        "Tài khoản hoặc mật khẩu không đúng."
+      );
+
+    }
+
+
+    if (!data?.session) {
+
+      throw new Error(
+        "Không tạo được phiên đăng nhập."
+      );
+
+    }
+
+
+    currentSessionUser =
+      data.session.user;
+
+
+    /*
+      Kiểm tra quyền lần nữa
+      sau khi đăng nhập.
+    */
+
+    const allowed =
+      await checkManagerPermission(
+        data.session.user.id
+      );
+
+
+    if (!allowed) {
+
+      await client.auth.signOut();
+
+      throw new Error(
+        "Tài khoản này chưa được cấp quyền quản lý."
+      );
+
+    }
+
+
+    loginMessage.textContent =
+      "";
+
+    showManager();
+
+
+    loginBtn.disabled =
+      false;
+
+    loginBtn.textContent =
+      "🔐 ĐĂNG NHẬP";
+
+
+    await loadData();
+
+
+  } catch (error) {
 
     console.error(error);
 
     loginMessage.textContent =
-      "❌ Đăng nhập thất bại: " +
-      error.message;
+      "❌ " +
+      (
+        error.message ||
+        "Đăng nhập thất bại."
+      );
 
     loginMessage.style.color =
       "#dc2626";
 
-    loginBtn.disabled = false;
+
+    loginBtn.disabled =
+      false;
 
     loginBtn.textContent =
       "🔐 ĐĂNG NHẬP";
 
-    return;
-
   }
-
-
-  if (!data.session) {
-
-    loginMessage.textContent =
-      "❌ Không tạo được phiên đăng nhập.";
-
-    loginBtn.disabled = false;
-
-    loginBtn.textContent =
-      "🔐 ĐĂNG NHẬP";
-
-    return;
-
-  }
-
-
-  loginMessage.textContent =
-    "";
-
-  loginBox.style.display =
-    "none";
-
-  managerBox.style.display =
-    "block";
-
-
-  loginBtn.disabled = false;
-
-  loginBtn.textContent =
-    "🔐 ĐĂNG NHẬP";
-
-
-  await loadData();
 
 }
 
@@ -410,10 +719,6 @@ function renderData() {
     "";
 
 
-  // ---------------------------------------------
-  // THỐNG KÊ
-  // ---------------------------------------------
-
   totalReports.textContent =
     filteredData.length;
 
@@ -438,10 +743,6 @@ function renderData() {
     formatMoney(total) +
     " đ";
 
-
-  // ---------------------------------------------
-  // KHÔNG CÓ DỮ LIỆU
-  // ---------------------------------------------
 
   if (
     filteredData.length === 0
@@ -469,10 +770,6 @@ function renderData() {
 
   }
 
-
-  // ---------------------------------------------
-  // PHÂN TRANG
-  // ---------------------------------------------
 
   const totalPages =
     Math.ceil(
@@ -510,10 +807,6 @@ function renderData() {
       end
     );
 
-
-  // ---------------------------------------------
-  // RENDER
-  // ---------------------------------------------
 
   pageData.forEach(
     row => {
@@ -617,10 +910,6 @@ function renderData() {
   );
 
 
-  // ---------------------------------------------
-  // GẮN EVENT SỬA
-  // ---------------------------------------------
-
   tableBody
     .querySelectorAll(
       "[data-edit-id]"
@@ -632,11 +921,8 @@ function renderData() {
           "click",
           () => {
 
-            const id =
-              button.dataset.editId;
-
             openEditUserModal(
-              id
+              button.dataset.editId
             );
 
           }
@@ -645,10 +931,6 @@ function renderData() {
       }
     );
 
-
-  // ---------------------------------------------
-  // GẮN EVENT XÓA
-  // ---------------------------------------------
 
   tableBody
     .querySelectorAll(
@@ -661,11 +943,8 @@ function renderData() {
           "click",
           () => {
 
-            const id =
-              button.dataset.deleteId;
-
             deleteReport(
-              id
+              button.dataset.deleteId
             );
 
           }
@@ -686,13 +965,9 @@ function renderData() {
 
 function updateSubmittedUserCount() {
 
-  const sourceData =
-    filteredData;
-
-
   const uniqueUsers =
     getUniqueUsers(
-      sourceData
+      filteredData
     );
 
 
@@ -703,7 +978,7 @@ function updateSubmittedUserCount() {
 
 
 // =====================================================
-// LẤY DANH SÁCH CÁN BỘ KHÔNG TRÙNG
+// DANH SÁCH CÁN BỘ
 // =====================================================
 
 function getUniqueUsers(data) {
@@ -860,26 +1135,19 @@ function showSubmittedUsers() {
     modal
   );
 
-
   document.body.appendChild(
     overlay
   );
 
 
-  const closeBtn =
-    modal.querySelector(
+  modal
+    .querySelector(
       ".user-modal-close"
+    )
+    .addEventListener(
+      "click",
+      () => overlay.remove()
     );
-
-
-  closeBtn.addEventListener(
-    "click",
-    () => {
-
-      overlay.remove();
-
-    }
-  );
 
 
   overlay.addEventListener(
@@ -902,7 +1170,7 @@ function showSubmittedUsers() {
 
 
 // =====================================================
-// MODAL SỬA CÁN BỘ
+// SỬA CÁN BỘ
 // =====================================================
 
 function openEditUserModal(id) {
@@ -963,9 +1231,7 @@ function openEditUserModal(id) {
     <input
       id="editUserNameInput"
       type="text"
-      value="${escapeAttribute(
-        oldName
-      )}"
+      value="${escapeAttribute(oldName)}"
       placeholder="Nhập tên cán bộ"
       autocomplete="off"
     >
@@ -997,7 +1263,6 @@ function openEditUserModal(id) {
     modal
   );
 
-
   document.body.appendChild(
     overlay
   );
@@ -1008,12 +1273,10 @@ function openEditUserModal(id) {
       "#editUserNameInput"
     );
 
-
   const saveBtn =
     modal.querySelector(
       "#saveEditUserBtn"
     );
-
 
   const cancelBtn =
     modal.querySelector(
@@ -1025,7 +1288,6 @@ function openEditUserModal(id) {
     () => {
 
       input.focus();
-
       input.select();
 
     },
@@ -1035,11 +1297,7 @@ function openEditUserModal(id) {
 
   cancelBtn.addEventListener(
     "click",
-    () => {
-
-      overlay.remove();
-
-    }
+    () => overlay.remove()
   );
 
 
@@ -1114,7 +1372,7 @@ function openEditUserModal(id) {
 
 
 // =====================================================
-// UPDATE USER_NAME TRỰC TIẾP SUPABASE
+// UPDATE USER_NAME
 // =====================================================
 
 async function updateUserName(
@@ -1125,14 +1383,6 @@ async function updateUserName(
 ) {
 
   try {
-
-    /*
-      QUAN TRỌNG:
-
-      Đây là phần cập nhật trực tiếp
-      cột user_name trong bảng
-      bao_cao_ngay.
-    */
 
     const {
       data,
@@ -1157,7 +1407,6 @@ async function updateUserName(
         error
       );
 
-
       saveBtn.disabled =
         false;
 
@@ -1174,11 +1423,6 @@ async function updateUserName(
 
     }
 
-
-    /*
-      Nếu Supabase trả về [] thì
-      rất có thể RLS đang chặn UPDATE.
-    */
 
     if (
       !data ||
@@ -1201,10 +1445,6 @@ async function updateUserName(
 
     }
 
-
-    // ---------------------------------------------
-    // CẬP NHẬT LOCAL DATA NGAY LẬP TỨC
-    // ---------------------------------------------
 
     const updatedRow =
       data[0];
@@ -1229,23 +1469,9 @@ async function updateUserName(
     }
 
 
-    // ---------------------------------------------
-    // ĐÓNG MODAL
-    // ---------------------------------------------
-
     overlay.remove();
 
-
-    // ---------------------------------------------
-    // VẼ LẠI BẢNG
-    // ---------------------------------------------
-
     applyCurrentFilter();
-
-
-    // ---------------------------------------------
-    // CẬP NHẬT SỐ CÁN BỘ
-    // ---------------------------------------------
 
     updateSubmittedUserCount();
 
@@ -1271,10 +1497,7 @@ async function updateUserName(
 
   } catch (error) {
 
-    console.error(
-      error
-    );
-
+    console.error(error);
 
     saveBtn.disabled =
       false;
@@ -1351,10 +1574,7 @@ async function deleteReport(id) {
 
   if (error) {
 
-    console.error(
-      error
-    );
-
+    console.error(error);
 
     alert(
       "❌ Xóa thất bại:\n\n" +
@@ -1366,10 +1586,6 @@ async function deleteReport(id) {
   }
 
 
-  // ---------------------------------------------
-  // XÓA KHỎI LOCAL DATA
-  // ---------------------------------------------
-
   allData =
     allData.filter(
       item =>
@@ -1377,10 +1593,6 @@ async function deleteReport(id) {
         String(id)
     );
 
-
-  // ---------------------------------------------
-  // HIỂN THỊ LẠI
-  // ---------------------------------------------
 
   applyCurrentFilter();
 
@@ -1451,10 +1663,6 @@ function renderPagination() {
   }
 
 
-  // ---------------------------------------------
-  // NÚT TRƯỚC
-  // ---------------------------------------------
-
   const prevBtn =
     document.createElement(
       "button"
@@ -1494,10 +1702,6 @@ function renderPagination() {
     prevBtn
   );
 
-
-  // ---------------------------------------------
-  // DANH SÁCH TRANG
-  // ---------------------------------------------
 
   const pages =
     getPaginationPages(
@@ -1575,10 +1779,6 @@ function renderPagination() {
   );
 
 
-  // ---------------------------------------------
-  // NÚT SAU
-  // ---------------------------------------------
-
   const nextBtn =
     document.createElement(
       "button"
@@ -1647,7 +1847,6 @@ function getPaginationPages(
 
   const pages = [];
 
-
   pages.push(1);
 
 
@@ -1694,7 +1893,6 @@ function getPaginationPages(
 
 
   pages.push(total);
-
 
   return pages;
 
@@ -1809,6 +2007,775 @@ function exportExcel() {
 
 
 // =====================================================
+// MENU
+// =====================================================
+
+if (menuBtn) {
+
+  menuBtn.addEventListener(
+    "click",
+    openMenu
+  );
+
+}
+
+
+if (sideMenuClose) {
+
+  sideMenuClose.addEventListener(
+    "click",
+    closeMenu
+  );
+
+}
+
+
+if (sideMenuOverlay) {
+
+  sideMenuOverlay.addEventListener(
+    "click",
+    closeMenu
+  );
+
+}
+
+
+function openMenu() {
+
+  sideMenu.classList.add(
+    "open"
+  );
+
+  sideMenuOverlay.classList.add(
+    "open"
+  );
+
+}
+
+
+function closeMenu() {
+
+  sideMenu.classList.remove(
+    "open"
+  );
+
+  sideMenuOverlay.classList.remove(
+    "open"
+  );
+
+}
+
+
+// =====================================================
+// MENU - QUẢN LÝ BÁO CÁO
+// =====================================================
+
+if (menuReportsBtn) {
+
+  menuReportsBtn.addEventListener(
+    "click",
+    () => {
+
+      closeMenu();
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+
+    }
+  );
+
+}
+
+
+// =====================================================
+// MENU - PHÂN QUYỀN
+// =====================================================
+
+if (menuPermissionBtn) {
+
+  menuPermissionBtn.addEventListener(
+    "click",
+    async () => {
+
+      closeMenu();
+
+      await openPermissionModal();
+
+    }
+  );
+
+}
+
+
+// =====================================================
+// MỞ MODAL PHÂN QUYỀN
+// =====================================================
+
+async function openPermissionModal() {
+
+  const overlay =
+    document.createElement(
+      "div"
+    );
+
+  overlay.className =
+    "permission-modal-overlay";
+
+
+  const modal =
+    document.createElement(
+      "div"
+    );
+
+  modal.className =
+    "permission-modal";
+
+
+  modal.innerHTML = `
+
+    <div class="permission-header">
+
+      <h2>
+        🔐 PHÂN QUYỀN QUẢN LÝ
+      </h2>
+
+      <button
+        class="permission-close"
+        type="button"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="permission-body">
+
+      <div class="permission-info">
+
+        Cấp quyền cho tài khoản được
+        đăng nhập vào trang quản lý.
+        <br><br>
+
+        Có thể nhập <b>User</b> hoặc
+        <b>Email</b>. Mật khẩu sẽ được
+        Supabase Auth quản lý, không lưu
+        trực tiếp vào bảng phân quyền.
+
+      </div>
+
+
+      <div class="permission-form">
+
+        <label>
+          User / Email
+        </label>
+
+        <input
+          id="permissionLogin"
+          type="text"
+          placeholder="Ví dụ: hoinv12 hoặc email@gmail.com"
+          autocomplete="off"
+        >
+
+
+        <label>
+          Mật khẩu
+        </label>
+
+        <input
+          id="permissionPassword"
+          type="password"
+          placeholder="Nhập mật khẩu"
+          autocomplete="new-password"
+        >
+
+
+        <button
+          id="grantPermissionBtn"
+          class="green"
+          type="button"
+        >
+          👤 CẤP QUYỀN
+        </button>
+
+      </div>
+
+
+      <div
+        id="permissionMessage"
+        style="
+          margin-top:12px;
+          text-align:center;
+          font-weight:800;
+        "
+      ></div>
+
+
+      <div class="permission-list-title">
+        👥 TÀI KHOẢN ĐƯỢC CẤP QUYỀN
+      </div>
+
+
+      <div id="permissionList">
+        ⏳ Đang tải...
+      </div>
+
+    </div>
+
+  `;
+
+
+  overlay.appendChild(
+    modal
+  );
+
+  document.body.appendChild(
+    overlay
+  );
+
+
+  modal
+    .querySelector(
+      ".permission-close"
+    )
+    .addEventListener(
+      "click",
+      () => overlay.remove()
+    );
+
+
+  overlay.addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target ===
+        overlay
+      ) {
+
+        overlay.remove();
+
+      }
+
+    }
+  );
+
+
+  modal
+    .querySelector(
+      "#grantPermissionBtn"
+    )
+    .addEventListener(
+      "click",
+      async () => {
+
+        await grantPermission(
+          modal
+        );
+
+      }
+    );
+
+
+  await loadPermissionList(
+    modal
+  );
+
+}
+
+
+// =====================================================
+// CẤP QUYỀN
+// =====================================================
+
+async function grantPermission(
+  modal
+) {
+
+  const loginInput =
+    modal.querySelector(
+      "#permissionLogin"
+    );
+
+  const passwordInput =
+    modal.querySelector(
+      "#permissionPassword"
+    );
+
+  const button =
+    modal.querySelector(
+      "#grantPermissionBtn"
+    );
+
+  const message =
+    modal.querySelector(
+      "#permissionMessage"
+    );
+
+
+  const loginId =
+    loginInput.value.trim();
+
+  const password =
+    passwordInput.value;
+
+
+  if (!loginId) {
+
+    message.textContent =
+      "❌ Vui lòng nhập User hoặc Email.";
+
+    message.style.color =
+      "#dc2626";
+
+    return;
+
+  }
+
+
+  if (
+    password.length < 6
+  ) {
+
+    message.textContent =
+      "❌ Mật khẩu phải có ít nhất 6 ký tự.";
+
+    message.style.color =
+      "#dc2626";
+
+    return;
+
+  }
+
+
+  button.disabled =
+    true;
+
+  button.textContent =
+    "⏳ ĐANG CẤP QUYỀN...";
+
+  message.textContent =
+    "⏳ Đang xử lý...";
+
+  message.style.color =
+    "#2563eb";
+
+
+  try {
+
+    /*
+      Gọi Edge Function.
+      Edge Function dùng Service Role
+      ở phía server để tạo tài khoản Auth.
+    */
+
+    const {
+      data: sessionData
+    } =
+      await client.auth.getSession();
+
+
+    const accessToken =
+      sessionData?.session?.access_token;
+
+
+    if (!accessToken) {
+
+      throw new Error(
+        "Phiên đăng nhập đã hết hạn."
+      );
+
+    }
+
+
+    const functionUrl =
+      window.SUPABASE_URL +
+      "/functions/v1/create-manager-user";
+
+
+    const response =
+      await fetch(
+        functionUrl,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            "Authorization":
+              "Bearer " +
+              accessToken,
+
+            "apikey":
+              window.SUPABASE_ANON_KEY
+          },
+
+          body:
+            JSON.stringify({
+              login_id:
+                loginId,
+
+              password:
+                password
+            })
+        }
+      );
+
+
+    let result = {};
+
+    try {
+
+      result =
+        await response.json();
+
+    } catch {
+
+      result = {};
+
+    }
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result.error ||
+        "Không thể cấp quyền."
+      );
+
+    }
+
+
+    message.textContent =
+      "✅ " +
+      (
+        result.message ||
+        "Đã cấp quyền thành công."
+      );
+
+    message.style.color =
+      "#16a34a";
+
+
+    loginInput.value =
+      "";
+
+    passwordInput.value =
+      "";
+
+
+    await loadPermissionList(
+      modal
+    );
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    message.textContent =
+      "❌ " +
+      (
+        error.message ||
+        "Cấp quyền thất bại."
+      );
+
+    message.style.color =
+      "#dc2626";
+
+  }
+
+
+  button.disabled =
+    false;
+
+  button.textContent =
+    "👤 CẤP QUYỀN";
+
+}
+
+
+// =====================================================
+// TẢI DANH SÁCH QUYỀN
+// =====================================================
+
+async function loadPermissionList(
+  modal
+) {
+
+  const list =
+    modal.querySelector(
+      "#permissionList"
+    );
+
+
+  list.innerHTML =
+    "⏳ Đang tải...";
+
+
+  const {
+    data,
+    error
+  } =
+    await client
+      .from("manager_permissions")
+      .select(
+        "id,login_name,auth_email,enabled,created_at"
+      )
+      .order(
+        "created_at",
+        {
+          ascending: true
+        }
+      );
+
+
+  if (error) {
+
+    console.error(error);
+
+    list.innerHTML = `
+      <div class="permission-empty">
+        ❌ Không tải được danh sách quyền.
+        <br><br>
+        ${escapeHtml(error.message)}
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  const users =
+    Array.isArray(data)
+      ? data
+      : [];
+
+
+  const activeUsers =
+    users.filter(
+      user =>
+        user.enabled === true
+    );
+
+
+  if (
+    activeUsers.length === 0
+  ) {
+
+    list.innerHTML = `
+      <div class="permission-empty">
+        Chưa có tài khoản nào được cấp quyền.
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  list.innerHTML =
+    activeUsers
+      .map(
+        user => `
+
+          <div
+            class="permission-user"
+            data-permission-id="${escapeAttribute(
+              user.id
+            )}"
+          >
+
+            <div
+              class="permission-user-info"
+            >
+
+              <div
+                class="permission-user-name"
+              >
+                ${escapeHtml(
+                  user.login_name ||
+                  user.auth_email ||
+                  ""
+                )}
+              </div>
+
+              <div
+                class="permission-user-status"
+              >
+                🟢 Được phép quản lý
+
+              </div>
+
+              ${
+                user.auth_email &&
+                normalizeText(
+                  user.auth_email
+                ) !==
+                normalizeText(
+                  user.login_name
+                )
+
+                  ? `
+                    <div
+                      style="
+                        margin-top:3px;
+                        font-size:12px;
+                        color:#64748b;
+                      "
+                    >
+                      ${escapeHtml(
+                        user.auth_email
+                      )}
+                    </div>
+                  `
+                  : ""
+              }
+
+            </div>
+
+
+            <button
+              class="revoke-btn"
+              type="button"
+              data-revoke-id="${escapeAttribute(
+                user.id
+              )}"
+            >
+              THU HỒI
+            </button>
+
+          </div>
+
+        `
+      )
+      .join("");
+
+
+  list
+    .querySelectorAll(
+      "[data-revoke-id]"
+    )
+    .forEach(
+      button => {
+
+        button.addEventListener(
+          "click",
+          async () => {
+
+            await revokePermission(
+              button.dataset.revokeId,
+              modal
+            );
+
+          }
+        );
+
+      }
+    );
+
+}
+
+
+// =====================================================
+// THU HỒI QUYỀN
+// =====================================================
+
+async function revokePermission(
+  permissionId,
+  modal
+) {
+
+  const confirmed =
+    confirm(
+      "Bạn có chắc muốn thu hồi quyền quản lý tài khoản này?"
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    const {
+      error
+    } =
+      await client
+        .from("manager_permissions")
+        .update({
+          enabled: false
+        })
+        .eq(
+          "id",
+          permissionId
+        );
+
+
+    if (error) {
+
+      console.error(error);
+
+      alert(
+        "❌ Thu hồi quyền thất bại:\n\n" +
+        error.message
+      );
+
+      return;
+
+    }
+
+
+    await loadPermissionList(
+      modal
+    );
+
+
+    alert(
+      "✅ Đã thu hồi quyền quản lý."
+    );
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      "❌ Có lỗi xảy ra."
+    );
+
+  }
+
+}
+
+
+// =====================================================
+// MENU LOGOUT
+// =====================================================
+
+if (menuLogoutBtn) {
+
+  menuLogoutBtn.addEventListener(
+    "click",
+    async () => {
+
+      closeMenu();
+
+      await logout();
+
+    }
+  );
+
+}
+
+
+// =====================================================
 // LOGOUT
 // =====================================================
 
@@ -1816,50 +2783,56 @@ if (logoutBtn) {
 
   logoutBtn.addEventListener(
     "click",
-    async () => {
-
-      await client.auth.signOut();
-
-
-      allData = [];
-
-      filteredData = [];
-
-      currentPage = 1;
-
-
-      managerBox.style.display =
-        "none";
-
-      loginBox.style.display =
-        "block";
-
-
-      tableBody.innerHTML =
-        "";
-
-      pagination.innerHTML =
-        "";
-
-
-      totalReports.textContent =
-        "0";
-
-      totalAmount.textContent =
-        "0 đ";
-
-      submittedUserCount.textContent =
-        "0";
-
-
-      passwordInput.value =
-        "";
-
-      loginMessage.textContent =
-        "";
-
-    }
+    logout
   );
+
+}
+
+
+async function logout() {
+
+  await client.auth.signOut();
+
+
+  currentSessionUser =
+    null;
+
+  allData = [];
+
+  filteredData = [];
+
+  currentPage = 1;
+
+
+  showLogin();
+
+
+  tableBody.innerHTML =
+    "";
+
+  pagination.innerHTML =
+    "";
+
+
+  totalReports.textContent =
+    "0";
+
+  totalAmount.textContent =
+    "0 đ";
+
+  submittedUserCount.textContent =
+    "0";
+
+
+  if (passwordInput) {
+    passwordInput.value =
+      "";
+  }
+
+  if (loginMessage) {
+    loginMessage.textContent =
+      "";
+  }
 
 }
 
@@ -1908,15 +2881,6 @@ function parseMoney(value) {
       ""
     );
 
-
-  /*
-    Xử lý:
-
-    6,000,000
-    6000000
-    6.000.000
-    6000000đ
-  */
 
   if (
     str.includes(",") &&
@@ -1983,9 +2947,7 @@ function formatMoney(
 // FORMAT DATE
 // =====================================================
 
-function formatDate(
-  value
-) {
+function formatDate(value) {
 
   if (!value) {
     return "";
@@ -2028,9 +2990,7 @@ function formatDate(
 // NORMALIZE TEXT
 // =====================================================
 
-function normalizeText(
-  value
-) {
+function normalizeText(value) {
 
   return String(
     value || ""
@@ -2049,9 +3009,7 @@ function normalizeText(
 // ESCAPE HTML
 // =====================================================
 
-function escapeHtml(
-  value
-) {
+function escapeHtml(value) {
 
   return String(
     value ?? ""
@@ -2084,9 +3042,7 @@ function escapeHtml(
 // ESCAPE ATTRIBUTE
 // =====================================================
 
-function escapeAttribute(
-  value
-) {
+function escapeAttribute(value) {
 
   return escapeHtml(
     value
