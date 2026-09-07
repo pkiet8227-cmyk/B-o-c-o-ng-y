@@ -1,1925 +1,2980 @@
 // ============================================================
 // MANAGER.JS
 // QUẢN LÝ BÁO CÁO NGÀY
-// BẢN HOÀN CHỈNH
+// ============================================================
+// PHIÊN BẢN HOÀN CHỈNH
+//
+// CHỨC NĂNG:
+// - Đăng nhập Supabase
+// - Phân quyền manager / admin
+// - Hiển thị báo cáo theo ngày
+// - Mặc định ngày hôm nay
+// - Đếm cán bộ duy nhất trong ngày
+// - Không tính trùng cán bộ
+// - Popup danh sách cán bộ đã nhập
+// - Hiển thị số báo cáo từng cán bộ
+// - Lọc cán bộ
+// - Lọc ngày
+// - Phân trang 20 dòng
+// - Sửa báo cáo
+// - Xóa báo cáo
+// - Xuất Excel
+// - Menu 3 gạch
 // ============================================================
 
 (() => {
-  "use strict";
 
-  // ==========================================================
-  // SUPABASE
-  // ==========================================================
+    "use strict";
 
-  const SUPABASE_URL_VALUE =
-    typeof SUPABASE_URL !== "undefined"
-      ? SUPABASE_URL
-      : window.SUPABASE_URL;
+    // ========================================================
+    // KIỂM TRA SUPABASE
+    // ========================================================
 
-  const SUPABASE_KEY_VALUE =
-    typeof SUPABASE_ANON_KEY !== "undefined"
-      ? SUPABASE_ANON_KEY
-      : window.SUPABASE_ANON_KEY;
+    if (!window.supabase) {
 
-  if (!SUPABASE_URL_VALUE || !SUPABASE_KEY_VALUE) {
-    alert("❌ Chưa cấu hình Supabase trong config.js.");
-    return;
-  }
+        alert(
+            "❌ Không tìm thấy Supabase.\n\n" +
+            "Hãy kiểm tra lại file Supabase JS."
+        );
 
-  const db = supabase.createClient(
-    SUPABASE_URL_VALUE,
-    SUPABASE_KEY_VALUE
-  );
+        return;
+    }
 
-  // ==========================================================
-  // BIẾN
-  // ==========================================================
 
-  let allData = [];
-  let filteredData = [];
-  let currentPage = 1;
+    // ========================================================
+    // SUPABASE CLIENT
+    // ========================================================
 
-  const PAGE_SIZE = 20;
+    const supabaseClient = window.supabase.createClient(
+        window.SUPABASE_URL,
+        window.SUPABASE_ANON_KEY
+    );
 
-  // ==========================================================
-  // DOM
-  // ==========================================================
 
-  const loginBox =
-    document.getElementById("loginBox");
+    // ========================================================
+    // STATE
+    // ========================================================
 
-  const managerBox =
-    document.getElementById("managerBox");
+    let allData = [];
 
-  const emailInput =
-    document.getElementById("loginId");
+    let filteredData = [];
 
-  const passwordInput =
-    document.getElementById("password");
+    let currentPage = 1;
 
-  const loginBtn =
-    document.getElementById("loginBtn");
+    const PAGE_SIZE = 20;
 
-  const logoutBtn =
-    document.getElementById("logoutBtn");
+    let currentUser = null;
 
-  const loginMessage =
-    document.getElementById("loginMessage");
 
-  const managerMessage =
-    document.getElementById("managerMessage");
+    // ========================================================
+    // DOM
+    // ========================================================
 
-  const totalReports =
-    document.getElementById("totalReports");
+    const loginBox =
+        document.getElementById("loginBox");
 
-  const totalAmount =
-    document.getElementById("totalAmount");
+    const managerBox =
+        document.getElementById("managerBox");
 
-  const filterUser =
-    document.getElementById("filterUser");
+    const emailInput =
+        document.getElementById("emailInput");
 
-  const filterDate =
-    document.getElementById("filterDate");
+    const passwordInput =
+        document.getElementById("passwordInput");
 
-  const filterBtn =
-    document.getElementById("filterBtn");
+    const loginBtn =
+        document.getElementById("loginBtn");
 
-  const refreshBtn =
-    document.getElementById("refreshBtn");
+    const logoutBtn =
+        document.getElementById("logoutBtn");
 
-  const exportBtn =
-    document.getElementById("exportBtn");
+    const loginMessage =
+        document.getElementById("loginMessage");
 
-  const tableBody =
-    document.getElementById("tableBody");
+    const managerMessage =
+        document.getElementById("managerMessage");
 
-  const pagination =
-    document.getElementById("pagination");
+    const totalReports =
+        document.getElementById("totalReports");
 
-  const menuBtn =
-    document.getElementById("menuBtn");
+    const totalAmount =
+        document.getElementById("totalAmount");
 
-  const sideMenu =
-    document.getElementById("sideMenu");
+    const filterUser =
+        document.getElementById("filterUser");
 
-  const sideMenuOverlay =
-    document.getElementById("sideMenuOverlay");
+    const filterDate =
+        document.getElementById("filterDate");
 
-  const sideMenuClose =
-    document.getElementById("sideMenuClose");
+    const filterBtn =
+        document.getElementById("filterBtn");
 
-  const menuReportsBtn =
-    document.getElementById("menuReportsBtn");
+    const refreshBtn =
+        document.getElementById("refreshBtn");
 
-  const menuLogoutBtn =
-    document.getElementById("menuLogoutBtn");
+    const exportBtn =
+        document.getElementById("exportBtn");
 
-  const showSubmittedUsersBtn =
-    document.getElementById("showSubmittedUsersBtn");
+    const tableBody =
+        document.getElementById("tableBody");
 
-  const submittedUserCount =
-    document.getElementById("submittedUserCount");
+    const pagination =
+        document.getElementById("pagination");
 
-  // ==========================================================
-  // KHỞI ĐỘNG
-  // ==========================================================
+    const menuBtn =
+        document.getElementById("menuBtn");
 
-  document.addEventListener("DOMContentLoaded", async () => {
+    const sideMenu =
+        document.getElementById("sideMenu");
 
-    // Login
-    loginBtn?.addEventListener("click", login);
+    const sideMenuOverlay =
+        document.getElementById("sideMenuOverlay");
 
-    passwordInput?.addEventListener(
-      "keydown",
-      (e) => {
-        if (e.key === "Enter") {
-          login();
+    const sideMenuClose =
+        document.getElementById("sideMenuClose");
+
+    const menuReportsBtn =
+        document.getElementById("menuReportsBtn");
+
+    const menuLogoutBtn =
+        document.getElementById("menuLogoutBtn");
+
+    const showSubmittedUsersBtn =
+        document.getElementById("showSubmittedUsersBtn");
+
+    const submittedUserCount =
+        document.getElementById("submittedUserCount");
+
+
+    // ========================================================
+    // KHỞI TẠO
+    // ========================================================
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        init
+    );
+
+
+    async function init() {
+
+        // ---------------------------------------------
+        // Ngày mặc định = hôm nay Việt Nam
+        // ---------------------------------------------
+
+        if (filterDate) {
+
+            filterDate.value =
+                getTodayVietnam();
+
         }
-      }
-    );
 
-    emailInput?.addEventListener(
-      "keydown",
-      (e) => {
-        if (e.key === "Enter") {
-          login();
+
+        // ---------------------------------------------
+        // Login
+        // ---------------------------------------------
+
+        if (loginBtn) {
+
+            loginBtn.addEventListener(
+                "click",
+                login
+            );
+
         }
-      }
-    );
 
-    // Logout
-    logoutBtn?.addEventListener("click", logout);
-    menuLogoutBtn?.addEventListener("click", logout);
 
-    // Filter
-    filterBtn?.addEventListener(
-      "click",
-      () => {
-        currentPage = 1;
-        applyFilter();
-      }
-    );
+        // ---------------------------------------------
+        // Enter để đăng nhập
+        // ---------------------------------------------
 
-    filterDate?.addEventListener(
-      "change",
-      () => {
-        currentPage = 1;
-        applyFilter();
-      }
-    );
+        if (passwordInput) {
 
-    filterUser?.addEventListener(
-      "keydown",
-      (e) => {
-        if (e.key === "Enter") {
-          currentPage = 1;
-          applyFilter();
+            passwordInput.addEventListener(
+                "keydown",
+                function (event) {
+
+                    if (event.key === "Enter") {
+
+                        login();
+
+                    }
+
+                }
+            );
+
         }
-      }
-    );
 
-    // Refresh
-    refreshBtn?.addEventListener(
-      "click",
-      async () => {
-        currentPage = 1;
-        await loadData();
-      }
-    );
 
-    // Excel
-    exportBtn?.addEventListener(
-      "click",
-      exportExcel
-    );
+        // ---------------------------------------------
+        // Logout
+        // ---------------------------------------------
 
-    // Menu
-    menuBtn?.addEventListener(
-      "click",
-      openMenu
-    );
+        if (logoutBtn) {
 
-    sideMenuClose?.addEventListener(
-      "click",
-      closeMenu
-    );
+            logoutBtn.addEventListener(
+                "click",
+                logout
+            );
 
-    sideMenuOverlay?.addEventListener(
-      "click",
-      closeMenu
-    );
+        }
 
-    menuReportsBtn?.addEventListener(
-      "click",
-      () => {
-        closeMenu();
+
+        // ---------------------------------------------
+        // Filter
+        // ---------------------------------------------
+
+        if (filterBtn) {
+
+            filterBtn.addEventListener(
+                "click",
+                function () {
+
+                    currentPage = 1;
+
+                    applyFilter();
+
+                }
+            );
+
+        }
+
+
+        // ---------------------------------------------
+        // Refresh
+        // ---------------------------------------------
+
+        if (refreshBtn) {
+
+            refreshBtn.addEventListener(
+                "click",
+                async function () {
+
+                    await loadData();
+
+                }
+            );
+
+        }
+
+
+        // ---------------------------------------------
+        // Export Excel
+        // ---------------------------------------------
+
+        if (exportBtn) {
+
+            exportBtn.addEventListener(
+                "click",
+                exportExcel
+            );
+
+        }
+
+
+        // ---------------------------------------------
+        // Menu
+        // ---------------------------------------------
+
+        if (menuBtn) {
+
+            menuBtn.addEventListener(
+                "click",
+                openMenu
+            );
+
+        }
+
+
+        if (sideMenuClose) {
+
+            sideMenuClose.addEventListener(
+                "click",
+                closeMenu
+            );
+
+        }
+
+
+        if (sideMenuOverlay) {
+
+            sideMenuOverlay.addEventListener(
+                "click",
+                closeMenu
+            );
+
+        }
+
+
+        if (menuReportsBtn) {
+
+            menuReportsBtn.addEventListener(
+                "click",
+                function () {
+
+                    closeMenu();
+
+                    window.scrollTo({
+                        top: 0,
+                        behavior: "smooth"
+                    });
+
+                }
+            );
+
+        }
+
+
+        if (menuLogoutBtn) {
+
+            menuLogoutBtn.addEventListener(
+                "click",
+                logout
+            );
+
+        }
+
+
+        // ---------------------------------------------
+        // Danh sách cán bộ
+        // ---------------------------------------------
+
+        if (showSubmittedUsersBtn) {
+
+            showSubmittedUsersBtn.addEventListener(
+                "click",
+                showSubmittedUsers
+            );
+
+        }
+
+
+        // ---------------------------------------------
+        // Kiểm tra session
+        // ---------------------------------------------
+
+        await checkSession();
+
+    }
+
+
+    // ========================================================
+    // LẤY NGÀY HÔM NAY THEO GIỜ VIỆT NAM
+    // ========================================================
+
+    function getTodayVietnam() {
+
+        try {
+
+            return new Intl.DateTimeFormat(
+                "en-CA",
+                {
+                    timeZone: "Asia/Ho_Chi_Minh",
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit"
+                }
+            ).format(new Date());
+
+        } catch (error) {
+
+            const now =
+                new Date();
+
+            const year =
+                now.getFullYear();
+
+            const month =
+                String(
+                    now.getMonth() + 1
+                ).padStart(2, "0");
+
+            const day =
+                String(
+                    now.getDate()
+                ).padStart(2, "0");
+
+            return `${year}-${month}-${day}`;
+
+        }
+
+    }
+
+
+    // ========================================================
+    // CHECK SESSION
+    // ========================================================
+
+    async function checkSession() {
+
+        try {
+
+            const {
+                data,
+                error
+            } =
+                await supabaseClient.auth.getSession();
+
+
+            if (error) {
+
+                console.error(
+                    "Session error:",
+                    error
+                );
+
+                showLogin();
+
+                return;
+
+            }
+
+
+            const session =
+                data?.session;
+
+
+            if (!session) {
+
+                showLogin();
+
+                return;
+
+            }
+
+
+            currentUser =
+                session.user;
+
+
+            // Kiểm tra quyền
+            const allowed =
+                checkUserRole(
+                    currentUser
+                );
+
+
+            if (!allowed) {
+
+                showLogin();
+
+                if (loginMessage) {
+
+                    loginMessage.textContent =
+                        "❌ Tài khoản không có quyền quản lý.";
+
+                }
+
+                await supabaseClient.auth.signOut();
+
+                return;
+
+            }
+
+
+            showManager();
+
+
+            await loadData();
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "checkSession:",
+                error
+            );
+
+            showLogin();
+
+        }
+
+    }
+
+
+    // ========================================================
+    // KIỂM TRA QUYỀN
+    // ========================================================
+
+    function checkUserRole(user) {
+
+        if (!user) {
+
+            return false;
+
+        }
+
+
+        const metadata =
+            user.user_metadata || {};
+
+
+        const appMetadata =
+            user.app_metadata || {};
+
+
+        const role =
+            metadata.role ||
+            appMetadata.role ||
+            "";
+
+
+        const normalizedRole =
+            String(role)
+                .trim()
+                .toLowerCase();
+
+
+        return (
+            normalizedRole === "manager" ||
+            normalizedRole === "admin"
+        );
+
+    }
+
+
+    // ========================================================
+    // HIỂN THỊ LOGIN
+    // ========================================================
+
+    function showLogin() {
+
+        if (loginBox) {
+
+            loginBox.style.display =
+                "";
+
+        }
+
 
         if (managerBox) {
-          managerBox.scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-          });
+
+            managerBox.style.display =
+                "none";
+
         }
-      }
-    );
 
-    // Cán bộ đã nhập
-    showSubmittedUsersBtn?.addEventListener(
-      "click",
-      showSubmittedUsers
-    );
 
-    // Hiện nút menu
-    if (menuBtn) {
-      menuBtn.style.display = "block";
+        currentUser = null;
+
     }
 
-    // Kiểm tra session
-    await checkSession();
-  });
 
-  // ==========================================================
-  // KIỂM TRA SESSION
-  // ==========================================================
+    // ========================================================
+    // HIỂN THỊ MANAGER
+    // ========================================================
 
-  async function checkSession() {
+    function showManager() {
 
-    try {
+        if (loginBox) {
 
-      const {
-        data,
-        error
-      } = await db.auth.getSession();
+            loginBox.style.display =
+                "none";
 
-      if (error) {
-        showLogin();
-        return;
-      }
+        }
 
-      if (data?.session) {
 
-        showManager();
+        if (managerBox) {
 
-        await loadData();
+            managerBox.style.display =
+                "";
 
-      } else {
+        }
 
-        showLogin();
-
-      }
-
-    } catch (error) {
-
-      console.error(
-        "checkSession:",
-        error
-      );
-
-      showLogin();
-    }
-  }
-
-  // ==========================================================
-  // HIỆN LOGIN
-  // ==========================================================
-
-  function showLogin() {
-
-    if (loginBox) {
-      loginBox.style.display = "block";
     }
 
-    if (managerBox) {
-      managerBox.style.display = "none";
-    }
-  }
 
-  // ==========================================================
-  // HIỆN MANAGER
-  // ==========================================================
+    // ========================================================
+    // LOGIN
+    // ========================================================
 
-  function showManager() {
+    async function login() {
 
-    if (loginBox) {
-      loginBox.style.display = "none";
-    }
+        const email =
+            emailInput?.value.trim();
 
-    if (managerBox) {
-      managerBox.style.display = "block";
-    }
+        const password =
+            passwordInput?.value;
 
-    if (loginMessage) {
-      loginMessage.textContent = "";
-    }
-  }
 
-  // ==========================================================
-  // ĐĂNG NHẬP
-  // ==========================================================
+        if (!email) {
 
-  async function login() {
+            if (loginMessage) {
 
-    const email =
-      emailInput?.value?.trim() || "";
+                loginMessage.textContent =
+                    "⚠️ Vui lòng nhập email.";
 
-    const password =
-      passwordInput?.value || "";
+            }
 
-    if (!email || !password) {
+            return;
 
-      if (loginMessage) {
-        loginMessage.textContent =
-          "❌ Vui lòng nhập Gmail và mật khẩu.";
-      }
+        }
 
-      return;
-    }
 
-    if (loginBtn) {
+        if (!password) {
 
-      loginBtn.disabled = true;
+            if (loginMessage) {
 
-      loginBtn.textContent =
-        "⏳ ĐANG ĐĂNG NHẬP...";
-    }
+                loginMessage.textContent =
+                    "⚠️ Vui lòng nhập mật khẩu.";
 
-    if (loginMessage) {
-      loginMessage.textContent =
-        "⏳ Đang kiểm tra tài khoản...";
-    }
+            }
 
-    try {
+            return;
 
-      const {
-        data,
-        error
-      } = await db.auth.signInWithPassword({
-        email: email,
-        password: password
-      });
+        }
 
-      if (error) {
-
-        console.error(
-          "Supabase login error:",
-          error
-        );
 
         if (loginMessage) {
-          loginMessage.textContent =
-            "❌ Đăng nhập thất bại: " +
-            error.message;
+
+            loginMessage.textContent =
+                "⏳ Đang đăng nhập...";
+
         }
 
-        return;
-      }
 
-      if (!data?.session) {
+        if (loginBtn) {
 
-        if (loginMessage) {
-          loginMessage.textContent =
-            "❌ Không tạo được phiên đăng nhập.";
+            loginBtn.disabled = true;
+
         }
 
-        return;
-      }
 
-      // Đăng nhập thành công
-      showManager();
+        try {
 
-      currentPage = 1;
+            const {
+                data,
+                error
+            } =
+                await supabaseClient.auth.signInWithPassword({
 
-      await loadData();
+                    email: email,
 
-    } catch (error) {
+                    password: password
 
-      console.error(
-        "Login error:",
-        error
-      );
+                });
 
-      if (loginMessage) {
-        loginMessage.textContent =
-          "❌ Lỗi hệ thống khi đăng nhập.";
-      }
 
-    } finally {
+            if (error) {
 
-      if (loginBtn) {
+                throw error;
 
-        loginBtn.disabled = false;
+            }
 
-        loginBtn.textContent =
-          "🔐 ĐĂNG NHẬP";
-      }
+
+            const user =
+                data?.user;
+
+
+            if (!user) {
+
+                throw new Error(
+                    "Không lấy được thông tin tài khoản."
+                );
+
+            }
+
+
+            if (!checkUserRole(user)) {
+
+                await supabaseClient.auth.signOut();
+
+                throw new Error(
+                    "Tài khoản không có quyền manager/admin."
+                );
+
+            }
+
+
+            currentUser =
+                user;
+
+
+            if (loginMessage) {
+
+                loginMessage.textContent =
+                    "";
+
+            }
+
+
+            showManager();
+
+
+            await loadData();
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "Login error:",
+                error
+            );
+
+
+            if (loginMessage) {
+
+                loginMessage.textContent =
+                    "❌ " +
+                    (
+                        error?.message ||
+                        "Đăng nhập thất bại."
+                    );
+
+            }
+
+        }
+
+        finally {
+
+            if (loginBtn) {
+
+                loginBtn.disabled = false;
+
+            }
+
+        }
+
     }
-  }
 
-  // ==========================================================
-  // ĐĂNG XUẤT
-  // ==========================================================
 
-  async function logout() {
+    // ========================================================
+    // LOGOUT
+    // ========================================================
 
-    try {
+    async function logout() {
 
-      await db.auth.signOut();
+        try {
 
-      allData = [];
-      filteredData = [];
-      currentPage = 1;
+            await supabaseClient.auth.signOut();
 
-      if (tableBody) {
-        tableBody.innerHTML = "";
-      }
+        }
 
-      if (pagination) {
-        pagination.innerHTML = "";
-      }
+        catch (error) {
 
-      if (totalReports) {
-        totalReports.textContent = "0";
-      }
+            console.error(
+                "Logout error:",
+                error
+            );
 
-      if (totalAmount) {
-        totalAmount.textContent = "0 đ";
-      }
+        }
 
-      closeMenu();
 
-      showLogin();
+        currentUser = null;
 
-    } catch (error) {
+        allData = [];
 
-      console.error(
-        "Logout:",
-        error
-      );
-    }
-  }
+        filteredData = [];
 
-  // ==========================================================
-  // TẢI DỮ LIỆU
-  // ==========================================================
+        showLogin();
 
-  async function loadData() {
+        closeMenu();
 
-    if (managerMessage) {
-      managerMessage.textContent =
-        "⏳ Đang tải dữ liệu...";
     }
 
-    try {
 
-      const {
-        data,
-        error
-      } = await db
-        .from("bao_cao_ngay")
-        .select("*")
-        .order(
-          "created_at",
-          {
-            ascending: false
-          }
-        );
+    // ========================================================
+    // LOAD DATA
+    // ========================================================
 
-      if (error) {
-
-        console.error(
-          "Load data error:",
-          error
-        );
+    async function loadData() {
 
         if (managerMessage) {
-          managerMessage.textContent =
-            "❌ Lỗi tải dữ liệu: " +
-            error.message;
+
+            managerMessage.textContent =
+                "⏳ Đang tải dữ liệu...";
+
         }
 
-        return;
-      }
 
-      allData = Array.isArray(data)
-        ? data
-        : [];
+        try {
 
-      currentPage = 1;
+            const {
+                data,
+                error
+            } =
+                await supabaseClient
+                    .from("bao_cao_ngay")
+                    .select("*")
+                    .order(
+                        "created_at",
+                        {
+                            ascending: false
+                        }
+                    );
 
-      applyFilter();
 
-      if (managerMessage) {
-        managerMessage.textContent =
-          `✅ Đã tải ${allData.length} báo cáo.`;
-      }
+            if (error) {
 
-    } catch (error) {
+                throw error;
 
-      console.error(
-        "loadData:",
-        error
-      );
+            }
 
-      if (managerMessage) {
-        managerMessage.textContent =
-          "❌ Không thể tải dữ liệu.";
-      }
-    }
-  }
 
-  // ==========================================================
-  // LỌC
-  // ==========================================================
+            allData =
+                Array.isArray(data)
+                    ? data
+                    : [];
 
-  function applyFilter() {
 
-    const userKeyword =
-      (filterUser?.value || "")
-        .trim()
-        .toLowerCase();
+            currentPage = 1;
 
-    const dateKeyword =
-      filterDate?.value || "";
 
-    filteredData =
-      allData.filter((row) => {
+            // -----------------------------------------
+            // Nếu chưa chọn ngày -> hôm nay
+            // -----------------------------------------
 
-        const userName =
-          String(
-            row.user_name || ""
-          ).toLowerCase();
+            if (
+                filterDate &&
+                !filterDate.value
+            ) {
 
-        const reportDate =
-          String(
-            row.field_date || ""
-          ).substring(0, 10);
+                filterDate.value =
+                    getTodayVietnam();
 
-        const matchUser =
-          !userKeyword ||
-          userName.includes(userKeyword);
+            }
 
-        const matchDate =
-          !dateKeyword ||
-          reportDate === dateKeyword;
 
-        return matchUser && matchDate;
-      });
+            applyFilter();
 
-    updateSubmittedUserCount();
 
-    render();
-  }
+            if (managerMessage) {
 
-  // ==========================================================
-  // ĐẾM CÁN BỘ
-  // ==========================================================
+                managerMessage.textContent =
+                    `Đã tải ${allData.length} báo cáo.`;
 
-  function updateSubmittedUserCount() {
+            }
 
-    const users =
-      new Set();
-
-    filteredData.forEach(
-      (row) => {
-
-        const name =
-          String(
-            row.user_name || ""
-          ).trim();
-
-        if (name) {
-          users.add(name);
         }
-      }
-    );
 
-    if (submittedUserCount) {
-      submittedUserCount.textContent =
-        users.size;
-    }
-  }
+        catch (error) {
 
-  // ==========================================================
-  // RENDER TABLE
-  // ==========================================================
+            console.error(
+                "Load data error:",
+                error
+            );
 
-  function render() {
 
-    if (totalReports) {
-      totalReports.textContent =
-        filteredData.length;
-    }
+            allData = [];
 
-    const total =
-      filteredData.reduce(
-        (sum, row) => {
+            filteredData = [];
 
-          const amount =
-            Number(
-              row.expected_amount
-            ) || 0;
 
-          return sum + amount;
+            if (managerMessage) {
 
-        },
-        0
-      );
+                managerMessage.textContent =
+                    "❌ Không thể tải dữ liệu: " +
+                    (
+                        error?.message ||
+                        "Lỗi không xác định."
+                    );
 
-    if (totalAmount) {
-      totalAmount.textContent =
-        total.toLocaleString("vi-VN") +
-        " đ";
-    }
+            }
 
-    if (!tableBody) {
-      return;
-    }
 
-    tableBody.innerHTML = "";
+            render();
 
-    if (filteredData.length === 0) {
-
-      tableBody.innerHTML = `
-        <tr>
-          <td colspan="10"
-              style="
-                text-align:center;
-                padding:25px;
-                font-weight:bold;
-              ">
-            Không tìm thấy dữ liệu.
-          </td>
-        </tr>
-      `;
-
-      if (pagination) {
-        pagination.innerHTML = "";
-      }
-
-      return;
-    }
-
-    const totalPages =
-      Math.ceil(
-        filteredData.length /
-        PAGE_SIZE
-      );
-
-    if (currentPage > totalPages) {
-      currentPage = totalPages;
-    }
-
-    const start =
-      (currentPage - 1) *
-      PAGE_SIZE;
-
-    const end =
-      start + PAGE_SIZE;
-
-    const pageItems =
-      filteredData.slice(
-        start,
-        end
-      );
-
-    pageItems.forEach(
-      (row) => {
-
-        const tr =
-          document.createElement("tr");
-
-        tr.innerHTML = `
-          <td>${escapeHtml(row.user_name)}</td>
-
-          <td>${escapeHtml(
-            formatDate(row.field_date)
-          )}</td>
-
-          <td>${escapeHtml(row.cif)}</td>
-
-          <td>${escapeHtml(
-            row.customer_name
-          )}</td>
-
-          <td>${escapeHtml(
-            row.result
-          )}</td>
-
-          <td>${escapeHtml(
-            row.connection
-          )}</td>
-
-          <td style="
-            white-space:normal;
-            min-width:220px;
-          ">
-            ${escapeHtml(row.detail)}
-          </td>
-
-          <td>
-            ${(
-              Number(
-                row.expected_amount
-              ) || 0
-            ).toLocaleString("vi-VN")} đ
-          </td>
-
-          <td style="
-            white-space:normal;
-            min-width:220px;
-          ">
-            ${escapeHtml(
-              row.next_action
-            )}
-          </td>
-
-          <td>
-            <button
-              class="edit-btn"
-              type="button"
-              data-action="edit"
-              data-id="${escapeHtml(row.id)}"
-            >
-              ✏️ Sửa
-            </button>
-
-            <button
-              class="delete-btn"
-              type="button"
-              data-action="delete"
-              data-id="${escapeHtml(row.id)}"
-            >
-              🗑️ Xóa
-            </button>
-          </td>
-        `;
-
-        tableBody.appendChild(tr);
-      }
-    );
-
-    // Gắn nút sửa/xóa
-    tableBody
-      .querySelectorAll(
-        '[data-action="edit"]'
-      )
-      .forEach((btn) => {
-
-        btn.addEventListener(
-          "click",
-          () => {
-
-            const id =
-              btn.dataset.id;
-
-            editReport(id);
-          }
-        );
-      });
-
-    tableBody
-      .querySelectorAll(
-        '[data-action="delete"]'
-      )
-      .forEach((btn) => {
-
-        btn.addEventListener(
-          "click",
-          () => {
-
-            const id =
-              btn.dataset.id;
-
-            deleteReport(id);
-          }
-        );
-      });
-
-    renderPagination();
-  }
-
-  // ==========================================================
-  // PHÂN TRANG
-  // ==========================================================
-
-  function renderPagination() {
-
-    if (!pagination) {
-      return;
-    }
-
-    pagination.innerHTML = "";
-
-    const totalPages =
-      Math.ceil(
-        filteredData.length /
-        PAGE_SIZE
-      );
-
-    if (totalPages <= 1) {
-      return;
-    }
-
-    // Nút trước
-    const prev =
-      document.createElement("button");
-
-    prev.textContent = "‹";
-    prev.disabled =
-      currentPage === 1;
-
-    prev.addEventListener(
-      "click",
-      () => {
-
-        if (currentPage > 1) {
-
-          currentPage--;
-
-          render();
-
-          window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-          });
         }
-      }
-    );
 
-    pagination.appendChild(prev);
+    }
 
-    // Hiển thị trang
-    let startPage =
-      Math.max(
-        1,
-        currentPage - 2
-      );
 
-    let endPage =
-      Math.min(
-        totalPages,
-        currentPage + 2
-      );
+    // ========================================================
+    // LỌC DỮ LIỆU
+    // ========================================================
+    //
+    // QUAN TRỌNG:
+    //
+    // Nếu filter ngày trống:
+    // => tự động dùng ngày hôm nay.
+    //
+    // Vì vậy bộ đếm cán bộ luôn tính trong ngày hiện tại.
+    //
+    // ========================================================
 
-    if (currentPage <= 3) {
-      startPage = 1;
-      endPage =
-        Math.min(
-          totalPages,
-          5
+    function applyFilter() {
+
+        const userKeyword =
+            (
+                filterUser?.value ||
+                ""
+            )
+                .trim()
+                .toLowerCase();
+
+
+        let dateKeyword =
+            filterDate?.value ||
+            "";
+
+
+        // -----------------------------------------
+        // Mặc định = hôm nay
+        // -----------------------------------------
+
+        if (!dateKeyword) {
+
+            dateKeyword =
+                getTodayVietnam();
+
+
+            if (filterDate) {
+
+                filterDate.value =
+                    dateKeyword;
+
+            }
+
+        }
+
+
+        filteredData =
+            allData.filter(
+                (row) => {
+
+                    const userName =
+                        String(
+                            row?.user_name ||
+                            ""
+                        )
+                            .trim()
+                            .toLowerCase();
+
+
+                    const reportDate =
+                        String(
+                            row?.field_date ||
+                            ""
+                        )
+                            .substring(
+                                0,
+                                10
+                            );
+
+
+                    const matchUser =
+                        !userKeyword ||
+                        userName.includes(
+                            userKeyword
+                        );
+
+
+                    const matchDate =
+                        reportDate ===
+                        dateKeyword;
+
+
+                    return (
+                        matchUser &&
+                        matchDate
+                    );
+
+                }
+            );
+
+
+        currentPage =
+            Math.max(
+                1,
+                currentPage
+            );
+
+
+        updateSubmittedUserCount();
+
+        render();
+
+    }
+
+
+    // ========================================================
+    // ĐẾM CÁN BỘ DUY NHẤT
+    // ========================================================
+    //
+    // Ví dụ:
+    //
+    // HOINV12 nhập 5 báo cáo
+    // HOINV13 nhập 3 báo cáo
+    // HOINV12 nhập thêm 2 báo cáo
+    //
+    // Kết quả:
+    // => 2 cán bộ
+    //
+    // Không phải 10.
+    //
+    // ========================================================
+
+    function updateSubmittedUserCount() {
+
+        if (!submittedUserCount) {
+
+            return;
+
+        }
+
+
+        const uniqueUsers =
+            new Set();
+
+
+        filteredData.forEach(
+            (row) => {
+
+                const name =
+                    String(
+                        row?.user_name ||
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase();
+
+
+                if (name) {
+
+                    uniqueUsers.add(
+                        name
+                    );
+
+                }
+
+            }
         );
+
+
+        submittedUserCount.textContent =
+            uniqueUsers.size;
+
     }
 
-    if (currentPage >= totalPages - 2) {
-      startPage =
-        Math.max(
-          1,
-          totalPages - 4
-        );
 
-      endPage = totalPages;
-    }
+    // ========================================================
+    // RENDER TABLE
+    // ========================================================
 
-    // Trang đầu + ...
-    if (startPage > 1) {
+    function render() {
 
-      addPageButton(1);
+        if (!tableBody) {
 
-      if (startPage > 2) {
+            return;
 
-        const dots =
-          document.createElement("span");
+        }
 
-        dots.textContent = "...";
 
-        dots.style.padding =
-          "0 5px";
+        tableBody.innerHTML =
+            "";
 
-        pagination.appendChild(dots);
-      }
-    }
 
-    for (
-      let i = startPage;
-      i <= endPage;
-      i++
-    ) {
-
-      addPageButton(i);
-    }
-
-    // ... + trang cuối
-    if (endPage < totalPages) {
-
-      if (endPage < totalPages - 1) {
-
-        const dots =
-          document.createElement("span");
-
-        dots.textContent = "...";
-
-        dots.style.padding =
-          "0 5px";
-
-        pagination.appendChild(dots);
-      }
-
-      addPageButton(totalPages);
-    }
-
-    // Nút sau
-    const next =
-      document.createElement("button");
-
-    next.textContent = "›";
-
-    next.disabled =
-      currentPage === totalPages;
-
-    next.addEventListener(
-      "click",
-      () => {
+        // -----------------------------------------
+        // Không có dữ liệu
+        // -----------------------------------------
 
         if (
-          currentPage <
-          totalPages
+            !filteredData ||
+            filteredData.length === 0
         ) {
 
-          currentPage++;
-
-          render();
-
-          window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-          });
-        }
-      }
-    );
-
-    pagination.appendChild(next);
-
-    function addPageButton(page) {
-
-      const btn =
-        document.createElement("button");
-
-      btn.textContent = page;
-
-      if (page === currentPage) {
-        btn.classList.add("active");
-      }
-
-      btn.addEventListener(
-        "click",
-        () => {
-
-          currentPage = page;
-
-          render();
-
-          window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-          });
-        }
-      );
-
-      pagination.appendChild(btn);
-    }
-  }
-
-  // ==========================================================
-  // SỬA BÁO CÁO
-  // ==========================================================
-
-  async function editReport(id) {
-
-    const row =
-      allData.find(
-        (item) =>
-          String(item.id) ===
-          String(id)
-      );
-
-    if (!row) {
-
-      alert(
-        "❌ Không tìm thấy báo cáo."
-      );
-
-      return;
-    }
-
-    createEditModal(row);
-  }
-
-  // ==========================================================
-  // TẠO MODAL SỬA
-  // ==========================================================
-
-  function createEditModal(row) {
-
-    removeEditModal();
-
-    const overlay =
-      document.createElement("div");
-
-    overlay.id =
-      "editReportModal";
-
-    overlay.style.cssText = `
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,.6);
-      z-index:100000;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      padding:15px;
-    `;
-
-    const modal =
-      document.createElement("div");
-
-    modal.style.cssText = `
-      width:100%;
-      max-width:600px;
-      max-height:90vh;
-      overflow-y:auto;
-      background:white;
-      border-radius:18px;
-      padding:20px;
-      box-shadow:0 20px 60px rgba(0,0,0,.35);
-    `;
-
-    modal.innerHTML = `
-      <h2 style="
-        margin-top:0;
-        margin-bottom:18px;
-      ">
-        ✏️ SỬA BÁO CÁO
-      </h2>
-
-      <div style="display:grid;gap:12px;">
-
-        <label>
-          <b>Cán bộ</b>
-          <input
-            id="editUserName"
-            type="text"
-            value="${escapeAttr(row.user_name)}"
-            style="width:100%;box-sizing:border-box;padding:11px;margin-top:5px;"
-          >
-        </label>
-
-        <label>
-          <b>Ngày field</b>
-          <input
-            id="editFieldDate"
-            type="date"
-            value="${escapeAttr(formatDate(row.field_date))}"
-            style="width:100%;box-sizing:border-box;padding:11px;margin-top:5px;"
-          >
-        </label>
-
-        <label>
-          <b>Số CIF</b>
-          <input
-            id="editCif"
-            type="text"
-            value="${escapeAttr(row.cif)}"
-            style="width:100%;box-sizing:border-box;padding:11px;margin-top:5px;"
-          >
-        </label>
-
-        <label>
-          <b>Tên khách hàng</b>
-          <input
-            id="editCustomerName"
-            type="text"
-            value="${escapeAttr(row.customer_name)}"
-            style="width:100%;box-sizing:border-box;padding:11px;margin-top:5px;"
-          >
-        </label>
-
-        <label>
-          <b>Kết quả</b>
-          <select
-            id="editResult"
-            style="width:100%;box-sizing:border-box;padding:11px;margin-top:5px;"
-          >
-            <option value="Sống">Sống</option>
-            <option value="Chết">Chết</option>
-          </select>
-        </label>
-
-        <label>
-          <b>Kết nối</b>
-          <input
-            id="editConnection"
-            type="text"
-            value="${escapeAttr(row.connection)}"
-            style="width:100%;box-sizing:border-box;padding:11px;margin-top:5px;"
-          >
-        </label>
-
-        <label>
-          <b>Kết quả chi tiết</b>
-          <textarea
-            id="editDetail"
-            rows="4"
-            style="width:100%;box-sizing:border-box;padding:11px;margin-top:5px;"
-          >${escapeHtml(row.detail)}</textarea>
-        </label>
-
-        <label>
-          <b>Dự thu</b>
-          <input
-            id="editExpectedAmount"
-            type="number"
-            value="${escapeAttr(row.expected_amount)}"
-            style="width:100%;box-sizing:border-box;padding:11px;margin-top:5px;"
-          >
-        </label>
-
-        <label>
-          <b>Hướng tác động tiếp theo</b>
-          <textarea
-            id="editNextAction"
-            rows="4"
-            style="width:100%;box-sizing:border-box;padding:11px;margin-top:5px;"
-          >${escapeHtml(row.next_action)}</textarea>
-        </label>
-
-      </div>
-
-      <div style="
-        display:flex;
-        gap:10px;
-        margin-top:20px;
-      ">
-
-        <button
-          id="cancelEditBtn"
-          type="button"
-          style="
-            flex:1;
-            padding:13px;
-            border:0;
-            border-radius:10px;
-            background:#64748b;
-            color:white;
-            font-weight:800;
-          "
-        >
-          HỦY
-        </button>
-
-        <button
-          id="saveEditBtn"
-          type="button"
-          style="
-            flex:1;
-            padding:13px;
-            border:0;
-            border-radius:10px;
-            background:#2563eb;
-            color:white;
-            font-weight:800;
-          "
-        >
-          💾 LƯU THAY ĐỔI
-        </button>
-
-      </div>
-
-      <div
-        id="editMessage"
-        style="
-          text-align:center;
-          margin-top:12px;
-          font-weight:bold;
-        "
-      ></div>
-    `;
-
-    overlay.appendChild(modal);
-
-    document.body.appendChild(overlay);
-
-    // Set selected result
-    const resultSelect =
-      document.getElementById(
-        "editResult"
-      );
-
-    if (resultSelect) {
-
-      resultSelect.value =
-        row.result || "Sống";
-    }
-
-    document
-      .getElementById(
-        "cancelEditBtn"
-      )
-      ?.addEventListener(
-        "click",
-        removeEditModal
-      );
-
-    document
-      .getElementById(
-        "saveEditBtn"
-      )
-      ?.addEventListener(
-        "click",
-        () => saveEditReport(row.id)
-      );
-
-    overlay.addEventListener(
-      "click",
-      (e) => {
-
-        if (e.target === overlay) {
-          removeEditModal();
-        }
-      }
-    );
-  }
-
-  // ==========================================================
-  // LƯU SỬA
-  // ==========================================================
-
-  async function saveEditReport(id) {
-
-    const saveBtn =
-      document.getElementById(
-        "saveEditBtn"
-      );
-
-    const editMessage =
-      document.getElementById(
-        "editMessage"
-      );
-
-    const user_name =
-      document.getElementById(
-        "editUserName"
-      )?.value.trim() || "";
-
-    const field_date =
-      document.getElementById(
-        "editFieldDate"
-      )?.value || null;
-
-    const cif =
-      document.getElementById(
-        "editCif"
-      )?.value.trim() || "";
-
-    const customer_name =
-      document.getElementById(
-        "editCustomerName"
-      )?.value.trim() || "";
-
-    const result =
-      document.getElementById(
-        "editResult"
-      )?.value || "";
-
-    const connection =
-      document.getElementById(
-        "editConnection"
-      )?.value.trim() || "";
-
-    const detail =
-      document.getElementById(
-        "editDetail"
-      )?.value.trim() || "";
-
-    const expected_amount =
-      Number(
-        document.getElementById(
-          "editExpectedAmount"
-        )?.value
-      ) || 0;
-
-    const next_action =
-      document.getElementById(
-        "editNextAction"
-      )?.value.trim() || "";
-
-    if (!user_name) {
-
-      if (editMessage) {
-        editMessage.textContent =
-          "❌ Vui lòng nhập tên cán bộ.";
-      }
-
-      return;
-    }
-
-    if (!cif) {
-
-      if (editMessage) {
-        editMessage.textContent =
-          "❌ Vui lòng nhập số CIF.";
-      }
-
-      return;
-    }
-
-    if (saveBtn) {
-
-      saveBtn.disabled = true;
-
-      saveBtn.textContent =
-        "⏳ ĐANG LƯU...";
-    }
-
-    if (editMessage) {
-      editMessage.textContent =
-        "⏳ Đang cập nhật...";
-    }
-
-    try {
-
-      const {
-        error
-      } = await db
-        .from("bao_cao_ngay")
-        .update({
-          user_name,
-          field_date,
-          cif,
-          customer_name,
-          result,
-          connection,
-          detail,
-          expected_amount,
-          next_action
-        })
-        .eq("id", id);
-
-      if (error) {
-
-        console.error(
-          "Update error:",
-          error
-        );
-
-        if (editMessage) {
-          editMessage.textContent =
-            "❌ Lỗi cập nhật: " +
-            error.message;
-        }
-
-        return;
-      }
-
-      removeEditModal();
-
-      await loadData();
-
-      if (managerMessage) {
-        managerMessage.textContent =
-          "✅ Đã sửa báo cáo thành công.";
-      }
-
-    } catch (error) {
-
-      console.error(
-        "saveEditReport:",
-        error
-      );
-
-      if (editMessage) {
-        editMessage.textContent =
-          "❌ Không thể cập nhật báo cáo.";
-      }
-
-    } finally {
-
-      if (saveBtn) {
-
-        saveBtn.disabled = false;
-
-        saveBtn.textContent =
-          "💾 LƯU THAY ĐỔI";
-      }
-    }
-  }
-
-  // ==========================================================
-  // XÓA BÁO CÁO
-  // ==========================================================
-
-  async function deleteReport(id) {
-
-    const row =
-      allData.find(
-        (item) =>
-          String(item.id) ===
-          String(id)
-      );
-
-    if (!row) {
-
-      alert(
-        "❌ Không tìm thấy báo cáo."
-      );
-
-      return;
-    }
-
-    const customer =
-      row.customer_name ||
-      row.cif ||
-      "báo cáo này";
-
-    const confirmed =
-      confirm(
-        `⚠️ Bạn có chắc muốn xóa báo cáo của "${customer}"?\n\nHành động này không thể hoàn tác.`
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
-    if (managerMessage) {
-      managerMessage.textContent =
-        "⏳ Đang xóa báo cáo...";
-    }
-
-    try {
-
-      const {
-        error
-      } = await db
-        .from("bao_cao_ngay")
-        .delete()
-        .eq("id", id);
-
-      if (error) {
-
-        console.error(
-          "Delete error:",
-          error
-        );
-
-        if (managerMessage) {
-          managerMessage.textContent =
-            "❌ Không thể xóa: " +
-            error.message;
-        }
-
-        return;
-      }
-
-      await loadData();
-
-      if (managerMessage) {
-        managerMessage.textContent =
-          "✅ Đã xóa báo cáo thành công.";
-      }
-
-    } catch (error) {
-
-      console.error(
-        "deleteReport:",
-        error
-      );
-
-      if (managerMessage) {
-        managerMessage.textContent =
-          "❌ Lỗi khi xóa báo cáo.";
-      }
-    }
-  }
-
-  // ==========================================================
-  // CÁN BỘ ĐÃ NHẬP BÁO CÁO
-  // ==========================================================
-
-  function showSubmittedUsers() {
-
-    removeSubmittedUserModal();
-
-    const usersMap =
-      new Map();
-
-    filteredData.forEach(
-      (row) => {
-
-        const name =
-          String(
-            row.user_name || ""
-          ).trim();
-
-        if (!name) {
-          return;
-        }
-
-        if (!usersMap.has(name)) {
-          usersMap.set(name, 0);
-        }
-
-        usersMap.set(
-          name,
-          usersMap.get(name) + 1
-        );
-      }
-    );
-
-    const users =
-      Array.from(
-        usersMap.entries()
-      ).sort(
-        (a, b) =>
-          a[0].localeCompare(
-            b[0],
-            "vi"
-          )
-      );
-
-    const overlay =
-      document.createElement("div");
-
-    overlay.id =
-      "submittedUserModal";
-
-    overlay.className =
-      "user-modal-overlay";
-
-    const modal =
-      document.createElement("div");
-
-    modal.className =
-      "user-modal";
-
-    modal.innerHTML = `
-      <div class="user-modal-header">
-        <h2>
-          👥 CÁN BỘ ĐÃ NHẬP BÁO CÁO
-          <br>
-          <span style="
-            color:#2563eb;
-            font-size:16px;
-          ">
-            ${users.length} cán bộ
-          </span>
-        </h2>
-
-        <button
-          class="user-modal-close"
-          id="closeSubmittedUsers"
-          type="button"
-        >
-          ×
-        </button>
-      </div>
-
-      <div class="user-modal-body">
-
-        ${
-          users.length === 0
-            ? `
-              <div style="
-                text-align:center;
-                padding:30px 10px;
-                color:#64748b;
-                font-weight:bold;
-              ">
-                Chưa có cán bộ nào nhập báo cáo.
-              </div>
-            `
-            : users
-                .map(
-                  ([name, count], index) => `
-                    <div
-                      class="submitted-user-item"
-                      data-user="${escapeAttr(name)}"
-                      style="cursor:pointer;"
+            tableBody.innerHTML = `
+                <tr>
+                    <td
+                        colspan="100"
+                        style="
+                            text-align:center;
+                            padding:30px;
+                        "
                     >
-                      <div class="submitted-user-number">
-                        ${index + 1}
-                      </div>
+                        📭 Không có báo cáo trong ngày này.
+                    </td>
+                </tr>
+            `;
 
-                      <div style="flex:1;">
-                        <div>
-                          ${escapeHtml(name)}
-                        </div>
 
-                        <div style="
-                          font-size:13px;
-                          color:#64748b;
-                          margin-top:3px;
-                        ">
-                          ${count} báo cáo
-                        </div>
-                      </div>
+            if (totalReports) {
 
-                      <div style="
-                        font-size:20px;
-                      ">
-                        ›
-                      </div>
-                    </div>
-                  `
-                )
-                .join("")
-        }
+                totalReports.textContent =
+                    "0";
 
-      </div>
-    `;
-
-    overlay.appendChild(modal);
-
-    document.body.appendChild(overlay);
-
-    document
-      .getElementById(
-        "closeSubmittedUsers"
-      )
-      ?.addEventListener(
-        "click",
-        removeSubmittedUserModal
-      );
-
-    overlay.addEventListener(
-      "click",
-      (e) => {
-
-        if (e.target === overlay) {
-          removeSubmittedUserModal();
-        }
-      }
-    );
-
-    // Bấm vào cán bộ -> tự lọc dữ liệu của cán bộ đó
-    modal
-      .querySelectorAll(
-        ".submitted-user-item"
-      )
-      .forEach(
-        (item) => {
-
-          item.addEventListener(
-            "click",
-            () => {
-
-              const user =
-                item.dataset.user || "";
-
-              if (filterUser) {
-                filterUser.value =
-                  user;
-              }
-
-              currentPage = 1;
-
-              applyFilter();
-
-              removeSubmittedUserModal();
-
-              if (tableBody) {
-                tableBody.scrollIntoView({
-                  behavior: "smooth",
-                  block: "start"
-                });
-              }
             }
-          );
+
+
+            if (totalAmount) {
+
+                totalAmount.textContent =
+                    "0";
+
+            }
+
+
+            if (pagination) {
+
+                pagination.innerHTML =
+                    "";
+
+            }
+
+
+            return;
+
         }
-      );
-  }
 
-  function removeSubmittedUserModal() {
 
-    document
-      .getElementById(
-        "submittedUserModal"
-      )
-      ?.remove();
-  }
+        // -----------------------------------------
+        // Tổng báo cáo
+        // -----------------------------------------
 
-  // ==========================================================
-  // MENU
-  // ==========================================================
+        if (totalReports) {
 
-  function openMenu() {
+            totalReports.textContent =
+                filteredData.length;
 
-    if (sideMenuOverlay) {
-      sideMenuOverlay.classList.add("open");
+        }
+
+
+        // -----------------------------------------
+        // Tổng dự thu
+        // -----------------------------------------
+
+        let amountTotal =
+            0;
+
+
+        filteredData.forEach(
+            (row) => {
+
+                amountTotal +=
+                    parseNumber(
+                        row?.expected_amount
+                    );
+
+            }
+        );
+
+
+        if (totalAmount) {
+
+            totalAmount.textContent =
+                formatMoney(
+                    amountTotal
+                );
+
+        }
+
+
+        // -----------------------------------------
+        // Phân trang
+        // -----------------------------------------
+
+        const totalPages =
+            Math.max(
+                1,
+                Math.ceil(
+                    filteredData.length /
+                    PAGE_SIZE
+                )
+            );
+
+
+        if (
+            currentPage >
+            totalPages
+        ) {
+
+            currentPage =
+                totalPages;
+
+        }
+
+
+        const startIndex =
+            (
+                currentPage -
+                1
+            ) *
+            PAGE_SIZE;
+
+
+        const endIndex =
+            startIndex +
+            PAGE_SIZE;
+
+
+        const pageData =
+            filteredData.slice(
+                startIndex,
+                endIndex
+            );
+
+
+        // -----------------------------------------
+        // Render từng báo cáo
+        // -----------------------------------------
+
+        pageData.forEach(
+            (row, index) => {
+
+                const realIndex =
+                    startIndex +
+                    index;
+
+
+                const tr =
+                    document.createElement(
+                        "tr"
+                    );
+
+
+                tr.innerHTML = `
+
+                    <td>
+                        ${realIndex + 1}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            row?.user_name || ""
+                        )}
+                    </td>
+
+                    <td>
+                        ${formatDate(
+                            row?.field_date
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            row?.cif || ""
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            row?.customer_name || ""
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            row?.result || ""
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            row?.connection || ""
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            row?.detail || ""
+                        )}
+                    </td>
+
+                    <td>
+                        ${formatMoney(
+                            parseNumber(
+                                row?.expected_amount
+                            )
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            row?.next_action || ""
+                        )}
+                    </td>
+
+                    <td>
+
+                        <button
+                            type="button"
+                            class="manager-edit-btn"
+                            data-id="${escapeAttr(
+                                row?.id || ""
+                            )}"
+                        >
+                            ✏️
+                        </button>
+
+                        <button
+                            type="button"
+                            class="manager-delete-btn"
+                            data-id="${escapeAttr(
+                                row?.id || ""
+                            )}"
+                        >
+                            🗑️
+                        </button>
+
+                    </td>
+
+                `;
+
+
+                // -------------------------------------
+                // Edit
+                // -------------------------------------
+
+                const editBtn =
+                    tr.querySelector(
+                        ".manager-edit-btn"
+                    );
+
+
+                if (editBtn) {
+
+                    editBtn.addEventListener(
+                        "click",
+                        function () {
+
+                            editReport(
+                                row?.id
+                            );
+
+                        }
+                    );
+
+                }
+
+
+                // -------------------------------------
+                // Delete
+                // -------------------------------------
+
+                const deleteBtn =
+                    tr.querySelector(
+                        ".manager-delete-btn"
+                    );
+
+
+                if (deleteBtn) {
+
+                    deleteBtn.addEventListener(
+                        "click",
+                        function () {
+
+                            deleteReport(
+                                row?.id
+                            );
+
+                        }
+                    );
+
+                }
+
+
+                tableBody.appendChild(
+                    tr
+                );
+
+            }
+        );
+
+
+        renderPagination();
+
     }
 
-    if (sideMenu) {
-      sideMenu.classList.add("open");
+
+    // ========================================================
+    // PAGINATION
+    // ========================================================
+
+    function renderPagination() {
+
+        if (!pagination) {
+
+            return;
+
+        }
+
+
+        pagination.innerHTML =
+            "";
+
+
+        const totalPages =
+            Math.max(
+                1,
+                Math.ceil(
+                    filteredData.length /
+                    PAGE_SIZE
+                )
+            );
+
+
+        if (totalPages <= 1) {
+
+            return;
+
+        }
+
+
+        // -----------------------------------------
+        // Previous
+        // -----------------------------------------
+
+        const prev =
+            document.createElement(
+                "button"
+            );
+
+
+        prev.type =
+            "button";
+
+
+        prev.textContent =
+            "‹";
+
+
+        prev.disabled =
+            currentPage <= 1;
+
+
+        prev.addEventListener(
+            "click",
+            function () {
+
+                if (currentPage > 1) {
+
+                    currentPage--;
+
+                    render();
+
+                }
+
+            }
+        );
+
+
+        pagination.appendChild(
+            prev
+        );
+
+
+        // -----------------------------------------
+        // Page numbers
+        // -----------------------------------------
+
+        for (
+            let page = 1;
+            page <= totalPages;
+            page++
+        ) {
+
+            const btn =
+                document.createElement(
+                    "button"
+                );
+
+
+            btn.type =
+                "button";
+
+
+            btn.textContent =
+                page;
+
+
+            if (
+                page ===
+                currentPage
+            ) {
+
+                btn.classList.add(
+                    "active"
+                );
+
+            }
+
+
+            btn.addEventListener(
+                "click",
+                function () {
+
+                    currentPage =
+                        page;
+
+                    render();
+
+                }
+            );
+
+
+            pagination.appendChild(
+                btn
+            );
+
+        }
+
+
+        // -----------------------------------------
+        // Next
+        // -----------------------------------------
+
+        const next =
+            document.createElement(
+                "button"
+            );
+
+
+        next.type =
+            "button";
+
+
+        next.textContent =
+            "›";
+
+
+        next.disabled =
+            currentPage >= totalPages;
+
+
+        next.addEventListener(
+            "click",
+            function () {
+
+                if (
+                    currentPage <
+                    totalPages
+                ) {
+
+                    currentPage++;
+
+                    render();
+
+                }
+
+            }
+        );
+
+
+        pagination.appendChild(
+            next
+        );
+
     }
-  }
 
-  function closeMenu() {
 
-    if (sideMenuOverlay) {
-      sideMenuOverlay.classList.remove("open");
+    // ========================================================
+    // EDIT REPORT
+    // ========================================================
+
+    function editReport(id) {
+
+        const row =
+            allData.find(
+                item =>
+                    String(item?.id) ===
+                    String(id)
+            );
+
+
+        if (!row) {
+
+            alert(
+                "❌ Không tìm thấy báo cáo."
+            );
+
+            return;
+
+        }
+
+
+        createEditModal(
+            row
+        );
+
     }
 
-    if (sideMenu) {
-      sideMenu.classList.remove("open");
+
+    // ========================================================
+    // CREATE EDIT MODAL
+    // ========================================================
+
+    function createEditModal(row) {
+
+        removeEditModal();
+
+
+        const modal =
+            document.createElement(
+                "div"
+            );
+
+
+        modal.id =
+            "managerEditModal";
+
+
+        modal.style.cssText = `
+            position:fixed;
+            inset:0;
+            background:rgba(0,0,0,.55);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            z-index:99999;
+            padding:15px;
+        `;
+
+
+        modal.innerHTML = `
+
+            <div
+                style="
+                    background:#fff;
+                    width:min(700px,100%);
+                    max-height:90vh;
+                    overflow:auto;
+                    border-radius:14px;
+                    padding:20px;
+                    box-sizing:border-box;
+                "
+            >
+
+                <h2
+                    style="
+                        margin-top:0;
+                        margin-bottom:20px;
+                    "
+                >
+                    ✏️ Sửa báo cáo
+                </h2>
+
+
+                <div
+                    style="
+                        display:grid;
+                        gap:12px;
+                    "
+                >
+
+                    <label>
+                        Cán bộ
+                        <input
+                            id="editUserName"
+                            type="text"
+                            value="${escapeAttr(
+                                row?.user_name || ""
+                            )}"
+                            style="width:100%;box-sizing:border-box;"
+                        >
+                    </label>
+
+
+                    <label>
+                        Ngày field
+                        <input
+                            id="editFieldDate"
+                            type="date"
+                            value="${escapeAttr(
+                                normalizeDateInput(
+                                    row?.field_date
+                                )
+                            )}"
+                            style="width:100%;box-sizing:border-box;"
+                        >
+                    </label>
+
+
+                    <label>
+                        CIF
+                        <input
+                            id="editCif"
+                            type="text"
+                            value="${escapeAttr(
+                                row?.cif || ""
+                            )}"
+                            style="width:100%;box-sizing:border-box;"
+                        >
+                    </label>
+
+
+                    <label>
+                        Tên khách hàng
+                        <input
+                            id="editCustomerName"
+                            type="text"
+                            value="${escapeAttr(
+                                row?.customer_name || ""
+                            )}"
+                            style="width:100%;box-sizing:border-box;"
+                        >
+                    </label>
+
+
+                    <label>
+                        Kết quả
+                        <input
+                            id="editResult"
+                            type="text"
+                            value="${escapeAttr(
+                                row?.result || ""
+                            )}"
+                            style="width:100%;box-sizing:border-box;"
+                        >
+                    </label>
+
+
+                    <label>
+                        Kết nối
+                        <input
+                            id="editConnection"
+                            type="text"
+                            value="${escapeAttr(
+                                row?.connection || ""
+                            )}"
+                            style="width:100%;box-sizing:border-box;"
+                        >
+                    </label>
+
+
+                    <label>
+                        Kết quả chi tiết
+                        <textarea
+                            id="editDetail"
+                            rows="4"
+                            style="width:100%;box-sizing:border-box;"
+                        >${escapeHtml(
+                            row?.detail || ""
+                        )}</textarea>
+                    </label>
+
+
+                    <label>
+                        Dự thu
+                        <input
+                            id="editExpectedAmount"
+                            type="number"
+                            value="${escapeAttr(
+                                row?.expected_amount ?? ""
+                            )}"
+                            style="width:100%;box-sizing:border-box;"
+                        >
+                    </label>
+
+
+                    <label>
+                        Hướng tác động tiếp theo
+                        <textarea
+                            id="editNextAction"
+                            rows="4"
+                            style="width:100%;box-sizing:border-box;"
+                        >${escapeHtml(
+                            row?.next_action || ""
+                        )}</textarea>
+                    </label>
+
+                </div>
+
+
+                <div
+                    style="
+                        display:flex;
+                        justify-content:flex-end;
+                        gap:10px;
+                        margin-top:20px;
+                    "
+                >
+
+                    <button
+                        type="button"
+                        id="editCancelBtn"
+                    >
+                        Hủy
+                    </button>
+
+
+                    <button
+                        type="button"
+                        id="editSaveBtn"
+                    >
+                        💾 Lưu
+                    </button>
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        document.body.appendChild(
+            modal
+        );
+
+
+        const cancelBtn =
+            document.getElementById(
+                "editCancelBtn"
+            );
+
+
+        const saveBtn =
+            document.getElementById(
+                "editSaveBtn"
+            );
+
+
+        if (cancelBtn) {
+
+            cancelBtn.addEventListener(
+                "click",
+                removeEditModal
+            );
+
+        }
+
+
+        if (saveBtn) {
+
+            saveBtn.addEventListener(
+                "click",
+                function () {
+
+                    saveEditReport(
+                        row?.id
+                    );
+
+                }
+            );
+
+        }
+
+
+        modal.addEventListener(
+            "click",
+            function (event) {
+
+                if (
+                    event.target ===
+                    modal
+                ) {
+
+                    removeEditModal();
+
+                }
+
+            }
+        );
+
     }
-  }
 
-  // ==========================================================
-  // XUẤT EXCEL
-  // ==========================================================
 
-  function exportExcel() {
+    // ========================================================
+    // SAVE EDIT REPORT
+    // ========================================================
 
-    if (
-      typeof XLSX ===
-      "undefined"
-    ) {
+    async function saveEditReport(id) {
 
-      alert(
-        "❌ Chưa tải được thư viện Excel."
-      );
+        const userName =
+            document.getElementById(
+                "editUserName"
+            )?.value.trim();
 
-      return;
+
+        const fieldDate =
+            document.getElementById(
+                "editFieldDate"
+            )?.value;
+
+
+        const cif =
+            document.getElementById(
+                "editCif"
+            )?.value.trim();
+
+
+        const customerName =
+            document.getElementById(
+                "editCustomerName"
+            )?.value.trim();
+
+
+        const result =
+            document.getElementById(
+                "editResult"
+            )?.value.trim();
+
+
+        const connection =
+            document.getElementById(
+                "editConnection"
+            )?.value.trim();
+
+
+        const detail =
+            document.getElementById(
+                "editDetail"
+            )?.value.trim();
+
+
+        const expectedAmount =
+            document.getElementById(
+                "editExpectedAmount"
+            )?.value;
+
+
+        const nextAction =
+            document.getElementById(
+                "editNextAction"
+            )?.value.trim();
+
+
+        if (!userName) {
+
+            alert(
+                "⚠️ Vui lòng nhập tên cán bộ."
+            );
+
+            return;
+
+        }
+
+
+        if (!fieldDate) {
+
+            alert(
+                "⚠️ Vui lòng chọn ngày."
+            );
+
+            return;
+
+        }
+
+
+        const saveBtn =
+            document.getElementById(
+                "editSaveBtn"
+            );
+
+
+        if (saveBtn) {
+
+            saveBtn.disabled =
+                true;
+
+            saveBtn.textContent =
+                "⏳ Đang lưu...";
+
+        }
+
+
+        try {
+
+            const updateData = {
+
+                user_name:
+                    userName,
+
+                field_date:
+                    fieldDate,
+
+                cif:
+                    cif,
+
+                customer_name:
+                    customerName,
+
+                result:
+                    result,
+
+                connection:
+                    connection,
+
+                detail:
+                    detail,
+
+                expected_amount:
+                    expectedAmount === ""
+                        ? null
+                        : Number(
+                            expectedAmount
+                        ),
+
+                next_action:
+                    nextAction
+
+            };
+
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("bao_cao_ngay")
+                    .update(updateData)
+                    .eq(
+                        "id",
+                        id
+                    );
+
+
+            if (error) {
+
+                throw error;
+
+            }
+
+
+            alert(
+                "✅ Đã cập nhật báo cáo."
+            );
+
+
+            removeEditModal();
+
+
+            await loadData();
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "Save edit error:",
+                error
+            );
+
+
+            alert(
+                "❌ Không thể cập nhật:\n\n" +
+                (
+                    error?.message ||
+                    "Lỗi không xác định."
+                )
+            );
+
+        }
+
+        finally {
+
+            if (saveBtn) {
+
+                saveBtn.disabled =
+                    false;
+
+                saveBtn.textContent =
+                    "💾 Lưu";
+
+            }
+
+        }
+
     }
 
-    if (
-      !filteredData ||
-      filteredData.length === 0
-    ) {
 
-      alert(
-        "⚠️ Không có dữ liệu để xuất Excel."
-      );
+    // ========================================================
+    // DELETE REPORT
+    // ========================================================
 
-      return;
+    async function deleteReport(id) {
+
+        const row =
+            allData.find(
+                item =>
+                    String(item?.id) ===
+                    String(id)
+            );
+
+
+        const customerName =
+            row?.customer_name ||
+            "báo cáo này";
+
+
+        const confirmed =
+            confirm(
+                `⚠️ Bạn có chắc muốn xóa báo cáo của "${customerName}" không?\n\n` +
+                "Dữ liệu sẽ bị xóa khỏi hệ thống."
+            );
+
+
+        if (!confirmed) {
+
+            return;
+
+        }
+
+
+        try {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("bao_cao_ngay")
+                    .delete()
+                    .eq(
+                        "id",
+                        id
+                    );
+
+
+            if (error) {
+
+                throw error;
+
+            }
+
+
+            alert(
+                "✅ Đã xóa báo cáo."
+            );
+
+
+            await loadData();
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "Delete error:",
+                error
+            );
+
+
+            alert(
+                "❌ Không thể xóa báo cáo:\n\n" +
+                (
+                    error?.message ||
+                    "Lỗi không xác định."
+                )
+            );
+
+        }
+
     }
 
-    const exportData =
-      filteredData.map(
-        (row, index) => ({
-          "STT":
-            index + 1,
 
-          "Cán bộ":
-            row.user_name || "",
+    // ========================================================
+    // HIỂN THỊ CÁN BỘ ĐÃ NHẬP
+    // ========================================================
+    //
+    // QUAN TRỌNG:
+    //
+    // Dùng Map với key = tên cán bộ viết thường.
+    //
+    // Ví dụ:
+    //
+    // HOI NV12
+    // hoinv12
+    // Hoinv12
+    //
+    // => được coi là cùng một người.
+    //
+    // ========================================================
 
-          "Ngày field":
-            formatDate(
-              row.field_date
-            ),
+    function showSubmittedUsers() {
 
-          "Số CIF":
-            row.cif || "",
+        closeMenu();
 
-          "Tên khách hàng":
-            row.customer_name || "",
+        removeSubmittedUserModal();
 
-          "Kết quả":
-            row.result || "",
 
-          "Kết nối":
-            row.connection || "",
+        const users =
+            new Map();
 
-          "Kết quả chi tiết":
-            row.detail || "",
 
-          "Dự thu":
-            Number(
-              row.expected_amount
-            ) || 0,
+        filteredData.forEach(
+            (row) => {
 
-          "Hướng tác động tiếp theo":
-            row.next_action || ""
-        })
-      );
+                const originalName =
+                    String(
+                        row?.user_name ||
+                        ""
+                    ).trim();
 
-    const ws =
-      XLSX.utils.json_to_sheet(
-        exportData
-      );
 
-    // Độ rộng cột
-    ws["!cols"] = [
-      { wch: 6 },
-      { wch: 20 },
-      { wch: 14 },
-      { wch: 15 },
-      { wch: 25 },
-      { wch: 15 },
-      { wch: 22 },
-      { wch: 45 },
-      { wch: 18 },
-      { wch: 45 }
-    ];
+                if (!originalName) {
 
-    const wb =
-      XLSX.utils.book_new();
+                    return;
 
-    XLSX.utils.book_append_sheet(
-      wb,
-      ws,
-      "BaoCaoNgay"
+                }
+
+
+                const key =
+                    originalName.toLowerCase();
+
+
+                if (!users.has(key)) {
+
+                    users.set(
+                        key,
+                        {
+                            name:
+                                originalName,
+
+                            count:
+                                1
+                        }
+                    );
+
+                }
+
+                else {
+
+                    users.get(
+                        key
+                    ).count++;
+
+                }
+
+            }
+        );
+
+
+        const userList =
+            Array.from(
+                users.values()
+            )
+                .sort(
+                    (a, b) =>
+                        a.name.localeCompare(
+                            b.name,
+                            "vi"
+                        )
+                );
+
+
+        const modal =
+            document.createElement(
+                "div"
+            );
+
+
+        modal.id =
+            "submittedUsersModal";
+
+
+        modal.style.cssText = `
+            position:fixed;
+            inset:0;
+            background:rgba(0,0,0,.55);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            z-index:99998;
+            padding:15px;
+        `;
+
+
+        let content = "";
+
+
+        if (userList.length === 0) {
+
+            content = `
+
+                <div
+                    style="
+                        text-align:center;
+                        padding:30px;
+                    "
+                >
+
+                    📭 Chưa có cán bộ nào
+                    nhập báo cáo trong ngày này.
+
+                </div>
+
+            `;
+
+        }
+
+        else {
+
+            content = `
+
+                <div
+                    style="
+                        display:flex;
+                        flex-direction:column;
+                        gap:8px;
+                    "
+                >
+
+            `;
+
+
+            userList.forEach(
+                (user) => {
+
+                    content += `
+
+                        <button
+                            type="button"
+                            class="submitted-user-item"
+                            data-user="${escapeAttr(
+                                user.name
+                            )}"
+                            style="
+                                width:100%;
+                                display:flex;
+                                align-items:center;
+                                justify-content:space-between;
+                                padding:12px 14px;
+                                border:1px solid #ddd;
+                                background:#fff;
+                                border-radius:10px;
+                                cursor:pointer;
+                                text-align:left;
+                            "
+                        >
+
+                            <span>
+                                👤
+                                ${escapeHtml(
+                                    user.name
+                                )}
+                            </span>
+
+                            <strong>
+                                ${user.count}
+                                báo cáo
+                            </strong>
+
+                        </button>
+
+                    `;
+
+                }
+            );
+
+
+            content += `
+
+                </div>
+
+            `;
+
+        }
+
+
+        modal.innerHTML = `
+
+            <div
+                style="
+                    background:#fff;
+                    width:min(500px,100%);
+                    max-height:85vh;
+                    overflow:auto;
+                    border-radius:14px;
+                    padding:20px;
+                    box-sizing:border-box;
+                "
+            >
+
+                <div
+                    style="
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        gap:10px;
+                        margin-bottom:18px;
+                    "
+                >
+
+                    <h2
+                        style="
+                            margin:0;
+                            font-size:20px;
+                        "
+                    >
+                        👥 CÁN BỘ ĐÃ NHẬP BÁO CÁO
+                    </h2>
+
+
+                    <button
+                        type="button"
+                        id="closeSubmittedUsers"
+                    >
+                        ✕
+                    </button>
+
+                </div>
+
+
+                <div
+                    style="
+                        margin-bottom:15px;
+                        padding:10px 12px;
+                        background:#f5f5f5;
+                        border-radius:8px;
+                    "
+                >
+
+                    Tổng:
+                    <strong>
+                        ${userList.length}
+                    </strong>
+                    cán bộ
+
+                </div>
+
+
+                ${content}
+
+            </div>
+
+        `;
+
+
+        document.body.appendChild(
+            modal
+        );
+
+
+        // -----------------------------------------
+        // Close
+        // -----------------------------------------
+
+        const closeBtn =
+            document.getElementById(
+                "closeSubmittedUsers"
+            );
+
+
+        if (closeBtn) {
+
+            closeBtn.addEventListener(
+                "click",
+                removeSubmittedUserModal
+            );
+
+        }
+
+
+        modal.addEventListener(
+            "click",
+            function (event) {
+
+                if (
+                    event.target ===
+                    modal
+                ) {
+
+                    removeSubmittedUserModal();
+
+                }
+
+            }
+        );
+
+
+        // -----------------------------------------
+        // Click cán bộ
+        // -----------------------------------------
+
+        modal
+            .querySelectorAll(
+                ".submitted-user-item"
+            )
+            .forEach(
+                (button) => {
+
+                    button.addEventListener(
+                        "click",
+                        function () {
+
+                            const user =
+                                this.dataset.user ||
+                                "";
+
+
+                            if (filterUser) {
+
+                                filterUser.value =
+                                    user;
+
+                            }
+
+
+                            currentPage =
+                                1;
+
+
+                            applyFilter();
+
+
+                            removeSubmittedUserModal();
+
+                        }
+                    );
+
+                }
+            );
+
+    }
+
+
+    // ========================================================
+    // REMOVE USER MODAL
+    // ========================================================
+
+    function removeSubmittedUserModal() {
+
+        const modal =
+            document.getElementById(
+                "submittedUsersModal"
+            );
+
+
+        if (modal) {
+
+            modal.remove();
+
+        }
+
+    }
+
+
+    // ========================================================
+    // MENU
+    // ========================================================
+
+    function openMenu() {
+
+        if (sideMenu) {
+
+            sideMenu.classList.add(
+                "open"
+            );
+
+        }
+
+
+        if (sideMenuOverlay) {
+
+            sideMenuOverlay.classList.add(
+                "open"
+            );
+
+        }
+
+    }
+
+
+    function closeMenu() {
+
+        if (sideMenu) {
+
+            sideMenu.classList.remove(
+                "open"
+            );
+
+        }
+
+
+        if (sideMenuOverlay) {
+
+            sideMenuOverlay.classList.remove(
+                "open"
+            );
+
+        }
+
+    }
+
+
+    // ========================================================
+    // EXPORT EXCEL
+    // ========================================================
+
+    function exportExcel() {
+
+        if (
+            !filteredData ||
+            filteredData.length === 0
+        ) {
+
+            alert(
+                "⚠️ Không có dữ liệu để xuất."
+            );
+
+            return;
+
+        }
+
+
+        // -----------------------------------------
+        // Kiểm tra thư viện XLSX
+        // -----------------------------------------
+
+        if (!window.XLSX) {
+
+            alert(
+                "❌ Chưa tải thư viện Excel XLSX."
+            );
+
+            return;
+
+        }
+
+
+        const exportData =
+            filteredData.map(
+                (row, index) => ({
+
+                    "STT":
+                        index + 1,
+
+                    "Cán bộ":
+                        row?.user_name || "",
+
+                    "Ngày field":
+                        formatDate(
+                            row?.field_date
+                        ),
+
+                    "Số CIF":
+                        row?.cif || "",
+
+                    "Tên khách hàng":
+                        row?.customer_name || "",
+
+                    "Kết quả":
+                        row?.result || "",
+
+                    "Kết nối":
+                        row?.connection || "",
+
+                    "Kết quả chi tiết":
+                        row?.detail || "",
+
+                    "Dự thu":
+                        parseNumber(
+                            row?.expected_amount
+                        ),
+
+                    "Hướng tác động tiếp theo":
+                        row?.next_action || ""
+
+                })
+            );
+
+
+        const worksheet =
+            XLSX.utils.json_to_sheet(
+                exportData
+            );
+
+
+        const workbook =
+            XLSX.utils.book_new();
+
+
+        XLSX.utils.book_append_sheet(
+            workbook,
+            worksheet,
+            "BaoCaoNgay"
+        );
+
+
+        const today =
+            getTodayVietnam();
+
+
+        XLSX.writeFile(
+            workbook,
+            `BaoCaoNgay_${today}.xlsx`
+        );
+
+    }
+
+
+    // ========================================================
+    // PARSE NUMBER
+    // ========================================================
+
+    function parseNumber(value) {
+
+        if (
+            value === null ||
+            value === undefined ||
+            value === ""
+        ) {
+
+            return 0;
+
+        }
+
+
+        if (
+            typeof value ===
+            "number"
+        ) {
+
+            return isNaN(value)
+                ? 0
+                : value;
+
+        }
+
+
+        let text =
+            String(value)
+                .trim();
+
+
+        if (!text) {
+
+            return 0;
+
+        }
+
+
+        // -----------------------------------------
+        // Xóa ký hiệu tiền tệ
+        // -----------------------------------------
+
+        text =
+            text.replace(
+                /₫|đ|VNĐ|VND/gi,
+                ""
+            )
+            .replace(
+                /\s/g,
+                ""
+            );
+
+
+        // -----------------------------------------
+        // Nếu dạng:
+        // 1.000.000
+        // -----------------------------------------
+
+        if (
+            text.includes(".") &&
+            !text.includes(",")
+        ) {
+
+            text =
+                text.replace(
+                    /\./g,
+                    ""
+                );
+
+        }
+
+        else {
+
+            text =
+                text.replace(
+                    /,/g,
+                    ""
+                );
+
+        }
+
+
+        const number =
+            Number(text);
+
+
+        return isNaN(number)
+            ? 0
+            : number;
+
+    }
+
+
+    // ========================================================
+    // FORMAT MONEY
+    // ========================================================
+
+    function formatMoney(value) {
+
+        const number =
+            parseNumber(
+                value
+            );
+
+
+        return number.toLocaleString(
+            "vi-VN"
+        );
+
+    }
+
+
+    // ========================================================
+    // FORMAT DATE
+    // ========================================================
+
+    function formatDate(value) {
+
+        if (!value) {
+
+            return "";
+
+        }
+
+
+        const text =
+            String(value);
+
+
+        const datePart =
+            text.substring(
+                0,
+                10
+            );
+
+
+        const parts =
+            datePart.split("-");
+
+
+        if (
+            parts.length === 3
+        ) {
+
+            return (
+                parts[2] +
+                "/" +
+                parts[1] +
+                "/" +
+                parts[0]
+            );
+
+        }
+
+
+        return text;
+
+    }
+
+
+    // ========================================================
+    // NORMALIZE DATE INPUT
+    // ========================================================
+
+    function normalizeDateInput(value) {
+
+        if (!value) {
+
+            return "";
+
+        }
+
+
+        return String(value)
+            .substring(
+                0,
+                10
+            );
+
+    }
+
+
+    // ========================================================
+    // ESCAPE HTML
+    // ========================================================
+
+    function escapeHtml(value) {
+
+        return String(
+            value ?? ""
+        )
+            .replace(
+                /&/g,
+                "&amp;"
+            )
+            .replace(
+                /</g,
+                "&lt;"
+            )
+            .replace(
+                />/g,
+                "&gt;"
+            )
+            .replace(
+                /"/g,
+                "&quot;"
+            )
+            .replace(
+                /'/g,
+                "&#039;"
+            );
+
+    }
+
+
+    // ========================================================
+    // ESCAPE ATTRIBUTE
+    // ========================================================
+
+    function escapeAttr(value) {
+
+        return escapeHtml(
+            value
+        );
+
+    }
+
+
+    // ========================================================
+    // REMOVE EDIT MODAL
+    // ========================================================
+
+    function removeEditModal() {
+
+        const modal =
+            document.getElementById(
+                "managerEditModal"
+            );
+
+
+        if (modal) {
+
+            modal.remove();
+
+        }
+
+    }
+
+
+    // ========================================================
+    // SUPABASE AUTH STATE
+    // ========================================================
+
+    supabaseClient.auth.onAuthStateChange(
+        async (
+            event,
+            session
+        ) => {
+
+            if (
+                event ===
+                "SIGNED_OUT"
+            ) {
+
+                currentUser = null;
+
+                showLogin();
+
+                return;
+
+            }
+
+
+            if (
+                session?.user
+            ) {
+
+                currentUser =
+                    session.user;
+
+            }
+
+        }
     );
 
-    const now =
-      new Date();
-
-    const date =
-      now.getFullYear() +
-      "-" +
-      String(
-        now.getMonth() + 1
-      ).padStart(2, "0") +
-      "-" +
-      String(
-        now.getDate()
-      ).padStart(2, "0");
-
-    XLSX.writeFile(
-      wb,
-      `Bao_Cao_Ngay_${date}.xlsx`
-    );
-
-    if (managerMessage) {
-      managerMessage.textContent =
-        `✅ Đã xuất ${filteredData.length} báo cáo ra Excel.`;
-    }
-  }
-
-  // ==========================================================
-  // FORMAT DATE
-  // ==========================================================
-
-  function formatDate(value) {
-
-    if (!value) {
-      return "";
-    }
-
-    return String(value)
-      .substring(0, 10);
-  }
-
-  // ==========================================================
-  // ESCAPE HTML
-  // ==========================================================
-
-  function escapeHtml(value) {
-
-    if (
-      value === null ||
-      value === undefined
-    ) {
-      return "";
-    }
-
-    return String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  // ==========================================================
-  // ESCAPE ATTRIBUTE
-  // ==========================================================
-
-  function escapeAttr(value) {
-
-    if (
-      value === null ||
-      value === undefined
-    ) {
-      return "";
-    }
-
-    return String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  }
-
-  // ==========================================================
-  // REMOVE EDIT MODAL
-  // ==========================================================
-
-  function removeEditModal() {
-
-    document
-      .getElementById(
-        "editReportModal"
-      )
-      ?.remove();
-  }
 
 })();
