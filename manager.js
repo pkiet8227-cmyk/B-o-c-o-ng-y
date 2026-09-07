@@ -1,7 +1,8 @@
+```javascript
 // ============================================================
 // MANAGER.JS
 // QUẢN LÝ BÁO CÁO NGÀY
-// PHIÊN BẢN HOÀN CHỈNH
+// PHIÊN BẢN KHÔNG CẤP QUYỀN
 // ============================================================
 
 (() => {
@@ -62,7 +63,6 @@
   let sideMenuClose;
 
   let menuReportsBtn;
-  let menuPermissionBtn;
   let menuLogoutBtn;
 
   let logoutBtn;
@@ -122,9 +122,6 @@
 
     menuReportsBtn =
       document.getElementById("menuReportsBtn");
-
-    menuPermissionBtn =
-      document.getElementById("menuPermissionBtn");
 
     menuLogoutBtn =
       document.getElementById("menuLogoutBtn");
@@ -205,6 +202,7 @@
         await client.auth.getSession();
 
       if (error) {
+
         console.error(
           "GET SESSION ERROR:",
           error
@@ -264,10 +262,7 @@
 
   function bindEvents() {
 
-    // ========================================================
     // LOGIN
-    // ========================================================
-
     if (loginBtn) {
 
       loginBtn.addEventListener(
@@ -304,10 +299,7 @@
       );
     }
 
-    // ========================================================
     // MENU
-    // ========================================================
-
     if (menuBtn) {
 
       menuBtn.onclick = function (e) {
@@ -338,10 +330,7 @@
         };
     }
 
-    // ========================================================
-    // MENU REPORTS
-    // ========================================================
-
+    // REPORTS
     if (menuReportsBtn) {
 
       menuReportsBtn.onclick =
@@ -353,25 +342,7 @@
         };
     }
 
-    // ========================================================
-    // MENU PERMISSION
-    // ========================================================
-
-    if (menuPermissionBtn) {
-
-      menuPermissionBtn.onclick =
-        async function () {
-
-          closeMenu();
-
-          await openPermissionModal();
-        };
-    }
-
-    // ========================================================
-    // MENU LOGOUT
-    // ========================================================
-
+    // LOGOUT
     if (menuLogoutBtn) {
 
       menuLogoutBtn.onclick =
@@ -390,10 +361,7 @@
         };
     }
 
-    // ========================================================
     // FILTER
-    // ========================================================
-
     if (filterBtn) {
 
       filterBtn.onclick =
@@ -403,10 +371,7 @@
         };
     }
 
-    // ========================================================
     // REFRESH
-    // ========================================================
-
     if (refreshBtn) {
 
       refreshBtn.onclick =
@@ -424,10 +389,7 @@
         };
     }
 
-    // ========================================================
     // EXPORT
-    // ========================================================
-
     if (exportBtn) {
 
       exportBtn.onclick =
@@ -437,10 +399,7 @@
         };
     }
 
-    // ========================================================
-    // SUBMITTED USERS
-    // ========================================================
-
+    // USERS
     if (showSubmittedUsersBtn) {
 
       showSubmittedUsersBtn.onclick =
@@ -503,44 +462,7 @@
     try {
 
       // ======================================================
-      // USER -> EMAIL
-      // ======================================================
-
-      let email =
-        identifier;
-
-      if (!identifier.includes("@")) {
-
-        const result =
-          await callManagerFunction(
-            "resolve",
-            {
-              identifier
-            },
-            false
-          );
-
-        if (!result.success) {
-
-          throw new Error(
-            result.error ||
-            "Không tìm thấy tài khoản."
-          );
-        }
-
-        email =
-          result.auth_email;
-
-        if (!email) {
-
-          throw new Error(
-            "Không xác định được email."
-          );
-        }
-      }
-
-      // ======================================================
-      // SUPABASE LOGIN
+      // LOGIN
       // ======================================================
 
       const {
@@ -548,7 +470,7 @@
         error
       } =
         await client.auth.signInWithPassword({
-          email,
+          email: identifier,
           password: pass
         });
 
@@ -741,8 +663,10 @@
 
   function openMenu() {
 
-    if (!sideMenu ||
-        !sideMenuOverlay) {
+    if (
+      !sideMenu ||
+      !sideMenuOverlay
+    ) {
 
       console.error(
         "SIDE MENU ELEMENT NOT FOUND"
@@ -2199,727 +2123,6 @@
   }
 
   // ==========================================================
-  // PERMISSION MODAL
-  // ==========================================================
-
-  async function openPermissionModal() {
-
-    const oldModal =
-      document.getElementById(
-        "permissionModal"
-      );
-
-    if (oldModal) {
-      oldModal.remove();
-    }
-
-    const overlay =
-      document.createElement(
-        "div"
-      );
-
-    overlay.className =
-      "permission-modal-overlay";
-
-    overlay.id =
-      "permissionModal";
-
-    overlay.innerHTML = `
-
-      <div class="permission-modal">
-
-        <div class="permission-header">
-
-          <h2>
-            🔐 PHÂN QUYỀN QUẢN LÝ
-          </h2>
-
-          <button
-            class="permission-close"
-            id="permissionClose"
-            type="button"
-          >
-            ×
-          </button>
-
-        </div>
-
-        <div class="permission-body">
-
-          <div class="permission-info">
-
-            Tại đây bạn có thể cấp quyền
-            quản lý cho cán bộ.
-
-            <br><br>
-
-            Người được cấp quyền có thể
-            đăng nhập trang quản lý và
-            sử dụng đầy đủ chức năng
-            giống tài khoản quản lý hiện tại.
-
-            <br><br>
-
-            <b>
-              Mật khẩu được Supabase Auth
-              quản lý, không lưu trực tiếp
-              trong bảng phân quyền.
-            </b>
-
-          </div>
-
-          <div class="permission-form">
-
-            <label>
-              User hoặc Email
-            </label>
-
-            <input
-              id="permissionIdentifier"
-              type="text"
-              placeholder="Ví dụ: hoinv12 hoặc abc@gmail.com"
-              autocomplete="off"
-            >
-
-            <label>
-              Mật khẩu
-            </label>
-
-            <input
-              id="permissionPassword"
-              type="password"
-              placeholder="Nhập mật khẩu"
-              autocomplete="new-password"
-            >
-
-            <button
-              id="grantPermissionBtn"
-              class="green"
-              type="button"
-            >
-              ✅ CẤP QUYỀN
-            </button>
-
-          </div>
-
-          <div
-            id="permissionMessage"
-            style="
-              margin-top:12px;
-              text-align:center;
-              font-weight:bold;
-            "
-          ></div>
-
-          <div
-            class="permission-list-title"
-          >
-            👥 Tài khoản đang được cấp quyền
-          </div>
-
-          <div id="permissionList">
-
-            <div class="permission-empty">
-              ⏳ Đang tải...
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-    `;
-
-    document.body.appendChild(
-      overlay
-    );
-
-    const closeBtn =
-      document.getElementById(
-        "permissionClose"
-      );
-
-    if (closeBtn) {
-
-      closeBtn.onclick =
-        function () {
-
-          overlay.remove();
-        };
-    }
-
-    overlay.onclick =
-      function (e) {
-
-        if (
-          e.target === overlay
-        ) {
-
-          overlay.remove();
-        }
-      };
-
-    const grantBtn =
-      document.getElementById(
-        "grantPermissionBtn"
-      );
-
-    if (grantBtn) {
-
-      grantBtn.onclick =
-        function () {
-
-          grantPermission();
-        };
-    }
-
-    await loadPermissionList();
-  }
-
-  // ==========================================================
-  // GRANT PERMISSION
-  // ==========================================================
-
-  async function grantPermission() {
-
-    const identifierInput =
-      document.getElementById(
-        "permissionIdentifier"
-      );
-
-    const passwordInput =
-      document.getElementById(
-        "permissionPassword"
-      );
-
-    const button =
-      document.getElementById(
-        "grantPermissionBtn"
-      );
-
-    const identifier =
-      (
-        identifierInput?.value ||
-        ""
-      ).trim();
-
-    const pass =
-      passwordInput?.value ||
-      "";
-
-    if (!identifier) {
-
-      setPermissionMessage(
-        "❌ Vui lòng nhập User hoặc Email.",
-        "error"
-      );
-
-      identifierInput?.focus();
-
-      return;
-    }
-
-    if (!pass) {
-
-      setPermissionMessage(
-        "❌ Vui lòng nhập mật khẩu.",
-        "error"
-      );
-
-      passwordInput?.focus();
-
-      return;
-    }
-
-    if (button) {
-      button.disabled = true;
-    }
-
-    setPermissionMessage(
-      "⏳ Đang cấp quyền...",
-      "info"
-    );
-
-    try {
-
-      const result =
-        await callManagerFunction(
-          "grant",
-          {
-            identifier: identifier,
-            password: pass
-          },
-          true
-        );
-
-      console.log(
-        "GRANT RESULT:",
-        result
-      );
-
-      if (!result.success) {
-
-        throw new Error(
-          result.error ||
-          "Không thể cấp quyền."
-        );
-      }
-
-      if (passwordInput) {
-        passwordInput.value = "";
-      }
-
-      setPermissionMessage(
-        "✅ Đã cấp quyền thành công.",
-        "success"
-      );
-
-      await loadPermissionList();
-
-    } catch (error) {
-
-      console.error(
-        "GRANT PERMISSION ERROR:",
-        error
-      );
-
-      let message =
-        error?.message ||
-        "Cấp quyền thất bại.";
-
-      if (
-        message ===
-        "Failed to fetch"
-      ) {
-
-        message =
-          "Không kết nối được Edge Function manager-permission. Hãy kiểm tra Edge Function đã Deploy chưa.";
-      }
-
-      setPermissionMessage(
-        "❌ " + message,
-        "error"
-      );
-
-    } finally {
-
-      if (button) {
-        button.disabled = false;
-      }
-    }
-  }
-
-  // ==========================================================
-  // LOAD PERMISSION LIST
-  // ==========================================================
-
-  async function loadPermissionList() {
-
-    const list =
-      document.getElementById(
-        "permissionList"
-      );
-
-    if (!list) {
-      return;
-    }
-
-    list.innerHTML = `
-      <div class="permission-empty">
-        ⏳ Đang tải danh sách...
-      </div>
-    `;
-
-    try {
-
-      const result =
-        await callManagerFunction(
-          "list",
-          {},
-          true
-        );
-
-      console.log(
-        "LIST PERMISSION RESULT:",
-        result
-      );
-
-      if (!result.success) {
-
-        throw new Error(
-          result.error ||
-          "Không thể tải danh sách."
-        );
-      }
-
-      const users =
-        Array.isArray(
-          result.users
-        )
-          ? result.users
-          : [];
-
-      if (!users.length) {
-
-        list.innerHTML = `
-          <div class="permission-empty">
-            Chưa có tài khoản được cấp quyền.
-          </div>
-        `;
-
-        return;
-      }
-
-      list.innerHTML =
-        users
-          .map(
-            user => {
-
-              const identifier =
-                user.display_identifier ||
-                user.auth_email ||
-                user.email ||
-                "";
-
-              const enabled =
-                user.enabled === true;
-
-              const isCurrent =
-                currentUser &&
-                user.auth_user_id ===
-                currentUser.id;
-
-              return `
-
-                <div
-                  class="permission-user"
-                >
-
-                  <div
-                    class="permission-user-info"
-                  >
-
-                    <div
-                      class="permission-user-name"
-                    >
-                      ${escapeHtml(
-                        identifier
-                      )}
-                    </div>
-
-                    <div
-                      style="
-                        font-size:12px;
-                        color:#64748b;
-                        margin-top:2px;
-                        word-break:break-all;
-                      "
-                    >
-                      ${escapeHtml(
-                        user.auth_email ||
-                        user.email ||
-                        ""
-                      )}
-                    </div>
-
-                    <div
-                      class="permission-user-status"
-                      style="
-                        color:${
-                          enabled
-                            ? "#16a34a"
-                            : "#dc2626"
-                        };
-                      "
-                    >
-                      ${
-                        enabled
-                          ? "● Đang hoạt động"
-                          : "● Đã khóa"
-                      }
-                    </div>
-
-                  </div>
-
-                  ${
-                    isCurrent
-                      ? `
-                        <span
-                          style="
-                            color:#2563eb;
-                            font-size:12px;
-                            font-weight:900;
-                            white-space:nowrap;
-                          "
-                        >
-                          Tài khoản của bạn
-                        </span>
-                      `
-                      : `
-                        <button
-                          class="revoke-btn"
-                          type="button"
-                          data-user-id="${escapeAttribute(
-                            user.auth_user_id
-                          )}"
-                          data-identifier="${escapeAttribute(
-                            identifier
-                          )}"
-                        >
-                          🚫 Thu hồi
-                        </button>
-                      `
-                  }
-
-                </div>
-              `;
-            }
-          )
-          .join("");
-
-      list
-        .querySelectorAll(
-          ".revoke-btn"
-        )
-        .forEach(
-          button => {
-
-            button.onclick =
-              function () {
-
-                revokePermission(
-                  button.dataset.userId,
-                  button.dataset.identifier
-                );
-              };
-          }
-        );
-
-    } catch (error) {
-
-      console.error(
-        "LOAD PERMISSION LIST ERROR:",
-        error
-      );
-
-      let message =
-        error?.message ||
-        "Không tải được danh sách.";
-
-      if (
-        message ===
-        "Failed to fetch"
-      ) {
-
-        message =
-          "Không kết nối được Edge Function manager-permission.";
-      }
-
-      list.innerHTML = `
-        <div
-          class="permission-empty"
-          style="color:#dc2626;"
-        >
-          ❌ ${escapeHtml(message)}
-        </div>
-      `;
-    }
-  }
-
-  // ==========================================================
-  // REVOKE
-  // ==========================================================
-
-  async function revokePermission(
-    userId,
-    identifier
-  ) {
-
-    if (!userId) {
-      return;
-    }
-
-    if (
-      currentUser &&
-      userId === currentUser.id
-    ) {
-
-      alert(
-        "❌ Không thể thu hồi chính tài khoản đang đăng nhập."
-      );
-
-      return;
-    }
-
-    const confirmed =
-      confirm(
-        `Bạn có chắc muốn thu hồi quyền của:\n\n${identifier || userId}?`
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-
-      const result =
-        await callManagerFunction(
-          "revoke",
-          {
-            auth_user_id: userId
-          },
-          true
-        );
-
-      if (!result.success) {
-
-        throw new Error(
-          result.error ||
-          "Không thể thu hồi."
-        );
-      }
-
-      alert(
-        "✅ Đã thu hồi quyền."
-      );
-
-      await loadPermissionList();
-
-    } catch (error) {
-
-      console.error(
-        "REVOKE ERROR:",
-        error
-      );
-
-      alert(
-        "❌ Thu hồi thất bại:\n" +
-        (
-          error?.message ||
-          "Lỗi"
-        )
-      );
-    }
-  }
-
-  // ==========================================================
-  // EDGE FUNCTION
-  // ==========================================================
-
-  async function callManagerFunction(
-    action,
-    body = {},
-    authenticated = true
-  ) {
-
-    try {
-
-      // ======================================================
-      // QUAN TRỌNG:
-      // Dùng Supabase functions.invoke thay cho fetch()
-      // ======================================================
-
-      const payload = {
-        action,
-        ...body
-      };
-
-      const {
-        data,
-        error
-      } =
-        await client.functions.invoke(
-          "manager-permission",
-          {
-            body: payload
-          }
-        );
-
-      console.log(
-        "MANAGER FUNCTION:",
-        action,
-        data,
-        error
-      );
-
-      if (error) {
-
-        // Supabase đôi khi trả lỗi FunctionsHttpError
-        // nhưng body lỗi nằm trong context.response.
-
-        let detail =
-          error.message ||
-          "Edge Function thất bại.";
-
-        try {
-
-          if (
-            error.context &&
-            error.context.response
-          ) {
-
-            const response =
-              error.context.response;
-
-            const text =
-              await response.text();
-
-            if (text) {
-
-              try {
-
-                const json =
-                  JSON.parse(text);
-
-                detail =
-                  json.error ||
-                  json.message ||
-                  detail;
-
-              } catch {
-
-                detail =
-                  text ||
-                  detail;
-              }
-            }
-          }
-
-        } catch (parseError) {
-
-          console.warn(
-            "Không đọc được chi tiết Edge Function:",
-            parseError
-          );
-        }
-
-        throw new Error(
-          detail
-        );
-      }
-
-      if (!data) {
-
-        return {
-          success: true
-        };
-      }
-
-      return data;
-
-    } catch (error) {
-
-      console.error(
-        "MANAGER FUNCTION ERROR:",
-        action,
-        error
-      );
-
-      throw error;
-    }
-  }
-
-  // ==========================================================
   // LOGOUT
   // ==========================================================
 
@@ -2980,29 +2183,6 @@
       text;
 
     loginMessage.style.color =
-      getMessageColor(
-        type
-      );
-  }
-
-  function setPermissionMessage(
-    text,
-    type = "info"
-  ) {
-
-    const element =
-      document.getElementById(
-        "permissionMessage"
-      );
-
-    if (!element) {
-      return;
-    }
-
-    element.textContent =
-      text;
-
-    element.style.color =
       getMessageColor(
         type
       );
@@ -3196,3 +2376,4 @@
   }
 
 })();
+```
