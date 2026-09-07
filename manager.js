@@ -18,19 +18,27 @@
 
     if (!window.supabase) {
 
-        alert("❌ Không tìm thấy Supabase.\n\nVui lòng kiểm tra lại thư viện Supabase.");
+        alert(
+
+            "❌ Không tìm thấy Supabase.\n\n" +
+
+            "Vui lòng kiểm tra lại thư viện Supabase."
+
+        );
 
         return;
 
     }
 
-    const supabaseClient = window.supabase.createClient(
+    const supabaseClient =
 
-        window.SUPABASE_URL,
+        window.supabase.createClient(
 
-        window.SUPABASE_ANON_KEY
+            window.SUPABASE_URL,
 
-    );
+            window.SUPABASE_ANON_KEY
+
+        );
 
     let allData = [];
 
@@ -48,155 +56,303 @@
 
     // ==========================================================
 
-    const loginBox = document.getElementById("loginBox");
+    const loginBox =
 
-    const managerBox = document.getElementById("managerBox");
+        document.getElementById("loginBox");
 
-    const emailInput = document.getElementById("emailInput");
+    const managerBox =
 
-    const passwordInput = document.getElementById("passwordInput");
+        document.getElementById("managerBox");
 
-    const loginBtn = document.getElementById("loginBtn");
+    const emailInput =
 
-    const logoutBtn = document.getElementById("logoutBtn");
+        document.getElementById("emailInput");
 
-    const loginMessage = document.getElementById("loginMessage");
+    const passwordInput =
 
-    const managerMessage = document.getElementById("managerMessage");
+        document.getElementById("passwordInput");
 
-    const totalReports = document.getElementById("totalReports");
+    const loginBtn =
 
-    const totalAmount = document.getElementById("totalAmount");
+        document.getElementById("loginBtn");
 
-    const filterUser = document.getElementById("filterUser");
+    const logoutBtn =
 
-    const filterDate = document.getElementById("filterDate");
+        document.getElementById("logoutBtn");
 
-    const filterBtn = document.getElementById("filterBtn");
+    const loginMessage =
 
-    const refreshBtn = document.getElementById("refreshBtn");
+        document.getElementById("loginMessage");
 
-    const exportBtn = document.getElementById("exportBtn");
+    const managerMessage =
 
-    const tableBody = document.getElementById("tableBody");
+        document.getElementById("managerMessage");
 
-    const pagination = document.getElementById("pagination");
+    const totalReports =
 
-    const menuBtn = document.getElementById("menuBtn");
+        document.getElementById("totalReports");
 
-    const sideMenu = document.getElementById("sideMenu");
+    const totalAmount =
 
-    const sideMenuOverlay = document.getElementById("sideMenuOverlay");
+        document.getElementById("totalAmount");
 
-    const sideMenuClose = document.getElementById("sideMenuClose");
+    const filterUser =
 
-    const menuReportsBtn = document.getElementById("menuReportsBtn");
+        document.getElementById("filterUser");
 
-    const menuLogoutBtn = document.getElementById("menuLogoutBtn");
+    const filterDate =
 
-    const showSubmittedUsersBtn = document.getElementById("showSubmittedUsersBtn");
+        document.getElementById("filterDate");
 
-    const submittedUserCount = document.getElementById("submittedUserCount");
+    const filterBtn =
 
-    document.addEventListener("DOMContentLoaded", init);
+        document.getElementById("filterBtn");
+
+    const refreshBtn =
+
+        document.getElementById("refreshBtn");
+
+    const exportBtn =
+
+        document.getElementById("exportBtn");
+
+    const tableBody =
+
+        document.getElementById("tableBody");
+
+    const pagination =
+
+        document.getElementById("pagination");
+
+    const menuBtn =
+
+        document.getElementById("menuBtn");
+
+    const sideMenu =
+
+        document.getElementById("sideMenu");
+
+    const sideMenuOverlay =
+
+        document.getElementById("sideMenuOverlay");
+
+    const sideMenuClose =
+
+        document.getElementById("sideMenuClose");
+
+    const menuReportsBtn =
+
+        document.getElementById("menuReportsBtn");
+
+    const menuLogoutBtn =
+
+        document.getElementById("menuLogoutBtn");
+
+    const showSubmittedUsersBtn =
+
+        document.getElementById(
+
+            "showSubmittedUsersBtn"
+
+        );
+
+    const submittedUserCount =
+
+        document.getElementById(
+
+            "submittedUserCount"
+
+        );
+
+    // ==========================================================
+
+    // INIT
+
+    // ==========================================================
+
+    document.addEventListener(
+
+        "DOMContentLoaded",
+
+        init
+
+    );
 
     async function init() {
 
         if (filterDate) {
 
-            filterDate.value = getTodayVietnam();
+            filterDate.value =
+
+                getTodayVietnam();
 
         }
 
         if (loginBtn) {
 
-            loginBtn.addEventListener("click", login);
+            loginBtn.addEventListener(
+
+                "click",
+
+                login
+
+            );
 
         }
 
         if (passwordInput) {
 
-            passwordInput.addEventListener("keydown", function(event) {
+            passwordInput.addEventListener(
 
-                if (event.key === "Enter") login();
+                "keydown",
 
-            });
+                function(event) {
+
+                    if (
+
+                        event.key ===
+
+                        "Enter"
+
+                    ) {
+
+                        login();
+
+                    }
+
+                }
+
+            );
 
         }
 
         if (logoutBtn) {
 
-            logoutBtn.addEventListener("click", logout);
+            logoutBtn.addEventListener(
+
+                "click",
+
+                logout
+
+            );
 
         }
 
         if (filterBtn) {
 
-            filterBtn.addEventListener("click", function() {
+            filterBtn.addEventListener(
 
-                currentPage = 1;
+                "click",
 
-                applyFilter();
+                function() {
 
-            });
+                    currentPage = 1;
+
+                    applyFilter();
+
+                }
+
+            );
 
         }
 
         if (refreshBtn) {
 
-            refreshBtn.addEventListener("click", async function() {
+            refreshBtn.addEventListener(
 
-                await loadData();
+                "click",
 
-            });
+                async function() {
+
+                    await loadData();
+
+                }
+
+            );
 
         }
 
         if (exportBtn) {
 
-            exportBtn.addEventListener("click", exportExcel);
+            exportBtn.addEventListener(
+
+                "click",
+
+                exportExcel
+
+            );
 
         }
 
         if (menuBtn) {
 
-            menuBtn.addEventListener("click", openMenu);
+            menuBtn.addEventListener(
+
+                "click",
+
+                openMenu
+
+            );
 
         }
 
         if (sideMenuClose) {
 
-            sideMenuClose.addEventListener("click", closeMenu);
+            sideMenuClose.addEventListener(
+
+                "click",
+
+                closeMenu
+
+            );
 
         }
 
         if (sideMenuOverlay) {
 
-            sideMenuOverlay.addEventListener("click", closeMenu);
+            sideMenuOverlay.addEventListener(
+
+                "click",
+
+                closeMenu
+
+            );
 
         }
 
         if (menuReportsBtn) {
 
-            menuReportsBtn.addEventListener("click", function() {
+            menuReportsBtn.addEventListener(
 
-                closeMenu();
+                "click",
 
-                window.scrollTo({
+                function() {
 
-                    top: 0,
+                    closeMenu();
 
-                    behavior: "smooth"
+                    window.scrollTo({
 
-                });
+                        top: 0,
 
-            });
+                        behavior: "smooth"
+
+                    });
+
+                }
+
+            );
 
         }
 
         if (menuLogoutBtn) {
 
-            menuLogoutBtn.addEventListener("click", logout);
+            menuLogoutBtn.addEventListener(
+
+                "click",
+
+                logout
+
+            );
 
         }
 
@@ -226,37 +382,65 @@
 
         try {
 
-            return new Intl.DateTimeFormat("en-CA", {
+            return new Intl.DateTimeFormat(
 
-                timeZone: "Asia/Ho_Chi_Minh",
+                "en-CA",
 
-                year: "numeric",
+                {
 
-                month: "2-digit",
+                    timeZone:
 
-                day: "2-digit"
+                        "Asia/Ho_Chi_Minh",
 
-            }).format(new Date());
+                    year: "numeric",
+
+                    month: "2-digit",
+
+                    day: "2-digit"
+
+                }
+
+            ).format(new Date());
 
         } catch (error) {
 
-            const now = new Date();
+            const now =
 
-            const year = now.getFullYear();
+                new Date();
 
-            const month = String(
+            const year =
 
-                now.getMonth() + 1
+                now.getFullYear();
 
-            ).padStart(2, "0");
+            const month =
 
-            const day = String(
+                String(
 
-                now.getDate()
+                    now.getMonth() + 1
 
-            ).padStart(2, "0");
+                ).padStart(2, "0");
 
-            return `${year}-${month}-${day}`;
+            const day =
+
+                String(
+
+                    now.getDate()
+
+                ).padStart(2, "0");
+
+            return (
+
+                year +
+
+                "-" +
+
+                month +
+
+                "-" +
+
+                day
+
+            );
 
         }
 
@@ -272,9 +456,17 @@
 
         try {
 
-            const { data, error } =
+            const {
 
-                await supabaseClient.auth.getSession();
+                data,
+
+                error
+
+            } =
+
+                await supabaseClient.auth
+
+                    .getSession();
 
             if (error) {
 
@@ -292,7 +484,9 @@
 
             }
 
-            const session = data?.session;
+            const session =
+
+                data?.session;
 
             if (!session) {
 
@@ -302,11 +496,23 @@
 
             }
 
-            currentUser = session.user;
+            currentUser =
 
-            if (!checkUserRole(currentUser)) {
+                session.user;
 
-                await supabaseClient.auth.signOut();
+            if (
+
+                !checkUserRole(
+
+                    currentUser
+
+                )
+
+            ) {
+
+                await supabaseClient.auth
+
+                    .signOut();
 
                 showLogin();
 
@@ -378,9 +584,13 @@
 
         return (
 
-            normalizedRole === "manager" ||
+            normalizedRole ===
 
-            normalizedRole === "admin"
+                "manager" ||
+
+            normalizedRole ===
+
+                "admin"
 
         );
 
@@ -396,13 +606,17 @@
 
         if (loginBox) {
 
-            loginBox.style.display = "";
+            loginBox.style.display =
+
+                "";
 
         }
 
         if (managerBox) {
 
-            managerBox.style.display = "none";
+            managerBox.style.display =
+
+                "none";
 
         }
 
@@ -420,13 +634,17 @@
 
         if (loginBox) {
 
-            loginBox.style.display = "none";
+            loginBox.style.display =
+
+                "none";
 
         }
 
         if (managerBox) {
 
-            managerBox.style.display = "";
+            managerBox.style.display =
+
+                "";
 
         }
 
@@ -435,6 +653,8 @@
     // ==========================================================
 
     // LOGIN
+
+    // GIỮ NGUYÊN LOGIC ĐĂNG NHẬP GỐC
 
     // ==========================================================
 
@@ -492,19 +712,29 @@
 
         try {
 
-            const { data, error } =
+            const {
 
-                await supabaseClient.auth.signInWithPassword({
+                data,
 
-                    email: email,
+                error
 
-                    password: password
+            } =
 
-                });
+                await supabaseClient.auth
+
+                    .signInWithPassword({
+
+                        email: email,
+
+                        password: password
+
+                    });
 
             if (error) throw error;
 
-            const user = data?.user;
+            const user =
+
+                data?.user;
 
             if (!user) {
 
@@ -516,9 +746,15 @@
 
             }
 
-            if (!checkUserRole(user)) {
+            if (
 
-                await supabaseClient.auth.signOut();
+                !checkUserRole(user)
+
+            ) {
+
+                await supabaseClient.auth
+
+                    .signOut();
 
                 throw new Error(
 
@@ -532,7 +768,9 @@
 
             if (loginMessage) {
 
-                loginMessage.textContent = "";
+                loginMessage.textContent =
+
+                    "";
 
             }
 
@@ -570,7 +808,9 @@
 
             if (loginBtn) {
 
-                loginBtn.disabled = false;
+                loginBtn.disabled =
+
+                    false;
 
             }
 
@@ -588,7 +828,9 @@
 
         try {
 
-            await supabaseClient.auth.signOut();
+            await supabaseClient.auth
+
+                .signOut();
 
         } catch (error) {
 
@@ -632,7 +874,13 @@
 
         try {
 
-            const { data, error } =
+            const {
+
+                data,
+
+                error
+
+            } =
 
                 await supabaseClient
 
@@ -646,7 +894,9 @@
 
                         {
 
-                            ascending: false
+                            ascending:
+
+                                false
 
                         }
 
@@ -770,59 +1020,69 @@
 
         filteredData =
 
-            allData.filter(function(row) {
+            allData.filter(
 
-                const userName =
+                function(row) {
 
-                    String(
+                    const userName =
 
-                        row?.user_name ||
+                        String(
 
-                        ""
+                            row?.user_name ||
 
-                    )
+                            ""
 
-                        .trim()
+                        )
 
-                        .toLowerCase();
+                            .trim()
 
-                const reportDate =
+                            .toLowerCase();
 
-                    String(
+                    const reportDate =
 
-                        row?.field_date ||
+                        String(
 
-                        ""
+                            row?.field_date ||
 
-                    )
+                            ""
 
-                        .substring(0, 10);
+                        )
 
-                const matchUser =
+                            .substring(
 
-                    !userKeyword ||
+                                0,
 
-                    userName.includes(
+                                10
 
-                        userKeyword
+                            );
+
+                    const matchUser =
+
+                        !userKeyword ||
+
+                        userName.includes(
+
+                            userKeyword
+
+                        );
+
+                    const matchDate =
+
+                        reportDate ===
+
+                        dateKeyword;
+
+                    return (
+
+                        matchUser &&
+
+                        matchDate
 
                     );
 
-                const matchDate =
+                }
 
-                    reportDate ===
-
-                    dateKeyword;
-
-                return (
-
-                    matchUser &&
-
-                    matchDate
-
-                );
-
-            });
+            );
 
         currentPage =
 
@@ -842,41 +1102,119 @@
 
     // ==========================================================
 
-    // ĐẾM CÁN BỘ DUY NHẤT
+    // ĐẾM CÁN BỘ DUY NHẤT TRONG NGÀY
+
+    //
+
+    // QUAN TRỌNG:
+
+    // Không dùng filteredData ở đây.
+
+    //
+
+    // Vì nếu đang lọc:
+
+    // Cán bộ = Anbth
+
+    //
+
+    // thì bộ đếm vẫn phải thể hiện tổng số
+
+    // cán bộ đã nhập trong ngày được chọn.
 
     // ==========================================================
 
     function updateSubmittedUserCount() {
 
-        if (!submittedUserCount) return;
+        if (!submittedUserCount) {
+
+            return;
+
+        }
+
+        const selectedDate =
+
+            (
+
+                filterDate?.value ||
+
+                getTodayVietnam()
+
+            )
+
+                .substring(
+
+                    0,
+
+                    10
+
+                );
 
         const uniqueUsers =
 
             new Set();
 
-        filteredData.forEach(function(row) {
+        allData.forEach(
 
-            const name =
+            function(row) {
 
-                String(
+                const reportDate =
 
-                    row?.user_name ||
+                    String(
 
-                    ""
+                        row?.field_date ||
 
-                )
+                        ""
 
-                    .trim()
+                    )
 
-                    .toLowerCase();
+                        .substring(
 
-            if (name) {
+                            0,
 
-                uniqueUsers.add(name);
+                            10
+
+                        );
+
+                if (
+
+                    reportDate !==
+
+                    selectedDate
+
+                ) {
+
+                    return;
+
+                }
+
+                const name =
+
+                    String(
+
+                        row?.user_name ||
+
+                        ""
+
+                    )
+
+                        .trim()
+
+                        .toLowerCase();
+
+                if (name) {
+
+                    uniqueUsers.add(
+
+                        name
+
+                    );
+
+                }
 
             }
 
-        });
+        );
 
         submittedUserCount.textContent =
 
@@ -892,7 +1230,11 @@
 
     function render() {
 
-        if (!tableBody) return;
+        if (!tableBody) {
+
+            return;
+
+        }
 
         tableBody.innerHTML = "";
 
@@ -912,7 +1254,13 @@
 
                         colspan="100"
 
-                        style="text-align:center;padding:30px;"
+                        style="
+
+                            text-align:center;
+
+                            padding:30px;
+
+                        "
 
                     >
 
@@ -926,19 +1274,25 @@
 
             if (totalReports) {
 
-                totalReports.textContent = "0";
+                totalReports.textContent =
+
+                    "0";
 
             }
 
             if (totalAmount) {
 
-                totalAmount.textContent = "0";
+                totalAmount.textContent =
+
+                    "0";
 
             }
 
             if (pagination) {
 
-                pagination.innerHTML = "";
+                pagination.innerHTML =
+
+                    "";
 
             }
 
@@ -956,23 +1310,31 @@
 
         let amountTotal = 0;
 
-        filteredData.forEach(function(row) {
+        filteredData.forEach(
 
-            amountTotal +=
+            function(row) {
 
-                parseNumber(
+                amountTotal +=
 
-                    row?.expected_amount
+                    parseNumber(
 
-                );
+                        row?.expected_amount
 
-        });
+                    );
+
+            }
+
+        );
 
         if (totalAmount) {
 
             totalAmount.textContent =
 
-                formatMoney(amountTotal);
+                formatMoney(
+
+                    amountTotal
+
+                );
 
         }
 
@@ -992,15 +1354,27 @@
 
             );
 
-        if (currentPage > totalPages) {
+        if (
 
-            currentPage = totalPages;
+            currentPage >
+
+            totalPages
+
+        ) {
+
+            currentPage =
+
+                totalPages;
 
         }
 
         const startIndex =
 
-            (currentPage - 1) *
+            (
+
+                currentPage - 1
+
+            ) *
 
             PAGE_SIZE;
 
@@ -1020,199 +1394,231 @@
 
             );
 
-        pageData.forEach(function(row, index) {
+        pageData.forEach(
 
-            const realIndex =
+            function(row, index) {
 
-                startIndex + index;
+                const realIndex =
 
-            const tr =
+                    startIndex +
 
-                document.createElement("tr");
+                    index;
 
-            tr.innerHTML = `
+                const tr =
 
-                <td>${realIndex + 1}</td>
+                    document.createElement(
 
-                <td>
+                        "tr"
 
-                    ${escapeHtml(
+                    );
 
-                        row?.user_name || ""
+                tr.innerHTML = `
 
-                    )}
+                    <td>
 
-                </td>
+                        ${realIndex + 1}
 
-                <td>
+                    </td>
 
-                    ${formatDate(
+                    <td>
 
-                        row?.field_date
+                        ${escapeHtml(
 
-                    )}
+                            row?.user_name ||
 
-                </td>
+                            ""
 
-                <td>
+                        )}
 
-                    ${escapeHtml(
+                    </td>
 
-                        row?.cif || ""
+                    <td>
 
-                    )}
+                        ${formatDate(
 
-                </td>
+                            row?.field_date
 
-                <td>
+                        )}
 
-                    ${escapeHtml(
+                    </td>
 
-                        row?.customer_name || ""
+                    <td>
 
-                    )}
+                        ${escapeHtml(
 
-                </td>
+                            row?.cif ||
 
-                <td>
+                            ""
 
-                    ${escapeHtml(
+                        )}
 
-                        row?.result || ""
+                    </td>
 
-                    )}
+                    <td>
 
-                </td>
+                        ${escapeHtml(
 
-                <td>
+                            row?.customer_name ||
 
-                    ${escapeHtml(
+                            ""
 
-                        row?.connection || ""
+                        )}
 
-                    )}
+                    </td>
 
-                </td>
+                    <td>
 
-                <td>
+                        ${escapeHtml(
 
-                    ${escapeHtml(
+                            row?.result ||
 
-                        row?.detail || ""
+                            ""
 
-                    )}
+                        )}
 
-                </td>
+                    </td>
 
-                <td>
+                    <td>
 
-                    ${formatMoney(
+                        ${escapeHtml(
 
-                        row?.expected_amount
+                            row?.connection ||
 
-                    )}
+                            ""
 
-                </td>
+                        )}
 
-                <td>
+                    </td>
 
-                    ${escapeHtml(
+                    <td>
 
-                        row?.next_action || ""
+                        ${escapeHtml(
 
-                    )}
+                            row?.detail ||
 
-                </td>
+                            ""
 
-                <td>
+                        )}
 
-                    <button
+                    </td>
 
-                        type="button"
+                    <td>
 
-                        class="manager-edit-btn"
+                        ${formatMoney(
 
-                    >
+                            row?.expected_amount
 
-                        ✏️
+                        )}
 
-                    </button>
+                    </td>
 
-                    <button
+                    <td>
 
-                        type="button"
+                        ${escapeHtml(
 
-                        class="manager-delete-btn"
+                            row?.next_action ||
 
-                    >
+                            ""
 
-                        🗑️
+                        )}
 
-                    </button>
+                    </td>
 
-                </td>
+                    <td>
 
-            `;
+                        <button
 
-            const editBtn =
+                            type="button"
 
-                tr.querySelector(
+                            class="manager-edit-btn"
 
-                    ".manager-edit-btn"
+                        >
 
-                );
+                            ✏️
 
-            if (editBtn) {
+                        </button>
 
-                editBtn.addEventListener(
+                        <button
 
-                    "click",
+                            type="button"
 
-                    function() {
+                            class="manager-delete-btn"
 
-                        editReport(
+                        >
 
-                            row?.id
+                            🗑️
 
-                        );
+                        </button>
 
-                    }
+                    </td>
+
+                `;
+
+                const editBtn =
+
+                    tr.querySelector(
+
+                        ".manager-edit-btn"
+
+                    );
+
+                if (editBtn) {
+
+                    editBtn.addEventListener(
+
+                        "click",
+
+                        function() {
+
+                            editReport(
+
+                                row?.id
+
+                            );
+
+                        }
+
+                    );
+
+                }
+
+                const deleteBtn =
+
+                    tr.querySelector(
+
+                        ".manager-delete-btn"
+
+                    );
+
+                if (deleteBtn) {
+
+                    deleteBtn.addEventListener(
+
+                        "click",
+
+                        function() {
+
+                            deleteReport(
+
+                                row?.id
+
+                            );
+
+                        }
+
+                    );
+
+                }
+
+                tableBody.appendChild(
+
+                    tr
 
                 );
 
             }
 
-            const deleteBtn =
-
-                tr.querySelector(
-
-                    ".manager-delete-btn"
-
-                );
-
-            if (deleteBtn) {
-
-                deleteBtn.addEventListener(
-
-                    "click",
-
-                    function() {
-
-                        deleteReport(
-
-                            row?.id
-
-                        );
-
-                    }
-
-                );
-
-            }
-
-            tableBody.appendChild(tr);
-
-        });
+        );
 
         renderPagination();
 
@@ -1226,7 +1632,11 @@
 
     function renderPagination() {
 
-        if (!pagination) return;
+        if (!pagination) {
+
+            return;
+
+        }
 
         pagination.innerHTML = "";
 
@@ -1246,15 +1656,31 @@
 
             );
 
-        if (totalPages <= 1) return;
+        if (
+
+            totalPages <= 1
+
+        ) {
+
+            return;
+
+        }
 
         const prev =
 
-            document.createElement("button");
+            document.createElement(
 
-        prev.type = "button";
+                "button"
 
-        prev.textContent = "‹";
+            );
+
+        prev.type =
+
+            "button";
+
+        prev.textContent =
+
+            "‹";
 
         prev.disabled =
 
@@ -1266,7 +1692,13 @@
 
             function() {
 
-                if (currentPage > 1) {
+                if (
+
+                    currentPage >
+
+                    1
+
+                ) {
 
                     currentPage--;
 
@@ -1278,7 +1710,11 @@
 
         );
 
-        pagination.appendChild(prev);
+        pagination.appendChild(
+
+            prev
+
+        );
 
         for (
 
@@ -1292,9 +1728,15 @@
 
             const btn =
 
-                document.createElement("button");
+                document.createElement(
 
-            btn.type = "button";
+                    "button"
+
+                );
+
+            btn.type =
+
+                "button";
 
             btn.textContent =
 
@@ -1302,7 +1744,9 @@
 
             if (
 
-                page === currentPage
+                page ===
+
+                currentPage
 
             ) {
 
@@ -1330,21 +1774,35 @@
 
             );
 
-            pagination.appendChild(btn);
+            pagination.appendChild(
+
+                btn
+
+            );
 
         }
 
         const next =
 
-            document.createElement("button");
+            document.createElement(
 
-        next.type = "button";
+                "button"
 
-        next.textContent = "›";
+            );
+
+        next.type =
+
+            "button";
+
+        next.textContent =
+
+            "›";
 
         next.disabled =
 
-            currentPage >= totalPages;
+            currentPage >=
+
+            totalPages;
 
         next.addEventListener(
 
@@ -1370,7 +1828,11 @@
 
         );
 
-        pagination.appendChild(next);
+        pagination.appendChild(
+
+            next
+
+        );
 
     }
 
@@ -1384,13 +1846,25 @@
 
         const row =
 
-            allData.find(function(item) {
+            allData.find(
 
-                return String(item?.id) ===
+                function(item) {
 
-                    String(id);
+                    return (
 
-            });
+                        String(
+
+                            item?.id
+
+                        ) ===
+
+                        String(id)
+
+                    );
+
+                }
+
+            );
 
         if (!row) {
 
@@ -1420,7 +1894,11 @@
 
         const modal =
 
-            document.createElement("div");
+            document.createElement(
+
+                "div"
+
+            );
 
         modal.id =
 
@@ -1510,7 +1988,9 @@
 
                             value="${escapeAttr(
 
-                                row?.user_name || ""
+                                row?.user_name ||
+
+                                ""
 
                             )}"
 
@@ -1570,7 +2050,9 @@
 
                             value="${escapeAttr(
 
-                                row?.cif || ""
+                                row?.cif ||
+
+                                ""
 
                             )}"
 
@@ -1598,7 +2080,9 @@
 
                             value="${escapeAttr(
 
-                                row?.customer_name || ""
+                                row?.customer_name ||
+
+                                ""
 
                             )}"
 
@@ -1626,7 +2110,9 @@
 
                             value="${escapeAttr(
 
-                                row?.result || ""
+                                row?.result ||
+
+                                ""
 
                             )}"
 
@@ -1654,7 +2140,9 @@
 
                             value="${escapeAttr(
 
-                                row?.connection || ""
+                                row?.connection ||
+
+                                ""
 
                             )}"
 
@@ -1690,7 +2178,9 @@
 
                         >${escapeHtml(
 
-                            row?.detail || ""
+                            row?.detail ||
+
+                            ""
 
                         )}</textarea>
 
@@ -1708,7 +2198,9 @@
 
                             value="${escapeAttr(
 
-                                row?.expected_amount ?? ""
+                                row?.expected_amount ??
+
+                                ""
 
                             )}"
 
@@ -1744,7 +2236,9 @@
 
                         >${escapeHtml(
 
-                            row?.next_action || ""
+                            row?.next_action ||
+
+                            ""
 
                         )}</textarea>
 
@@ -1798,7 +2292,11 @@
 
         `;
 
-        document.body.appendChild(modal);
+        document.body.appendChild(
+
+            modal
+
+        );
 
         const cancelBtn =
 
@@ -1986,7 +2484,9 @@
 
         if (saveBtn) {
 
-            saveBtn.disabled = true;
+            saveBtn.disabled =
+
+                true;
 
             saveBtn.textContent =
 
@@ -2044,15 +2544,29 @@
 
             };
 
-            const { error } =
+            const {
+
+                error
+
+            } =
 
                 await supabaseClient
 
                     .from("bao_cao_ngay")
 
-                    .update(updateData)
+                    .update(
 
-                    .eq("id", id);
+                        updateData
+
+                    )
+
+                    .eq(
+
+                        "id",
+
+                        id
+
+                    );
 
             if (error) throw error;
 
@@ -2094,7 +2608,9 @@
 
             if (saveBtn) {
 
-                saveBtn.disabled = false;
+                saveBtn.disabled =
+
+                    false;
 
                 saveBtn.textContent =
 
@@ -2116,13 +2632,25 @@
 
         const row =
 
-            allData.find(function(item) {
+            allData.find(
 
-                return String(item?.id) ===
+                function(item) {
 
-                    String(id);
+                    return (
 
-            });
+                        String(
+
+                            item?.id
+
+                        ) ===
+
+                        String(id)
+
+                    );
+
+                }
+
+            );
 
         const customerName =
 
@@ -2138,11 +2666,19 @@
 
             );
 
-        if (!confirmed) return;
+        if (!confirmed) {
+
+            return;
+
+        }
 
         try {
 
-            const { error } =
+            const {
+
+                error
+
+            } =
 
                 await supabaseClient
 
@@ -2150,7 +2686,13 @@
 
                     .delete()
 
-                    .eq("id", id);
+                    .eq(
+
+                        "id",
+
+                        id
+
+                    );
 
             if (error) throw error;
 
@@ -2202,55 +2744,119 @@
 
         removeSubmittedUserModal();
 
+        const selectedDate =
+
+            (
+
+                filterDate?.value ||
+
+                getTodayVietnam()
+
+            )
+
+                .substring(
+
+                    0,
+
+                    10
+
+                );
+
         const users =
 
             new Map();
 
-        filteredData.forEach(function(row) {
+        // Dùng allData để danh sách cán bộ
 
-            const originalName =
+        // không bị ảnh hưởng bởi filterUser.
 
-                String(
+        allData.forEach(
 
-                    row?.user_name ||
+            function(row) {
 
-                    ""
+                const reportDate =
 
-                ).trim();
+                    String(
 
-            if (!originalName) return;
+                        row?.field_date ||
 
-            const key =
+                        ""
 
-                originalName.toLowerCase();
+                    )
 
-            if (!users.has(key)) {
+                        .substring(
 
-                users.set(
+                            0,
 
-                    key,
+                            10
 
-                    {
+                        );
 
-                        name:
+                if (
 
-                            originalName,
+                    reportDate !==
 
-                        count:
+                    selectedDate
 
-                            1
+                ) {
 
-                    }
+                    return;
 
-                );
+                }
 
-            } else {
+                const originalName =
 
-                users.get(key).count++;
+                    String(
+
+                        row?.user_name ||
+
+                        ""
+
+                    ).trim();
+
+                if (!originalName) {
+
+                    return;
+
+                }
+
+                const key =
+
+                    originalName.toLowerCase();
+
+                if (!users.has(key)) {
+
+                    users.set(
+
+                        key,
+
+                        {
+
+                            name:
+
+                                originalName,
+
+                            count:
+
+                                1
+
+                        }
+
+                    );
+
+                } else {
+
+                    users.get(
+
+                        key
+
+                    ).count++;
+
+                }
 
             }
 
-        });
+        );
 
         const userList =
 
@@ -2258,21 +2864,29 @@
 
                 users.values()
 
-            ).sort(function(a, b) {
+            ).sort(
 
-                return a.name.localeCompare(
+                function(a, b) {
 
-                    b.name,
+                    return a.name.localeCompare(
 
-                    "vi"
+                        b.name,
 
-                );
+                        "vi"
 
-            });
+                    );
+
+                }
+
+            );
 
         const modal =
 
-            document.createElement("div");
+            document.createElement(
+
+                "div"
+
+            );
 
         modal.id =
 
@@ -2300,7 +2914,11 @@
 
         let content = "";
 
-        if (userList.length === 0) {
+        if (
+
+            userList.length === 0
+
+        ) {
 
             content = `
 
@@ -2342,69 +2960,73 @@
 
             `;
 
-            userList.forEach(function(user) {
+            userList.forEach(
 
-                content += `
+                function(user) {
 
-                    <button
+                    content += `
 
-                        type="button"
+                        <button
 
-                        class="submitted-user-item"
+                            type="button"
 
-                        data-user="${escapeAttr(
+                            class="submitted-user-item"
 
-                            user.name
-
-                        )}"
-
-                        style="
-
-                            width:100%;
-
-                            display:flex;
-
-                            align-items:center;
-
-                            justify-content:space-between;
-
-                            padding:12px 14px;
-
-                            border:1px solid #ddd;
-
-                            background:#fff;
-
-                            border-radius:10px;
-
-                            cursor:pointer;
-
-                            text-align:left;
-
-                        "
-
-                    >
-
-                        <span>
-
-                            👤 ${escapeHtml(
+                            data-user="${escapeAttr(
 
                                 user.name
 
-                            )}
+                            )}"
 
-                        </span>
+                            style="
 
-                        <strong>
+                                width:100%;
 
-                            ${user.count} báo cáo
+                                display:flex;
 
-                        </strong>
+                                align-items:center;
 
-                    </button>
+                                justify-content:space-between;
 
-                `;
+                                padding:12px 14px;
 
-            });
+                                border:1px solid #ddd;
+
+                                background:#fff;
+
+                                border-radius:10px;
+
+                                cursor:pointer;
+
+                                text-align:left;
+
+                            "
+
+                        >
+
+                            <span>
+
+                                👤 ${escapeHtml(
+
+                                    user.name
+
+                                )}
+
+                            </span>
+
+                            <strong>
+
+                                ${user.count} báo cáo
+
+                            </strong>
+
+                        </button>
+
+                    `;
+
+                }
+
+            );
 
             content += `
 
@@ -2520,7 +3142,11 @@
 
         `;
 
-        document.body.appendChild(modal);
+        document.body.appendChild(
+
+            modal
+
+        );
 
         const closeBtn =
 
@@ -2572,39 +3198,45 @@
 
             )
 
-            .forEach(function(button) {
+            .forEach(
 
-                button.addEventListener(
+                function(button) {
 
-                    "click",
+                    button.addEventListener(
 
-                    function() {
+                        "click",
 
-                        const user =
+                        function() {
 
-                            this.dataset.user ||
+                            const user =
 
-                            "";
+                                this.dataset.user ||
 
-                        if (filterUser) {
+                                "";
 
-                            filterUser.value =
+                            if (filterUser) {
 
-                                user;
+                                filterUser.value =
+
+                                    user;
+
+                            }
+
+                            currentPage =
+
+                                1;
+
+                            applyFilter();
+
+                            removeSubmittedUserModal();
 
                         }
 
-                        currentPage = 1;
+                    );
 
-                        applyFilter();
+                }
 
-                        removeSubmittedUserModal();
-
-                    }
-
-                );
-
-            });
+            );
 
     }
 
@@ -2642,13 +3274,21 @@
 
         if (sideMenu) {
 
-            sideMenu.classList.add("open");
+            sideMenu.classList.add(
+
+                "open"
+
+            );
 
         }
 
         if (sideMenuOverlay) {
 
-            sideMenuOverlay.classList.add("open");
+            sideMenuOverlay.classList.add(
+
+                "open"
+
+            );
 
         }
 
@@ -2658,13 +3298,21 @@
 
         if (sideMenu) {
 
-            sideMenu.classList.remove("open");
+            sideMenu.classList.remove(
+
+                "open"
+
+            );
 
         }
 
         if (sideMenuOverlay) {
 
-            sideMenuOverlay.classList.remove("open");
+            sideMenuOverlay.classList.remove(
+
+                "open"
+
+            );
 
         }
 
@@ -2710,61 +3358,79 @@
 
         const exportData =
 
-            filteredData.map(function(row, index) {
+            filteredData.map(
 
-                return {
+                function(row, index) {
 
-                    "STT":
+                    return {
 
-                        index + 1,
+                        "STT":
 
-                    "Cán bộ":
+                            index + 1,
 
-                        row?.user_name || "",
+                        "Cán bộ":
 
-                    "Ngày field":
+                            row?.user_name ||
 
-                        formatDate(
+                            "",
 
-                            row?.field_date
+                        "Ngày field":
 
-                        ),
+                            formatDate(
 
-                    "Số CIF":
+                                row?.field_date
 
-                        row?.cif || "",
+                            ),
 
-                    "Tên khách hàng":
+                        "Số CIF":
 
-                        row?.customer_name || "",
+                            row?.cif ||
 
-                    "Kết quả":
+                            "",
 
-                        row?.result || "",
+                        "Tên khách hàng":
 
-                    "Kết nối":
+                            row?.customer_name ||
 
-                        row?.connection || "",
+                            "",
 
-                    "Kết quả chi tiết":
+                        "Kết quả":
 
-                        row?.detail || "",
+                            row?.result ||
 
-                    "Dự thu":
+                            "",
 
-                        parseNumber(
+                        "Kết nối":
 
-                            row?.expected_amount
+                            row?.connection ||
 
-                        ),
+                            "",
 
-                    "Hướng tác động tiếp theo":
+                        "Kết quả chi tiết":
 
-                        row?.next_action || ""
+                            row?.detail ||
 
-                };
+                            "",
 
-            });
+                        "Dự thu":
+
+                            parseNumber(
+
+                                row?.expected_amount
+
+                            ),
+
+                        "Hướng tác động tiếp theo":
+
+                            row?.next_action ||
+
+                            ""
+
+                    };
+
+                }
+
+            );
 
         const worksheet =
 
@@ -2844,7 +3510,11 @@
 
             String(value).trim();
 
-        if (!text) return 0;
+        if (!text) {
+
+            return 0;
+
+        }
 
         text =
 
@@ -2938,7 +3608,11 @@
 
     function formatDate(value) {
 
-        if (!value) return "";
+        if (!value) {
+
+            return "";
+
+        }
 
         const text =
 
@@ -2946,13 +3620,25 @@
 
         const datePart =
 
-            text.substring(0, 10);
+            text.substring(
+
+                0,
+
+                10
+
+            );
 
         const parts =
 
             datePart.split("-");
 
-        if (parts.length === 3) {
+        if (
+
+            parts.length ===
+
+            3
+
+        ) {
 
             return (
 
@@ -2980,13 +3666,27 @@
 
     // ==========================================================
 
-    function normalizeDateInput(value) {
+    function normalizeDateInput(
 
-        if (!value) return "";
+        value
+
+    ) {
+
+        if (!value) {
+
+            return "";
+
+        }
 
         return String(value)
 
-            .substring(0, 10);
+            .substring(
+
+                0,
+
+                10
+
+            );
 
     }
 
@@ -3054,7 +3754,11 @@
 
     function escapeAttr(value) {
 
-        return escapeHtml(value);
+        return escapeHtml(
+
+            value
+
+        );
 
     }
 
@@ -3081,6 +3785,198 @@
         }
 
     }
+
+    // ==========================================================
+
+    // SUPABASE REALTIME
+
+    //
+
+    // Khi có cán bộ nhập:
+
+    // INSERT -> cập nhật ngay
+
+    //
+
+    // Khi sửa:
+
+    // UPDATE -> cập nhật ngay
+
+    //
+
+    // Khi xóa:
+
+    // DELETE -> cập nhật ngay
+
+    // ==========================================================
+
+    const realtimeChannel =
+
+        supabaseClient
+
+            .channel(
+
+                "manager-bao-cao-ngay-realtime"
+
+            )
+
+            .on(
+
+                "postgres_changes",
+
+                {
+
+                    event: "*",
+
+                    schema: "public",
+
+                    table: "bao_cao_ngay"
+
+                },
+
+                async function(payload) {
+
+                    console.log(
+
+                        "🔄 Có thay đổi dữ liệu:",
+
+                        payload
+
+                    );
+
+                    // Chỉ tải lại nếu đã đăng nhập
+
+                    if (!currentUser) {
+
+                        return;
+
+                    }
+
+                    await loadData();
+
+                }
+
+            )
+
+            .subscribe(
+
+                function(status) {
+
+                    console.log(
+
+                        "📡 Realtime:",
+
+                        status
+
+                    );
+
+                }
+
+            );
+
+    // ==========================================================
+
+    // TỰ ĐỘNG CHUYỂN NGÀY LÚC 00:00 VIỆT NAM
+
+    //
+
+    // Ví dụ:
+
+    //
+
+    // 23:59 ngày 07
+
+    // bộ đếm = 6
+
+    //
+
+    // sang 00:00 ngày 08
+
+    // bộ đếm = 0
+
+    //
+
+    // khi cán bộ đầu tiên nhập
+
+    // bộ đếm = 1
+
+    // ==========================================================
+
+    let lastVietnamDate =
+
+        getTodayVietnam();
+
+    setInterval(
+
+        async function() {
+
+            const today =
+
+                getTodayVietnam();
+
+            if (
+
+                today !==
+
+                lastVietnamDate
+
+            ) {
+
+                console.log(
+
+                    "🌙 Sang ngày mới:",
+
+                    today
+
+                );
+
+                lastVietnamDate =
+
+                    today;
+
+                if (filterDate) {
+
+                    filterDate.value =
+
+                        today;
+
+                }
+
+                // Xóa bộ lọc cán bộ
+
+                // để bắt đầu ngày mới
+
+                if (filterUser) {
+
+                    filterUser.value =
+
+                        "";
+
+                }
+
+                currentPage = 1;
+
+                // Cập nhật ngay bộ đếm về 0
+
+                // trước khi tải dữ liệu mới
+
+                if (submittedUserCount) {
+
+                    submittedUserCount.textContent =
+
+                        "0";
+
+                }
+
+                await loadData();
+
+            }
+
+        },
+
+        1000
+
+    );
 
     // ==========================================================
 
