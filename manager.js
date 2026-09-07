@@ -1,13 +1,14 @@
 // ============================================================
 // MANAGER.JS
 // QUẢN LÝ BÁO CÁO NGÀY
+// PHIÊN BẢN HOÀN CHỈNH
 // ============================================================
 
 (() => {
   "use strict";
 
   // ==========================================================
-  // SUPABASE
+  // KIỂM TRA SUPABASE
   // ==========================================================
 
   if (!window.supabase) {
@@ -15,7 +16,10 @@
     return;
   }
 
-  if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+  if (
+    !window.SUPABASE_URL ||
+    !window.SUPABASE_ANON_KEY
+  ) {
     alert("❌ Chưa cấu hình Supabase trong config.js");
     return;
   }
@@ -26,14 +30,16 @@
   );
 
   // ==========================================================
-  // GLOBAL DATA
+  // DATA
   // ==========================================================
 
   let currentUser = null;
+
   let allReports = [];
   let filteredReports = [];
 
   let currentPage = 1;
+
   const pageSize = 10;
 
   let editingReportId = null;
@@ -173,49 +179,71 @@
 
     bindEvents();
 
-    // Ẩn khu vực quản lý lúc đầu
     if (managerBox) {
       managerBox.style.display = "none";
     }
 
-    // Hiện menu button nhưng chỉ khi đã đăng nhập
     if (menuBtn) {
+
       menuBtn.style.display = "none";
+
       menuBtn.style.position = "relative";
+
       menuBtn.style.zIndex = "100000";
+
+      menuBtn.style.visibility = "visible";
+
+      menuBtn.style.pointerEvents = "auto";
     }
 
-    // Kiểm tra session hiện tại
     try {
 
       const {
         data,
         error
-      } = await client.auth.getSession();
+      } =
+        await client.auth.getSession();
 
       if (error) {
-        console.error(error);
+        console.error(
+          "GET SESSION ERROR:",
+          error
+        );
+
         showLogin();
+
         return;
       }
 
-      const session = data?.session;
+      const session =
+        data?.session;
 
-      if (session?.user) {
+      if (
+        session &&
+        session.user
+      ) {
 
-        currentUser = session.user;
+        currentUser =
+          session.user;
 
         const allowed =
           await checkManagerPermission();
 
         if (allowed) {
+
           await showManager();
+
         } else {
+
           await client.auth.signOut();
+
+          currentUser = null;
+
           showLogin();
         }
 
       } else {
+
         showLogin();
       }
 
@@ -231,14 +259,14 @@
   }
 
   // ==========================================================
-  // EVENT
+  // EVENTS
   // ==========================================================
 
   function bindEvents() {
 
-    // ------------------------------
+    // ========================================================
     // LOGIN
-    // ------------------------------
+    // ========================================================
 
     if (loginBtn) {
 
@@ -276,107 +304,112 @@
       );
     }
 
-    // ------------------------------
+    // ========================================================
     // MENU
-    // ------------------------------
+    // ========================================================
 
     if (menuBtn) {
 
-      menuBtn.addEventListener(
-        "click",
-        function (e) {
+      menuBtn.onclick = function (e) {
 
-          e.preventDefault();
-          e.stopPropagation();
+        e.preventDefault();
 
-          openMenu();
-        }
-      );
+        e.stopPropagation();
+
+        openMenu();
+      };
     }
 
     if (sideMenuClose) {
 
-      sideMenuClose.addEventListener(
-        "click",
-        function (e) {
-
-          e.preventDefault();
+      sideMenuClose.onclick =
+        function () {
 
           closeMenu();
-        }
-      );
+        };
     }
 
     if (sideMenuOverlay) {
 
-      sideMenuOverlay.addEventListener(
-        "click",
-        closeMenu
-      );
-    }
-
-    // ------------------------------
-    // MENU ITEMS
-    // ------------------------------
-
-    if (menuReportsBtn) {
-
-      menuReportsBtn.addEventListener(
-        "click",
+      sideMenuOverlay.onclick =
         function () {
 
           closeMenu();
-
-          showManager();
-        }
-      );
+        };
     }
+
+    // ========================================================
+    // MENU REPORTS
+    // ========================================================
+
+    if (menuReportsBtn) {
+
+      menuReportsBtn.onclick =
+        async function () {
+
+          closeMenu();
+
+          await showManager();
+        };
+    }
+
+    // ========================================================
+    // MENU PERMISSION
+    // ========================================================
 
     if (menuPermissionBtn) {
 
-      menuPermissionBtn.addEventListener(
-        "click",
+      menuPermissionBtn.onclick =
         async function () {
 
           closeMenu();
 
           await openPermissionModal();
-        }
-      );
+        };
     }
+
+    // ========================================================
+    // MENU LOGOUT
+    // ========================================================
 
     if (menuLogoutBtn) {
 
-      menuLogoutBtn.addEventListener(
-        "click",
-        logout
-      );
+      menuLogoutBtn.onclick =
+        async function () {
+
+          await logout();
+        };
     }
 
     if (logoutBtn) {
 
-      logoutBtn.addEventListener(
-        "click",
-        logout
-      );
+      logoutBtn.onclick =
+        async function () {
+
+          await logout();
+        };
     }
 
-    // ------------------------------
+    // ========================================================
     // FILTER
-    // ------------------------------
+    // ========================================================
 
     if (filterBtn) {
 
-      filterBtn.addEventListener(
-        "click",
-        applyFilter
-      );
+      filterBtn.onclick =
+        function () {
+
+          applyFilter();
+        };
     }
+
+    // ========================================================
+    // REFRESH
+    // ========================================================
 
     if (refreshBtn) {
 
-      refreshBtn.addEventListener(
-        "click",
+      refreshBtn.onclick =
         async function () {
 
           if (filterUser) {
@@ -388,32 +421,33 @@
           }
 
           await loadReports();
-        }
-      );
+        };
     }
 
-    // ------------------------------
+    // ========================================================
     // EXPORT
-    // ------------------------------
+    // ========================================================
 
     if (exportBtn) {
 
-      exportBtn.addEventListener(
-        "click",
-        exportExcel
-      );
+      exportBtn.onclick =
+        function () {
+
+          exportExcel();
+        };
     }
 
-    // ------------------------------
+    // ========================================================
     // SUBMITTED USERS
-    // ------------------------------
+    // ========================================================
 
     if (showSubmittedUsersBtn) {
 
-      showSubmittedUsersBtn.addEventListener(
-        "click",
-        showSubmittedUsers
-      );
+      showSubmittedUsersBtn.onclick =
+        function () {
+
+          showSubmittedUsers();
+        };
     }
   }
 
@@ -424,10 +458,14 @@
   async function login() {
 
     const identifier =
-      (loginId?.value || "").trim();
+      (
+        loginId?.value ||
+        ""
+      ).trim();
 
     const pass =
-      password?.value || "";
+      password?.value ||
+      "";
 
     if (!identifier) {
 
@@ -453,24 +491,23 @@
       return;
     }
 
+    if (loginBtn) {
+      loginBtn.disabled = true;
+    }
+
     setLoginMessage(
       "⏳ Đang đăng nhập...",
       "info"
     );
 
-    if (loginBtn) {
-      loginBtn.disabled = true;
-    }
-
     try {
 
       // ======================================================
-      // BƯỚC 1:
-      // Nếu nhập USER thì Edge Function resolve sang email.
-      // Nếu nhập EMAIL thì dùng trực tiếp.
+      // USER -> EMAIL
       // ======================================================
 
-      let email = identifier;
+      let email =
+        identifier;
 
       if (!identifier.includes("@")) {
 
@@ -497,14 +534,13 @@
         if (!email) {
 
           throw new Error(
-            "Không xác định được email đăng nhập."
+            "Không xác định được email."
           );
         }
       }
 
       // ======================================================
-      // BƯỚC 2:
-      // Đăng nhập Supabase Auth
+      // SUPABASE LOGIN
       // ======================================================
 
       const {
@@ -531,8 +567,7 @@
         data.user;
 
       // ======================================================
-      // BƯỚC 3:
-      // KIỂM TRA QUYỀN MANAGER
+      // CHECK MANAGER
       // ======================================================
 
       const allowed =
@@ -548,10 +583,6 @@
           "Tài khoản này chưa được cấp quyền quản lý."
         );
       }
-
-      // ======================================================
-      // THÀNH CÔNG
-      // ======================================================
 
       if (password) {
         password.value = "";
@@ -607,7 +638,7 @@
       if (error) {
 
         console.error(
-          "is_manager error:",
+          "IS MANAGER ERROR:",
           error
         );
 
@@ -642,7 +673,9 @@
     }
 
     if (menuBtn) {
-      menuBtn.style.display = "none";
+
+      menuBtn.style.display =
+        "none";
     }
 
     closeMenu();
@@ -662,7 +695,8 @@
         await client.auth.getUser();
 
       currentUser =
-        data?.user || null;
+        data?.user ||
+        null;
     }
 
     if (!currentUser) {
@@ -680,54 +714,77 @@
       managerBox.style.display = "block";
     }
 
-    // QUAN TRỌNG:
-    // HTML đang style display:none
-    // nên phải bật lại ở đây.
-
     if (menuBtn) {
 
-      menuBtn.style.display = "flex";
-      menuBtn.style.visibility = "visible";
-      menuBtn.style.pointerEvents = "auto";
-      menuBtn.style.position = "relative";
-      menuBtn.style.zIndex = "100000";
+      menuBtn.style.display =
+        "flex";
+
+      menuBtn.style.visibility =
+        "visible";
+
+      menuBtn.style.pointerEvents =
+        "auto";
+
+      menuBtn.style.position =
+        "relative";
+
+      menuBtn.style.zIndex =
+        "100000";
     }
 
     await loadReports();
   }
 
   // ==========================================================
-  // MENU
+  // OPEN MENU
   // ==========================================================
 
   function openMenu() {
 
-    if (!sideMenu || !sideMenuOverlay) {
+    if (!sideMenu ||
+        !sideMenuOverlay) {
+
       console.error(
-        "Không tìm thấy side menu."
+        "SIDE MENU ELEMENT NOT FOUND"
       );
 
       return;
     }
 
-    sideMenu.classList.add("open");
+    sideMenu.classList.add(
+      "open"
+    );
 
-    sideMenuOverlay.classList.add("open");
+    sideMenuOverlay.classList.add(
+      "open"
+    );
 
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow =
+      "hidden";
   }
+
+  // ==========================================================
+  // CLOSE MENU
+  // ==========================================================
 
   function closeMenu() {
 
     if (sideMenu) {
-      sideMenu.classList.remove("open");
+
+      sideMenu.classList.remove(
+        "open"
+      );
     }
 
     if (sideMenuOverlay) {
-      sideMenuOverlay.classList.remove("open");
+
+      sideMenuOverlay.classList.remove(
+        "open"
+      );
     }
 
-    document.body.style.overflow = "";
+    document.body.style.overflow =
+      "";
   }
 
   // ==========================================================
@@ -828,13 +885,10 @@
       allReports.filter(
         report => {
 
-          // ----------------------------------------------
-          // TÌM CÁN BỘ
-          // ----------------------------------------------
-
           const userText =
-            getReportUser(report)
-              .toLowerCase();
+            getReportUser(
+              report
+            ).toLowerCase();
 
           const userOK =
             !userKeyword ||
@@ -842,16 +896,15 @@
               userKeyword
             );
 
-          // ----------------------------------------------
-          // TÌM NGÀY FIELD
-          // ----------------------------------------------
-
           const reportDate =
-            getReportDate(report);
+            getReportDate(
+              report
+            );
 
           const dateOK =
             !dateKeyword ||
-            reportDate === dateKeyword;
+            reportDate ===
+            dateKeyword;
 
           return (
             userOK &&
@@ -906,11 +959,13 @@
       return "";
     }
 
-    // Nếu là YYYY-MM-DD
     if (
       typeof value === "string" &&
-      /^\d{4}-\d{2}-\d{2}/.test(value)
+      /^\d{4}-\d{2}-\d{2}/.test(
+        value
+      )
     ) {
+
       return value.substring(
         0,
         10
@@ -922,8 +977,15 @@
       const d =
         new Date(value);
 
-      if (isNaN(d.getTime())) {
-        return String(value);
+      if (
+        isNaN(
+          d.getTime()
+        )
+      ) {
+
+        return String(
+          value
+        );
       }
 
       return [
@@ -938,7 +1000,9 @@
 
     } catch {
 
-      return String(value);
+      return String(
+        value
+      );
     }
   }
 
@@ -958,21 +1022,28 @@
       0;
 
     if (
-      typeof value === "number"
+      typeof value ===
+      "number"
     ) {
+
       return value;
     }
 
     if (
-      typeof value === "string"
+      typeof value ===
+      "string"
     ) {
 
       const cleaned =
-        value
-          .replace(/[^\d.-]/g, "");
+        value.replace(
+          /[^\d.-]/g,
+          ""
+        );
 
       const number =
-        Number(cleaned);
+        Number(
+          cleaned
+        );
 
       return isNaN(number)
         ? 0
@@ -983,7 +1054,7 @@
   }
 
   // ==========================================================
-  // UPDATE STATS
+  // STATS
   // ==========================================================
 
   function updateStats() {
@@ -992,7 +1063,9 @@
 
       totalReports.textContent =
         filteredReports.length
-          .toLocaleString("vi-VN");
+          .toLocaleString(
+            "vi-VN"
+          );
     }
 
     const total =
@@ -1004,7 +1077,9 @@
 
           return (
             sum +
-            getReportAmount(report)
+            getReportAmount(
+              report
+            )
           );
 
         },
@@ -1014,12 +1089,14 @@
     if (totalAmount) {
 
       totalAmount.textContent =
-        formatMoney(total);
+        formatMoney(
+          total
+        );
     }
   }
 
   // ==========================================================
-  // RENDER TABLE
+  // TABLE
   // ==========================================================
 
   function renderTable() {
@@ -1071,13 +1148,19 @@
       report => {
 
         const tr =
-          document.createElement("tr");
+          document.createElement(
+            "tr"
+          );
 
         const user =
-          getReportUser(report);
+          getReportUser(
+            report
+          );
 
         const date =
-          getReportDate(report);
+          getReportDate(
+            report
+          );
 
         const cif =
           report.cif ??
@@ -1110,7 +1193,9 @@
           "";
 
         const amount =
-          getReportAmount(report);
+          getReportAmount(
+            report
+          );
 
         const nextAction =
           report.next_action ??
@@ -1119,43 +1204,60 @@
           "";
 
         tr.innerHTML = `
-          <td>${escapeHtml(user)}</td>
-
-          <td>${escapeHtml(
-            formatDisplayDate(date)
-          )}</td>
-
-          <td>${escapeHtml(
-            cif
-          )}</td>
-
-          <td>${escapeHtml(
-            customerName
-          )}</td>
-
-          <td>${escapeHtml(
-            result
-          )}</td>
-
-          <td>${escapeHtml(
-            connection
-          )}</td>
-
-          <td>${escapeHtml(
-            detail
-          )}</td>
-
-          <td>${escapeHtml(
-            formatMoney(amount)
-          )}</td>
-
-          <td>${escapeHtml(
-            nextAction
-          )}</td>
 
           <td>
+            ${escapeHtml(user)}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              formatDisplayDate(
+                date
+              )
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(cif)}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              customerName
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(result)}
+          </td>
+
+          <td>
+            ${escapeHtml(connection)}
+          </td>
+
+          <td>
+            ${escapeHtml(detail)}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              formatMoney(
+                amount
+              )
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              nextAction
+            )}
+          </td>
+
+          <td>
+
             <button
               class="edit-btn"
+              type="button"
               data-action="edit"
             >
               ✏️ Sửa
@@ -1163,10 +1265,12 @@
 
             <button
               class="delete-btn"
+              type="button"
               data-action="delete"
             >
               🗑️ Xóa
             </button>
+
           </td>
         `;
 
@@ -1182,31 +1286,29 @@
 
         if (editButton) {
 
-          editButton.addEventListener(
-            "click",
+          editButton.onclick =
             function () {
 
               openEditModal(
                 report
               );
-            }
-          );
+            };
         }
 
         if (deleteButton) {
 
-          deleteButton.addEventListener(
-            "click",
+          deleteButton.onclick =
             function () {
 
               deleteReport(
                 report
               );
-            }
-          );
+            };
         }
 
-        tableBody.appendChild(tr);
+        tableBody.appendChild(
+          tr
+        );
       }
     );
 
@@ -1235,19 +1337,21 @@
       return;
     }
 
-    // Nút trước
     const prev =
-      document.createElement("button");
+      document.createElement(
+        "button"
+      );
 
-    prev.className = "arrow";
+    prev.className =
+      "arrow";
 
-    prev.textContent = "‹";
+    prev.textContent =
+      "‹";
 
     prev.disabled =
       currentPage === 1;
 
-    prev.addEventListener(
-      "click",
+    prev.onclick =
       function () {
 
         if (
@@ -1260,12 +1364,12 @@
 
           scrollToTable();
         }
-      }
+      };
+
+    pagination.appendChild(
+      prev
     );
 
-    pagination.appendChild(prev);
-
-    // Tính khoảng page hiển thị
     let startPage =
       Math.max(
         1,
@@ -1282,7 +1386,9 @@
       endPage - startPage < 4
     ) {
 
-      if (startPage === 1) {
+      if (
+        startPage === 1
+      ) {
 
         endPage =
           Math.min(
@@ -1307,7 +1413,9 @@
     ) {
 
       const button =
-        document.createElement("button");
+        document.createElement(
+          "button"
+        );
 
       button.textContent =
         i;
@@ -1321,36 +1429,38 @@
         );
       }
 
-      button.addEventListener(
-        "click",
+      button.onclick =
         function () {
 
-          currentPage = i;
+          currentPage =
+            i;
 
           renderTable();
 
           scrollToTable();
-        }
-      );
+        };
 
       pagination.appendChild(
         button
       );
     }
 
-    // Nút sau
     const next =
-      document.createElement("button");
+      document.createElement(
+        "button"
+      );
 
-    next.className = "arrow";
+    next.className =
+      "arrow";
 
-    next.textContent = "›";
+    next.textContent =
+      "›";
 
     next.disabled =
-      currentPage === totalPages;
+      currentPage ===
+      totalPages;
 
-    next.addEventListener(
-      "click",
+    next.onclick =
       function () {
 
         if (
@@ -1364,14 +1474,15 @@
 
           scrollToTable();
         }
-      }
-    );
+      };
 
-    pagination.appendChild(next);
+    pagination.appendChild(
+      next
+    );
   }
 
   // ==========================================================
-  // SCROLL TABLE
+  // SCROLL
   // ==========================================================
 
   function scrollToTable() {
@@ -1394,16 +1505,22 @@
   // EDIT MODAL
   // ==========================================================
 
-  function openEditModal(report) {
+  function openEditModal(
+    report
+  ) {
 
     editingReportId =
       report.id;
 
     const currentAmount =
-      getReportAmount(report);
+      getReportAmount(
+        report
+      );
 
     const overlay =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
 
     overlay.className =
       "edit-modal-overlay";
@@ -1452,11 +1569,14 @@
 
         </div>
 
-        <div class="edit-modal-buttons">
+        <div
+          class="edit-modal-buttons"
+        >
 
           <button
             id="editCancelBtn"
             class="edit-cancel-btn"
+            type="button"
           >
             HỦY
           </button>
@@ -1464,6 +1584,7 @@
           <button
             id="editSaveBtn"
             class="edit-save-btn"
+            type="button"
           >
             💾 LƯU
           </button>
@@ -1498,43 +1619,40 @@
 
     if (cancelBtn) {
 
-      cancelBtn.addEventListener(
-        "click",
-        closeEditModal
-      );
+      cancelBtn.onclick =
+        closeEditModal;
     }
 
     if (saveBtn) {
 
-      saveBtn.addEventListener(
-        "click",
+      saveBtn.onclick =
         function () {
 
           saveEditReport(
             report
           );
-        }
-      );
+        };
     }
 
-    overlay.addEventListener(
-      "click",
+    overlay.onclick =
       function (e) {
 
         if (
           e.target === overlay
         ) {
+
           closeEditModal();
         }
-      }
-    );
+      };
   }
 
   // ==========================================================
   // SAVE EDIT
   // ==========================================================
 
-  async function saveEditReport(report) {
+  async function saveEditReport(
+    report
+  ) {
 
     const input =
       document.getElementById(
@@ -1556,7 +1674,9 @@
     }
 
     const amount =
-      Number(input.value);
+      Number(
+        input.value
+      );
 
     if (
       isNaN(amount) ||
@@ -1590,11 +1710,6 @@
 
     try {
 
-      // ======================================================
-      // Cột dự thu hiện tại của hệ thống là amount.
-      // Nếu dữ liệu cũ dùng du_thu thì cập nhật theo cột đó.
-      // ======================================================
-
       let updateData;
 
       if (
@@ -1621,7 +1736,6 @@
 
       } else {
 
-        // Mặc định hệ thống mới dùng amount
         updateData = {
           amount
         };
@@ -1632,7 +1746,9 @@
       } =
         await client
           .from("bao_cao_ngay")
-          .update(updateData)
+          .update(
+            updateData
+          )
           .eq(
             "id",
             report.id
@@ -1680,7 +1796,7 @@
   }
 
   // ==========================================================
-  // CLOSE EDIT MODAL
+  // CLOSE EDIT
   // ==========================================================
 
   function closeEditModal() {
@@ -1702,10 +1818,14 @@
   // DELETE
   // ==========================================================
 
-  async function deleteReport(report) {
+  async function deleteReport(
+    report
+  ) {
 
     const name =
-      getReportUser(report);
+      getReportUser(
+        report
+      );
 
     const customer =
       report.customer_name ??
@@ -1806,6 +1926,7 @@
           report => {
 
             return {
+
               "Cán bộ":
                 getReportUser(
                   report
@@ -1910,7 +2031,7 @@
   }
 
   // ==========================================================
-  // SUBMITTED USERS COUNT
+  // COUNT USERS
   // ==========================================================
 
   function updateSubmittedUserCount() {
@@ -1942,7 +2063,7 @@
   }
 
   // ==========================================================
-  // SHOW SUBMITTED USERS
+  // SHOW USERS
   // ==========================================================
 
   function showSubmittedUsers() {
@@ -1968,7 +2089,9 @@
       );
 
     const overlay =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
 
     overlay.className =
       "user-modal-overlay";
@@ -2029,6 +2152,7 @@
           <button
             class="user-modal-close"
             id="submittedUsersClose"
+            type="button"
           >
             ×
           </button>
@@ -2055,17 +2179,14 @@
 
     if (closeBtn) {
 
-      closeBtn.addEventListener(
-        "click",
+      closeBtn.onclick =
         function () {
 
           overlay.remove();
-        }
-      );
+        };
     }
 
-    overlay.addEventListener(
-      "click",
+    overlay.onclick =
       function (e) {
 
         if (
@@ -2074,8 +2195,7 @@
 
           overlay.remove();
         }
-      }
-    );
+      };
   }
 
   // ==========================================================
@@ -2084,8 +2204,19 @@
 
   async function openPermissionModal() {
 
+    const oldModal =
+      document.getElementById(
+        "permissionModal"
+      );
+
+    if (oldModal) {
+      oldModal.remove();
+    }
+
     const overlay =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
 
     overlay.className =
       "permission-modal-overlay";
@@ -2106,6 +2237,7 @@
           <button
             class="permission-close"
             id="permissionClose"
+            type="button"
           >
             ×
           </button>
@@ -2118,6 +2250,7 @@
 
             Tại đây bạn có thể cấp quyền
             quản lý cho cán bộ.
+
             <br><br>
 
             Người được cấp quyền có thể
@@ -2162,6 +2295,7 @@
             <button
               id="grantPermissionBtn"
               class="green"
+              type="button"
             >
               ✅ CẤP QUYỀN
             </button>
@@ -2177,7 +2311,9 @@
             "
           ></div>
 
-          <div class="permission-list-title">
+          <div
+            class="permission-list-title"
+          >
             👥 Tài khoản đang được cấp quyền
           </div>
 
@@ -2205,17 +2341,14 @@
 
     if (closeBtn) {
 
-      closeBtn.addEventListener(
-        "click",
+      closeBtn.onclick =
         function () {
 
           overlay.remove();
-        }
-      );
+        };
     }
 
-    overlay.addEventListener(
-      "click",
+    overlay.onclick =
       function (e) {
 
         if (
@@ -2224,8 +2357,7 @@
 
           overlay.remove();
         }
-      }
-    );
+      };
 
     const grantBtn =
       document.getElementById(
@@ -2234,10 +2366,11 @@
 
     if (grantBtn) {
 
-      grantBtn.addEventListener(
-        "click",
-        grantPermission
-      );
+      grantBtn.onclick =
+        function () {
+
+          grantPermission();
+        };
     }
 
     await loadPermissionList();
@@ -2257,11 +2390,6 @@
     const passwordInput =
       document.getElementById(
         "permissionPassword"
-      );
-
-    const message =
-      document.getElementById(
-        "permissionMessage"
       );
 
     const button =
@@ -2286,6 +2414,8 @@
         "error"
       );
 
+      identifierInput?.focus();
+
       return;
     }
 
@@ -2295,6 +2425,8 @@
         "❌ Vui lòng nhập mật khẩu.",
         "error"
       );
+
+      passwordInput?.focus();
 
       return;
     }
@@ -2314,11 +2446,16 @@
         await callManagerFunction(
           "grant",
           {
-            identifier,
+            identifier: identifier,
             password: pass
           },
           true
         );
+
+      console.log(
+        "GRANT RESULT:",
+        result
+      );
 
       if (!result.success) {
 
@@ -2346,12 +2483,21 @@
         error
       );
 
+      let message =
+        error?.message ||
+        "Cấp quyền thất bại.";
+
+      if (
+        message ===
+        "Failed to fetch"
+      ) {
+
+        message =
+          "Không kết nối được Edge Function manager-permission. Hãy kiểm tra Edge Function đã Deploy chưa.";
+      }
+
       setPermissionMessage(
-        "❌ " +
-        (
-          error?.message ||
-          "Cấp quyền thất bại."
-        ),
+        "❌ " + message,
         "error"
       );
 
@@ -2380,7 +2526,7 @@
 
     list.innerHTML = `
       <div class="permission-empty">
-        ⏳ Đang tải...
+        ⏳ Đang tải danh sách...
       </div>
     `;
 
@@ -2392,6 +2538,11 @@
           {},
           true
         );
+
+      console.log(
+        "LIST PERMISSION RESULT:",
+        result
+      );
 
       if (!result.success) {
 
@@ -2440,9 +2591,13 @@
 
               return `
 
-                <div class="permission-user">
+                <div
+                  class="permission-user"
+                >
 
-                  <div class="permission-user-info">
+                  <div
+                    class="permission-user-info"
+                  >
 
                     <div
                       class="permission-user-name"
@@ -2503,6 +2658,7 @@
                       : `
                         <button
                           class="revoke-btn"
+                          type="button"
                           data-user-id="${escapeAttribute(
                             user.auth_user_id
                           )}"
@@ -2521,7 +2677,6 @@
           )
           .join("");
 
-      // Gắn event thu hồi
       list
         .querySelectorAll(
           ".revoke-btn"
@@ -2529,16 +2684,14 @@
         .forEach(
           button => {
 
-            button.addEventListener(
-              "click",
+            button.onclick =
               function () {
 
                 revokePermission(
                   button.dataset.userId,
                   button.dataset.identifier
                 );
-              }
-            );
+              };
           }
         );
 
@@ -2549,17 +2702,25 @@
         error
       );
 
+      let message =
+        error?.message ||
+        "Không tải được danh sách.";
+
+      if (
+        message ===
+        "Failed to fetch"
+      ) {
+
+        message =
+          "Không kết nối được Edge Function manager-permission.";
+      }
+
       list.innerHTML = `
         <div
           class="permission-empty"
           style="color:#dc2626;"
         >
-          ❌ ${
-            escapeHtml(
-              error?.message ||
-              "Không tải được danh sách."
-            )
-          }
+          ❌ ${escapeHtml(message)}
         </div>
       `;
     }
@@ -2651,75 +2812,111 @@
     authenticated = true
   ) {
 
-    const headers = {
-      "Content-Type":
-        "application/json"
-    };
+    try {
 
-    // ======================================================
-    // Lấy access token hiện tại
-    // ======================================================
+      // ======================================================
+      // QUAN TRỌNG:
+      // Dùng Supabase functions.invoke thay cho fetch()
+      // ======================================================
 
-    if (authenticated) {
+      const payload = {
+        action,
+        ...body
+      };
 
       const {
-        data
+        data,
+        error
       } =
-        await client.auth.getSession();
+        await client.functions.invoke(
+          "manager-permission",
+          {
+            body: payload
+          }
+        );
 
-      const session =
-        data?.session;
+      console.log(
+        "MANAGER FUNCTION:",
+        action,
+        data,
+        error
+      );
 
-      if (!session?.access_token) {
+      if (error) {
+
+        // Supabase đôi khi trả lỗi FunctionsHttpError
+        // nhưng body lỗi nằm trong context.response.
+
+        let detail =
+          error.message ||
+          "Edge Function thất bại.";
+
+        try {
+
+          if (
+            error.context &&
+            error.context.response
+          ) {
+
+            const response =
+              error.context.response;
+
+            const text =
+              await response.text();
+
+            if (text) {
+
+              try {
+
+                const json =
+                  JSON.parse(text);
+
+                detail =
+                  json.error ||
+                  json.message ||
+                  detail;
+
+              } catch {
+
+                detail =
+                  text ||
+                  detail;
+              }
+            }
+          }
+
+        } catch (parseError) {
+
+          console.warn(
+            "Không đọc được chi tiết Edge Function:",
+            parseError
+          );
+        }
 
         throw new Error(
-          "Phiên đăng nhập đã hết hạn."
+          detail
         );
       }
 
-      headers.Authorization =
-        `Bearer ${session.access_token}`;
-    }
+      if (!data) {
 
-    const response =
-      await fetch(
-        `${window.SUPABASE_URL}/functions/v1/manager-permission`,
-        {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            action,
-            ...body
-          })
-        }
-      );
-
-    let result = null;
-
-    try {
-
-      result =
-        await response.json();
-
-    } catch {
-
-      result = null;
-    }
-
-    if (!response.ok) {
-
-      throw new Error(
-        result?.error ||
-        result?.message ||
-        `HTTP ${response.status}`
-      );
-    }
-
-    return (
-      result || {
-        success: true
+        return {
+          success: true
+        };
       }
-    );
+
+      return data;
+
+    } catch (error) {
+
+      console.error(
+        "MANAGER FUNCTION ERROR:",
+        action,
+        error
+      );
+
+      throw error;
+    }
   }
 
   // ==========================================================
@@ -2783,7 +2980,9 @@
       text;
 
     loginMessage.style.color =
-      getMessageColor(type);
+      getMessageColor(
+        type
+      );
   }
 
   function setPermissionMessage(
@@ -2804,7 +3003,9 @@
       text;
 
     element.style.color =
-      getMessageColor(type);
+      getMessageColor(
+        type
+      );
   }
 
   function showManagerMessage(
@@ -2820,20 +3021,28 @@
       text;
 
     managerMessage.style.color =
-      getMessageColor(type);
+      getMessageColor(
+        type
+      );
   }
 
-  function getMessageColor(type) {
+  function getMessageColor(
+    type
+  ) {
 
     if (
-      type === "error"
+      type ===
+      "error"
     ) {
+
       return "#dc2626";
     }
 
     if (
-      type === "success"
+      type ===
+      "success"
     ) {
+
       return "#16a34a";
     }
 
@@ -2844,7 +3053,9 @@
   // MONEY
   // ==========================================================
 
-  function formatMoney(value) {
+  function formatMoney(
+    value
+  ) {
 
     const number =
       Number(value) || 0;
@@ -2858,7 +3069,7 @@
   }
 
   // ==========================================================
-  // DATE DISPLAY
+  // DATE
   // ==========================================================
 
   function formatDisplayDate(
@@ -2925,6 +3136,7 @@
       value === null ||
       value === undefined
     ) {
+
       return "";
     }
 
