@@ -32,6 +32,7 @@
       gap: 12px;
     }
 
+
     .menu-button {
       width: 48px;
       height: 48px;
@@ -48,6 +49,7 @@
 
       cursor: pointer;
     }
+
 
     .menu-button:active {
       transform: scale(.96);
@@ -68,6 +70,7 @@
 
       display: none;
     }
+
 
     .side-menu-overlay.open {
       display: block;
@@ -95,6 +98,7 @@
       overflow-y: auto;
     }
 
+
     .side-menu.open {
       transform: translateX(0);
     }
@@ -110,6 +114,7 @@
       justify-content: space-between;
       align-items: center;
     }
+
 
     .side-menu-header h2 {
       margin: 0;
@@ -159,9 +164,11 @@
       cursor: pointer;
     }
 
+
     .side-menu-item:hover {
       background: #e2e8f0;
     }
+
 
     .side-menu-item:active {
       transform: scale(.98);
@@ -562,6 +569,18 @@
 
 
     /* =====================================================
+       ẨN NÚT LOGOUT CŨ
+       
+       Giữ ID logoutBtn để tương thích với manager.js
+       nhưng không hiển thị trên giao diện.
+    ===================================================== */
+
+    #logoutBtn {
+      display: none !important;
+    }
+
+
+    /* =====================================================
        MOBILE
     ===================================================== */
 
@@ -667,12 +686,12 @@
             User / Email
           </label>
 
-       <<input
-  id="loginId"
-  type="email"
-  placeholder="Nhập email"
-  autocomplete="username"
->
+          <input
+            id="loginId"
+            type="email"
+            placeholder="Nhập email"
+            autocomplete="username"
+          >
 
         </div>
 
@@ -684,11 +703,11 @@
           </label>
 
           <input
-  id="password"
-  type="password"
-  placeholder="Nhập mật khẩu"
-  autocomplete="current-password"
->
+            id="password"
+            type="password"
+            placeholder="Nhập mật khẩu"
+            autocomplete="current-password"
+          >
 
         </div>
 
@@ -716,12 +735,17 @@
       >
 
 
-        <!-- LOGOUT -->
+        <!-- =================================================
+             LOGOUT CŨ - ẨN KHỎI GIAO DIỆN
+             
+             Giữ ID để manager.js cũ không bị lỗi.
+        ================================================= -->
 
         <button
           id="logoutBtn"
           class="danger"
           type="button"
+          style="display:none !important"
         >
           🚪 ĐĂNG XUẤT
         </button>
@@ -1014,6 +1038,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
   <script src="config.js"></script>
+
 
   <!-- =====================================================
        MANAGER JS
