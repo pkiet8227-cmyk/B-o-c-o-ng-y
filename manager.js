@@ -1,6 +1,3 @@
-
-
-
 // ============================================================
 // MANAGER.JS
 // QUẢN LÝ BÁO CÁO NGÀY
@@ -448,6 +445,10 @@
         totalAmount.textContent = "0 đ";
       }
 
+      if (submittedUserCount) {
+        submittedUserCount.textContent = "0";
+      }
+
       closeMenu();
 
       showLogin();
@@ -552,6 +553,9 @@
             row.user_name || ""
           ).toLowerCase();
 
+        // Luôn lấy ngày gốc YYYY-MM-DD
+        // để bộ lọc không bị ảnh hưởng bởi
+        // định dạng hiển thị DD/MM/YYYY.
         const reportDate =
           String(
             row.field_date || ""
@@ -761,7 +765,7 @@
       }
     );
 
-    // Gắn nút sửa/xóa
+    // Gắn nút sửa
     tableBody
       .querySelectorAll(
         '[data-action="edit"]'
@@ -780,6 +784,7 @@
         );
       });
 
+    // Gắn nút xóa
     tableBody
       .querySelectorAll(
         '[data-action="delete"]'
@@ -828,6 +833,7 @@
       document.createElement("button");
 
     prev.textContent = "‹";
+
     prev.disabled =
       currentPage === 1;
 
@@ -865,7 +871,9 @@
       );
 
     if (currentPage <= 3) {
+
       startPage = 1;
+
       endPage =
         Math.min(
           totalPages,
@@ -874,6 +882,7 @@
     }
 
     if (currentPage >= totalPages - 2) {
+
       startPage =
         Math.max(
           1,
@@ -1081,7 +1090,7 @@
           <input
             id="editFieldDate"
             type="date"
-            value="${escapeAttr(formatDate(row.field_date))}"
+            value="${escapeAttr(formatDateForInput(row.field_date))}"
             style="width:100%;box-sizing:border-box;padding:11px;margin-top:5px;"
           >
         </label>
@@ -1273,6 +1282,7 @@
         "editUserName"
       )?.value.trim() || "";
 
+    // Input type="date" luôn trả về YYYY-MM-DD
     const field_date =
       document.getElementById(
         "editFieldDate"
@@ -1765,6 +1775,14 @@
       return;
     }
 
+    // ========================================================
+    // TẠO DỮ LIỆU EXCEL
+    //
+    // Quan trọng:
+    // "Ngày field" được chuyển thành Date thật.
+    // Sau đó đặt format Excel là dd/mm/yyyy.
+    // ========================================================
+
     const exportData =
       filteredData.map(
         (row, index) => ({
@@ -1775,9 +1793,7 @@
             row.user_name || "",
 
           "Ngày field":
-            formatDate(
-              row.field_date
-            ),
+            toExcelDate(row.field_date),
 
           "Số CIF":
             row.cif || "",
@@ -1809,7 +1825,59 @@
         exportData
       );
 
-    // Độ rộng cột
+    // ========================================================
+    // ĐỊNH DẠNG CỘT NGÀY
+    //
+    // Cột C = Ngày field
+    // Dòng 1 = tiêu đề
+    // Dòng 2 trở đi = dữ liệu
+    // ========================================================
+
+    for (
+      let rowIndex = 2;
+      rowIndex <= filteredData.length + 1;
+      rowIndex++
+    ) {
+
+      const cell =
+        ws[`C${rowIndex}`];
+
+      if (cell) {
+
+        cell.z =
+          "dd/mm/yyyy";
+      }
+    }
+
+    // ========================================================
+    // ĐỊNH DẠNG DỰ THU
+    //
+    // Cột I = Dự thu
+    // ========================================================
+
+    for (
+      let rowIndex = 2;
+      rowIndex <= filteredData.length + 1;
+      rowIndex++
+    ) {
+
+      const cell =
+        ws[`I${rowIndex}`];
+
+      if (
+        cell &&
+        typeof cell.v === "number"
+      ) {
+
+        cell.z =
+          '#,##0" đ"';
+      }
+    }
+
+    // ========================================================
+    // ĐỘ RỘNG CỘT
+    // ========================================================
+
     ws["!cols"] = [
       { wch: 6 },
       { wch: 20 },
@@ -1823,6 +1891,10 @@
       { wch: 45 }
     ];
 
+    // ========================================================
+    // TẠO WORKBOOK
+    // ========================================================
+
     const wb =
       XLSX.utils.book_new();
 
@@ -1831,6 +1903,10 @@
       ws,
       "BaoCaoNgay"
     );
+
+    // ========================================================
+    // TÊN FILE
+    // ========================================================
 
     const now =
       new Date();
@@ -1846,9 +1922,16 @@
         now.getDate()
       ).padStart(2, "0");
 
+    // ========================================================
+    // XUẤT FILE
+    // ========================================================
+
     XLSX.writeFile(
       wb,
-      `Bao_Cao_Ngay_${date}.xlsx`
+      `Bao_Cao_Ngay_${date}.xlsx`,
+      {
+        cellDates: true
+      }
     );
 
     if (managerMessage) {
@@ -1858,7 +1941,13 @@
   }
 
   // ==========================================================
-  // FORMAT DATE
+  // FORMAT DATE HIỂN THỊ
+  //
+  // Supabase:
+  // YYYY-MM-DD
+  //
+  // Giao diện:
+  // DD/MM/YYYY
   // ==========================================================
 
   function formatDate(value) {
@@ -1867,8 +1956,111 @@
       return "";
     }
 
+    const dateString =
+      String(value)
+        .substring(0, 10);
+
+    const parts =
+      dateString.split("-");
+
+    if (parts.length === 3) {
+
+      const year =
+        parts[0];
+
+      const month =
+        parts[1];
+
+      const day =
+        parts[2];
+
+      if (
+        year &&
+        month &&
+        day
+      ) {
+
+        return (
+          `${day}/${month}/${year}`
+        );
+      }
+    }
+
+    return dateString;
+  }
+
+  // ==========================================================
+  // FORMAT DATE CHO INPUT TYPE="DATE"
+  //
+  // input type="date" bắt buộc:
+  // YYYY-MM-DD
+  //
+  // KHÔNG dùng formatDate() ở đây.
+  // ==========================================================
+
+  function formatDateForInput(value) {
+
+    if (!value) {
+      return "";
+    }
+
     return String(value)
       .substring(0, 10);
+  }
+
+  // ==========================================================
+  // CHUYỂN NGÀY SUPABASE -> DATE CHO EXCEL
+  //
+  // Ví dụ:
+  // 2026-09-11
+  //
+  // thành:
+  // Date(2026, 8, 11)
+  //
+  // Dùng local date để tránh lỗi lệch ngày
+  // do timezone.
+  // ==========================================================
+
+  function toExcelDate(value) {
+
+    if (!value) {
+      return null;
+    }
+
+    const dateString =
+      String(value)
+        .substring(0, 10);
+
+    const parts =
+      dateString.split("-");
+
+    if (parts.length !== 3) {
+      return null;
+    }
+
+    const year =
+      Number(parts[0]);
+
+    const month =
+      Number(parts[1]);
+
+    const day =
+      Number(parts[2]);
+
+    if (
+      !year ||
+      !month ||
+      !day
+    ) {
+
+      return null;
+    }
+
+    return new Date(
+      year,
+      month - 1,
+      day
+    );
   }
 
   // ==========================================================
@@ -1885,11 +2077,26 @@
     }
 
     return String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+      .replace(
+        /&/g,
+        "&amp;"
+      )
+      .replace(
+        /</g,
+        "&lt;"
+      )
+      .replace(
+        />/g,
+        "&gt;"
+      )
+      .replace(
+        /"/g,
+        "&quot;"
+      )
+      .replace(
+        /'/g,
+        "&#039;"
+      );
   }
 
   // ==========================================================
@@ -1906,10 +2113,22 @@
     }
 
     return String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+      .replace(
+        /&/g,
+        "&amp;"
+      )
+      .replace(
+        /"/g,
+        "&quot;"
+      )
+      .replace(
+        /</g,
+        "&lt;"
+      )
+      .replace(
+        />/g,
+        "&gt;"
+      );
   }
 
   // ==========================================================
